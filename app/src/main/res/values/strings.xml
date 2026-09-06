@@ -12,4 +12,18 @@
     <string name="widget_luxury_description">A premium glass view of the current and upcoming periods.</string>
     <string name="widget_cards_description">A clear card list for today’s periods.</string>
     <string name="widget_compact_description">The current period and what comes next at a glance.</string>
+    <string name="design_ticket_label">بطاقة يومك</string>
+    <string name="design_ticket_description">جدول حي بتصميم بطاقة يومك، اضغط لفتح ملاحظات الحصة وتجهيزها.</string>
+    <string name="design_orbit_label">المدار التقني</string>
+    <string name="design_orbit_description">جدول حي بتصميم المدار التقني، اضغط لفتح ملاحظات الحصة وتجهيزها.</string>
+    <string name="design_editorial_label">المجلة الهادئة</string>
+    <string name="design_editorial_description">جدول حي بتصميم المجلة الهادئة، اضغط لفتح ملاحظات الحصة وتجهيزها.</string>
+    <string name="design_bento_label">الوحدات الملونة</string>
+    <string name="design_bento_description">جدول حي بتصميم الوحدات الملونة، اضغط لفتح ملاحظات الحصة وتجهيزها.</string>
+    <string name="design_route_label">المسار الليلي</string>
+    <string name="design_route_description">جدول حي بتصميم المسار الليلي، اضغط لفتح ملاحظات الحصة وتجهيزها.</string>
+    <string name="design_sport_label">وقت التركيز</string>
+    <string name="design_sport_description">جدول حي بتصميم وقت التركيز، اضغط لفتح ملاحظات الحصة وتجهيزها.</string>
+    <string name="design_blueprint_label">المخطط الهندسي</string>
+    <string name="design_blueprint_description">جدول حي بتصميم المخطط الهندسي، اضغط لفتح ملاحظات الحصة وتجهيزها.</string>
 </resources>

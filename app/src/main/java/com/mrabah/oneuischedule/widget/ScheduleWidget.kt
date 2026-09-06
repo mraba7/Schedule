@@ -678,7 +678,7 @@ class ScheduleWidgetReceiver : GlanceAppWidgetReceiver() {
 
     override fun onDisabled(context: Context) {
         super.onDisabled(context)
-        ScheduleUpdater.cancel(context)
+        if (!DesignWidgets.anyInstalled(context)) ScheduleUpdater.cancel(context)
     }
 
     private fun refresh(context: Context) {

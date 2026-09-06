@@ -60,6 +60,35 @@ schedule engine:
 
 ## Two platform limits, handled honestly
 
+## Seven illustrated designs (native rendering)
+
+The **التصاميم** tab previews the actual Android renderer and lets you pin each
+design separately: بطاقة يومك، المدار التقني، المجلة الهادئة، الوحدات الملونة،
+المسار الليلي، وقت التركيز، المخطط الهندسي. All prior widgets remain available.
+
+- The seven layouts use a shared 360×360 coordinate space, the bundled Arabic
+  font, and Canvas-rendered live data. These are not static concept images.
+- Best reference size is a square widget (approximately 4×4). Non-square sizes
+  preserve proportions with transparent padding rather than distorting text.
+- Tap a widget to edit a date-and-period-specific note and preparation task.
+  The visible task circle toggles completion; setting a different task clears
+  completion. No sample preparation task is silently saved to user data.
+- Active lessons show remaining minutes. Future days show the starting time;
+  breaks and unassigned time are distinct. Alarms share the original updater.
+- Removing the original widget no longer cancels updates for remaining widgets.
+- `gradle test` includes native Android rendering across 7 designs × 6 states
+  and exports PNGs to `app/build/design-previews`. These are real rendered
+  previews, not a claim of physical One UI launcher verification.
+- Branch builds are prereleases and point their tag at the build commit.
+
+### Visual scope
+
+The implementation follows the approved color palettes, hierarchy, and seven
+distinct compositions. Dynamic labels, empty states, responsive padding and
+accessible task hit areas necessarily differ from static sample drawings.
+Use the exported previews and a device screenshot for final acceptance;
+generated concept imagery is not a pixel-perfect screenshot specification.
+
 - Widgets can't cast real shadows → depth is faked with a 1dp top hairline and
   layered opacity.
 - Widgets can't sample the wallpaper → no true blur. If you want it, turn on

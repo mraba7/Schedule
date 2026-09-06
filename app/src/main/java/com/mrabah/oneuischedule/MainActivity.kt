@@ -154,7 +154,7 @@ private fun AppShell() {
     Scaffold(
         bottomBar = {
             NavigationBar {
-                listOf("اليوم", "الجدول", "المنهج").forEachIndexed { index, label ->
+                listOf("اليوم", "الجدول", "المنهج", "التصاميم").forEachIndexed { index, label ->
                     NavigationBarItem(
                         selected = tab == index,
                         onClick = { tab = index },
@@ -169,7 +169,8 @@ private fun AppShell() {
             when (tab) {
                 0 -> TodayScreen(config, ::commit)
                 1 -> ScheduleScreen(config, ::commit)
-                else -> SyllabusScreen(config, ::commit)
+                2 -> SyllabusScreen(config, ::commit)
+                else -> com.mrabah.oneuischedule.widget.DesignGallery(config)
             }
         }
     }
