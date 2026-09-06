@@ -726,6 +726,11 @@ private fun ScheduleScreen(config: Config, commit: (Config) -> Unit) {
                             "لتختم الدرس وتوزّع الواجب",
                             draft.endAlert,
                         ) { edit(draft.copy(endAlert = it)) }
+                        OptionRow(
+                            "نطق التنبيه بصوت",
+                            "يقرأ التنبيه بالعربية بدل الاكتفاء بالجرس",
+                            draft.speak,
+                        ) { edit(draft.copy(speak = it)) }
                         OptionRow("إشعار الحصة الجارية", "شريط تقدّم مستمر", draft.liveUpdate) {
                             edit(draft.copy(liveUpdate = it))
                         }
@@ -1186,6 +1191,7 @@ private fun NotificationTestCard() {
                 "نهاية حصة" to PeriodNotifier.Preview.END,
                 "قبل الحصة" to PeriodNotifier.Preview.PRE,
                 "الحصة الجارية" to PeriodNotifier.Preview.LIVE,
+                "نطق تجريبي" to PeriodNotifier.Preview.SPEAK,
             )
             samples.chunked(2).forEach { row ->
                 Row(

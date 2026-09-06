@@ -33,8 +33,8 @@ import java.time.ZoneId
  */
 object PeriodNotifier {
 
-    private const val CH_BELL = "bells_school_v2"   // synthesised bell
-    private const val CH_PLAIN = "bells_system_v2"  // device notification tone
+    private const val CH_BELL = "bells_school_v3"   // synthesised bell
+    private const val CH_PLAIN = "bells_system_v3"  // device notification tone
     private const val CH_LIVE = "live_class_v1"     // silent, ongoing
 
     private const val REQUEST = 9110
@@ -61,7 +61,7 @@ object PeriodNotifier {
 
     /* ── testing and diagnostics ────────────────────────────── */
 
-    enum class Preview { START, END_SOON, END, PRE, LIVE }
+    enum class Preview { START, END_SOON, END, PRE, LIVE, SPEAK }
 
     /** Fires a sample of each notification so it can be heard, not imagined. */
     fun preview(context: Context, kind: Preview) {
@@ -78,6 +78,9 @@ object PeriodNotifier {
             Preview.END -> ring(context, config, "انتهت الحصة 2", sample)
             Preview.PRE -> ring(context, config, "بعد 5 دقائق · الحصة 2", sample)
             Preview.LIVE -> postLive(context, config, sample, 2, 0.45f, 22)
+            Preview.SPEAK -> Speaker.say(
+                context, "باقي خمس دقائق على نهاية الحصة الثانية. $sample"
+            )
         }
     }
 
@@ -164,7 +167,10 @@ object PeriodNotifier {
                 }
             }
 
-            title?.let { ring(context, config, it, body.orEmpty()) }
+            title?.let { text ->
+                ring(context, config, text, body.orEmpty())
+                if (config.speak) Speaker.say(context, spoken(text, body.orEmpty()))
+            }
         }
 
         // live progress notification
@@ -225,6 +231,10 @@ object PeriodNotifier {
         }
         return null
     }
+
+    /** Notification text is written to be read; this is written to be heard. */
+    private fun spoken(title: String, body: String): String =
+        if (body.isBlank()) title else "$title. $body"
 
     private fun near(a: LocalTime, b: LocalTime): Boolean =
         kotlin.math.abs(a.toSecondOfDay() - b.toSecondOfDay()) <= 90
@@ -301,7 +311,7 @@ object PeriodNotifier {
                     setSound(
                         bellUri,
                         AudioAttributes.Builder()
-                            .setUsage(AudioAttributes.USAGE_ALARM)
+                            .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                             .build()
                     )
