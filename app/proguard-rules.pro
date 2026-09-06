@@ -7,3 +7,6 @@
 # Glance builds RemoteViews through generated layout lookups.
 -keep class androidx.glance.appwidget.** { *; }
 -dontwarn androidx.glance.**
+
+# Bundled Arabic font files are referenced only through R.font
+-keep class **.R$font { *; }

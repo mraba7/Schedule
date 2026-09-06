@@ -30,6 +30,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -49,6 +50,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -70,6 +73,39 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle as JavaTextStyle
 import java.util.Locale
 
+/**
+ * IBM Plex Sans Arabic: open licence, four weights, and — the reason it was
+ * chosen over the geometric alternatives — Arabic and Latin drawn as one
+ * family, so "الحصة 2" and "8:05" share a baseline and a colour of text.
+ *
+ * The widget cannot use this. App widgets are drawn by the launcher's process,
+ * which only reaches system fonts, so it keeps inheriting One UI Sans.
+ */
+private val PlexArabic = FontFamily(
+    Font(R.font.plex_arabic_regular, FontWeight.Normal),
+    Font(R.font.plex_arabic_medium, FontWeight.Medium),
+    Font(R.font.plex_arabic_semibold, FontWeight.SemiBold),
+    Font(R.font.plex_arabic_bold, FontWeight.Bold),
+)
+
+private fun typographyOf(base: Typography) = Typography(
+    displayLarge = base.displayLarge.copy(fontFamily = PlexArabic),
+    displayMedium = base.displayMedium.copy(fontFamily = PlexArabic),
+    displaySmall = base.displaySmall.copy(fontFamily = PlexArabic),
+    headlineLarge = base.headlineLarge.copy(fontFamily = PlexArabic),
+    headlineMedium = base.headlineMedium.copy(fontFamily = PlexArabic),
+    headlineSmall = base.headlineSmall.copy(fontFamily = PlexArabic),
+    titleLarge = base.titleLarge.copy(fontFamily = PlexArabic),
+    titleMedium = base.titleMedium.copy(fontFamily = PlexArabic),
+    titleSmall = base.titleSmall.copy(fontFamily = PlexArabic),
+    bodyLarge = base.bodyLarge.copy(fontFamily = PlexArabic),
+    bodyMedium = base.bodyMedium.copy(fontFamily = PlexArabic),
+    bodySmall = base.bodySmall.copy(fontFamily = PlexArabic),
+    labelLarge = base.labelLarge.copy(fontFamily = PlexArabic),
+    labelMedium = base.labelMedium.copy(fontFamily = PlexArabic),
+    labelSmall = base.labelSmall.copy(fontFamily = PlexArabic),
+)
+
 private val DAYS = listOf(
     DayOfWeek.SUNDAY, DayOfWeek.MONDAY, DayOfWeek.TUESDAY,
     DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY,
@@ -89,7 +125,10 @@ class MainActivity : ComponentActivity() {
             val context = LocalContext.current
             val scheme = if (isSystemInDarkTheme()) dynamicDarkColorScheme(context)
             else dynamicLightColorScheme(context)
-            MaterialTheme(colorScheme = scheme) {
+            MaterialTheme(
+                colorScheme = scheme,
+                typography = typographyOf(MaterialTheme.typography),
+            ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
