@@ -342,7 +342,10 @@ private fun WidgetRoot(vm: Vm) {
 
         if (height >= Medium.height && vm.rows.isNotEmpty()) {
             Column(modifier = GlanceModifier.fillMaxWidth().padding(top = 8.dp)) {
-                vm.rows.forEach { row -> SlotRow(row, g) }
+                vm.rows.forEach { row ->
+                    SlotRow(row, g)
+                    Spacer(GlanceModifier.height(7.dp))
+                }
             }
             if (height >= Large.height && vm.footer.isNotEmpty()) {
                 Spacer(GlanceModifier.defaultWeight())
@@ -523,7 +526,6 @@ private fun SlotRow(row: RowVm, g: Glass) {
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .padding(bottom = 6.dp)
             .background(dim(g.row, row.inkAlpha))
             .cornerRadius(18.dp)
             .padding(horizontal = 12.dp, vertical = 10.dp),
