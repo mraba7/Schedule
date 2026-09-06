@@ -184,12 +184,22 @@ private fun TodayScreen(config: Config, commit: (Config) -> Unit) {
     val ui = ScheduleEngine.build(config, now)
 
     var update by remember { mutableStateOf<UpdateChecker.Result?>(null) }
+    var checking by remember { mutableStateOf(true) }
+    var checkFailed by remember { mutableStateOf(false) }
     var downloading by remember { mutableStateOf(false) }
     var progress by remember { mutableStateOf(0f) }
     var failed by remember { mutableStateOf(false) }
     val uriHandler = LocalUriHandler.current
 
-    LaunchedEffect(Unit) { update = UpdateChecker.check(context)?.takeIf { it.newer } }
+    suspend fun runCheck() {
+        checking = true
+        checkFailed = false
+        val result = UpdateChecker.check(context)
+        checking = false
+        if (result == null) checkFailed = true else update = result
+    }
+
+    LaunchedEffect(Unit) { runCheck() }
 
     var editing by remember { mutableStateOf<Int?>(null) }
 
@@ -197,7 +207,41 @@ private fun TodayScreen(config: Config, commit: (Config) -> Unit) {
         contentPadding = PaddingValues(20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        update?.let { found ->
+        item {
+            val found = update
+            if (found == null || !found.newer) {
+                // Silence is not an answer: say which state we are in.
+                Card(shape = RoundedCornerShape(20.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                when {
+                                    checking -> "يبحث عن تحديث…"
+                                    checkFailed -> "تعذّر الوصول إلى الخادم"
+                                    else -> "أنت على أحدث نسخة"
+                                },
+                                fontSize = 14.sp,
+                            )
+                            Text(
+                                "النسخة ${BuildConfig.VERSION_NAME}",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        if (!checking) {
+                            TextButton(onClick = { scope.launch { runCheck() } }) {
+                                Text("تحقق الآن")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        update?.takeIf { it.newer }?.let { found ->
             item {
                 Card(
                     shape = RoundedCornerShape(20.dp),
