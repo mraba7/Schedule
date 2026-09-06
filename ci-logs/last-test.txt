@@ -4,28 +4,28 @@ Daemon will be stopped at the end of the build
 > Task :app:preBuild UP-TO-DATE
 > Task :app:preDebugBuild UP-TO-DATE
 > Task :app:generateDebugBuildConfig
-> Task :app:generateDebugResValues FROM-CACHE
 > Task :app:checkDebugAarMetadata
+> Task :app:generateDebugResValues FROM-CACHE
 > Task :app:mapDebugSourceSetPaths
-> Task :app:generateDebugResources
+> Task :app:generateDebugResources FROM-CACHE
+> Task :app:mergeDebugResources FROM-CACHE
+> Task :app:packageDebugResources FROM-CACHE
+> Task :app:parseDebugLocalResources FROM-CACHE
 > Task :app:createDebugCompatibleScreenManifests
 > Task :app:extractDeepLinksDebug FROM-CACHE
-> Task :app:mergeDebugResources
 > Task :app:processDebugMainManifest
-> Task :app:packageDebugResources
-> Task :app:parseDebugLocalResources
 > Task :app:processDebugManifest
 > Task :app:javaPreCompileDebug FROM-CACHE
-> Task :app:processDebugManifestForPackage
 > Task :app:preDebugUnitTestBuild UP-TO-DATE
 > Task :app:javaPreCompileDebugUnitTest FROM-CACHE
+> Task :app:processDebugManifestForPackage
 > Task :app:buildKotlinToolingMetadata
 > Task :app:preReleaseBuild UP-TO-DATE
 > Task :app:generateReleaseBuildConfig
 > Task :app:checkReleaseAarMetadata
 > Task :app:generateReleaseResValues FROM-CACHE
 > Task :app:mapReleaseSourceSetPaths
-> Task :app:generateReleaseResources
+> Task :app:generateReleaseResources FROM-CACHE
 > Task :app:createReleaseCompatibleScreenManifests
 > Task :app:extractDeepLinksRelease FROM-CACHE
 > Task :app:processReleaseMainManifest
@@ -35,35 +35,193 @@ Daemon will be stopped at the end of the build
 > Task :app:preReleaseUnitTestBuild UP-TO-DATE
 > Task :app:javaPreCompileReleaseUnitTest FROM-CACHE
 > Task :app:processDebugResources
-> Task :app:mergeReleaseResources
-> Task :app:packageReleaseResources
+> Task :app:mergeReleaseResources FROM-CACHE
+> Task :app:packageReleaseResources FROM-CACHE
 > Task :app:parseReleaseLocalResources FROM-CACHE
 > Task :app:processReleaseResources
-> Task :app:compileDebugKotlin
-> Task :app:compileReleaseKotlin
-w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/widget/ScheduleWidget.kt:652:20 'static field ACTION_WALLPAPER_CHANGED: String' is deprecated. Deprecated in Java.
 
 > Task :app:compileDebugKotlin
-w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/widget/ScheduleWidget.kt:652:20 'static field ACTION_WALLPAPER_CHANGED: String' is deprecated. Deprecated in Java.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/notify/PeriodNotifier.kt:133:32 Unresolved reference 'dutiesOn'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/notify/PeriodNotifier.kt:134:31 Cannot infer type for this parameter. Please specify it explicitly.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/notify/PeriodNotifier.kt:135:18 Overload resolution ambiguity between candidates:
+fun <T, R> Array<out T>.flatMap(transform: (T) -> Iterable<R>): List<R>
+fun <T, R> Array<out T>.flatMap(transform: (T) -> Sequence<R>): List<R>
+fun <R> BooleanArray.flatMap(transform: (Boolean) -> Iterable<R>): List<R>
+fun <R> ByteArray.flatMap(transform: (Byte) -> Iterable<R>): List<R>
+fun <R> CharArray.flatMap(transform: (Char) -> Iterable<R>): List<R>
+fun <R> DoubleArray.flatMap(transform: (Double) -> Iterable<R>): List<R>
+fun <R> FloatArray.flatMap(transform: (Float) -> Iterable<R>): List<R>
+fun <R> IntArray.flatMap(transform: (Int) -> Iterable<R>): List<R>
+fun <R> LongArray.flatMap(transform: (Long) -> Iterable<R>): List<R>
+fun <R> ShortArray.flatMap(transform: (Short) -> Iterable<R>): List<R>
+fun <T, R> Iterable<T>.flatMap(transform: (T) -> Iterable<R>): List<R>
+fun <T, R> Iterable<T>.flatMap(transform: (T) -> Sequence<R>): List<R>
+fun <K, V, R> Map<out K, V>.flatMap(transform: (Map.Entry<K, V>) -> Iterable<R>): List<R>
+fun <K, V, R> Map<out K, V>.flatMap(transform: (Map.Entry<K, V>) -> Sequence<R>): List<R>
+fun <R> UByteArray.flatMap(transform: (UByte) -> Iterable<R>): List<R>
+fun <R> UIntArray.flatMap(transform: (UInt) -> Iterable<R>): List<R>
+fun <R> ULongArray.flatMap(transform: (ULong) -> Iterable<R>): List<R>
+fun <R> UShortArray.flatMap(transform: (UShort) -> Iterable<R>): List<R>
+fun <T, R> Sequence<T>.flatMap(transform: (T) -> Iterable<R>): Sequence<R>
+fun <T, R> Sequence<T>.flatMap(transform: (T) -> Sequence<R>): Sequence<R>
+fun <R> CharSequence.flatMap(transform: (Char) -> Iterable<R>): List<R>
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/notify/PeriodNotifier.kt:136:21 Cannot infer type for this parameter. Please specify it explicitly.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/notify/PeriodNotifier.kt:137:44 Unresolved reference 'start'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/notify/PeriodNotifier.kt:138:44 Unresolved reference 'end'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/notify/PeriodNotifier.kt:139:65 Unresolved reference 'start'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/notify/PeriodNotifier.kt:139:72 Unresolved reference 'minusMinutes'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/notify/PeriodNotifier.kt:142:18 Overload resolution ambiguity between candidates:
+fun <T> Array<out T>.filter(predicate: (T) -> Boolean): List<T>
+fun BooleanArray.filter(predicate: (Boolean) -> Boolean): List<Boolean>
+fun ByteArray.filter(predicate: (Byte) -> Boolean): List<Byte>
+fun CharArray.filter(predicate: (Char) -> Boolean): List<Char>
+fun DoubleArray.filter(predicate: (Double) -> Boolean): List<Double>
+fun FloatArray.filter(predicate: (Float) -> Boolean): List<Float>
+fun IntArray.filter(predicate: (Int) -> Boolean): List<Int>
+fun LongArray.filter(predicate: (Long) -> Boolean): List<Long>
+fun ShortArray.filter(predicate: (Short) -> Boolean): List<Short>
+fun <T> Iterable<T>.filter(predicate: (T) -> Boolean): List<T>
+fun <K, V> Map<out K, V>.filter(predicate: (Map.Entry<K, V>) -> Boolean): Map<K, V>
+fun UByteArray.filter(predicate: (UByte) -> Boolean): List<UByte>
+fun UIntArray.filter(predicate: (UInt) -> Boolean): List<UInt>
+fun ULongArray.filter(predicate: (ULong) -> Boolean): List<ULong>
+fun UShortArray.filter(predicate: (UShort) -> Boolean): List<UShort>
+fun <T> Sequence<T>.filter(predicate: (T) -> Boolean): Sequence<T>
+fun CharSequence.filter(predicate: (Char) -> Boolean): CharSequence
+fun String.filter(predicate: (Char) -> Boolean): String
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/notify/PeriodNotifier.kt:142:25 Unresolved reference 'isAfter'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/notify/PeriodNotifier.kt:142:30 Unresolved reference 'isAfter'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/notify/PeriodNotifier.kt:143:18 Overload resolution ambiguity between candidates:
+fun <T : Comparable<T>> Array<out T>.minOrNull(): T?
+fun Array<out Double>.minOrNull(): Double?
+fun Array<out Float>.minOrNull(): Float?
+fun ByteArray.minOrNull(): Byte?
+fun CharArray.minOrNull(): Char?
+fun DoubleArray.minOrNull(): Double?
+fun FloatArray.minOrNull(): Float?
+fun IntArray.minOrNull(): Int?
+fun LongArray.minOrNull(): Long?
+fun ShortArray.minOrNull(): Short?
+fun <T : Comparable<T>> Iterable<T>.minOrNull(): T?
+fun Iterable<Double>.minOrNull(): Double?
+fun Iterable<Float>.minOrNull(): Float?
+fun UByteArray.minOrNull(): UByte?
+fun UIntArray.minOrNull(): UInt?
+fun ULongArray.minOrNull(): ULong?
+fun UShortArray.minOrNull(): UShort?
+fun <T : Comparable<T>> Sequence<T>.minOrNull(): T?
+fun Sequence<Double>.minOrNull(): Double?
+fun Sequence<Float>.minOrNull(): Float?
+fun CharSequence.minOrNull(): Char?
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/notify/PeriodNotifier.kt:144:39 Return type mismatch: expected 'java.time.LocalDateTime?', actual 'kotlin.Any'.
 
-> Task :app:compileDebugJavaWithJavac
-> Task :app:bundleDebugClassesToCompileJar
-> Task :app:bundleDebugClassesToRuntimeJar
-> Task :app:processDebugJavaRes
-> Task :app:compileReleaseJavaWithJavac
-> Task :app:bundleReleaseClassesToRuntimeJar
-> Task :app:bundleReleaseClassesToCompileJar
-> Task :app:compileDebugUnitTestKotlin
-> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
-> Task :app:processDebugUnitTestJavaRes
-> Task :app:compileReleaseUnitTestKotlin
-> Task :app:testDebugUnitTest
-> Task :app:compileReleaseUnitTestJavaWithJavac NO-SOURCE
-> Task :app:processReleaseJavaRes
-> Task :app:processReleaseUnitTestJavaRes
-> Task :app:testReleaseUnitTest
-> Task :app:test
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/tests-1788692648397.json
+> Task :app:compileReleaseKotlin FAILED
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/notify/PeriodNotifier.kt:133:32 Unresolved reference 'dutiesOn'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/notify/PeriodNotifier.kt:134:31 Cannot infer type for this parameter. Please specify it explicitly.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/notify/PeriodNotifier.kt:135:18 Overload resolution ambiguity between candidates:
+fun <T, R> Array<out T>.flatMap(transform: (T) -> Iterable<R>): List<R>
+fun <T, R> Array<out T>.flatMap(transform: (T) -> Sequence<R>): List<R>
+fun <R> BooleanArray.flatMap(transform: (Boolean) -> Iterable<R>): List<R>
+fun <R> ByteArray.flatMap(transform: (Byte) -> Iterable<R>): List<R>
+fun <R> CharArray.flatMap(transform: (Char) -> Iterable<R>): List<R>
+fun <R> DoubleArray.flatMap(transform: (Double) -> Iterable<R>): List<R>
+fun <R> FloatArray.flatMap(transform: (Float) -> Iterable<R>): List<R>
+fun <R> IntArray.flatMap(transform: (Int) -> Iterable<R>): List<R>
+fun <R> LongArray.flatMap(transform: (Long) -> Iterable<R>): List<R>
+fun <R> ShortArray.flatMap(transform: (Short) -> Iterable<R>): List<R>
+fun <T, R> Iterable<T>.flatMap(transform: (T) -> Iterable<R>): List<R>
+fun <T, R> Iterable<T>.flatMap(transform: (T) -> Sequence<R>): List<R>
+fun <K, V, R> Map<out K, V>.flatMap(transform: (Map.Entry<K, V>) -> Iterable<R>): List<R>
+fun <K, V, R> Map<out K, V>.flatMap(transform: (Map.Entry<K, V>) -> Sequence<R>): List<R>
+fun <R> UByteArray.flatMap(transform: (UByte) -> Iterable<R>): List<R>
+fun <R> UIntArray.flatMap(transform: (UInt) -> Iterable<R>): List<R>
+fun <R> ULongArray.flatMap(transform: (ULong) -> Iterable<R>): List<R>
+fun <R> UShortArray.flatMap(transform: (UShort) -> Iterable<R>): List<R>
+fun <T, R> Sequence<T>.flatMap(transform: (T) -> Iterable<R>): Sequence<R>
+fun <T, R> Sequence<T>.flatMap(transform: (T) -> Sequence<R>): Sequence<R>
+fun <R> CharSequence.flatMap(transform: (Char) -> Iterable<R>): List<R>
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/notify/PeriodNotifier.kt:136:21 Cannot infer type for this parameter. Please specify it explicitly.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/notify/PeriodNotifier.kt:137:44 Unresolved reference 'start'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/notify/PeriodNotifier.kt:138:44 Unresolved reference 'end'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/notify/PeriodNotifier.kt:139:65 Unresolved reference 'start'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/notify/PeriodNotifier.kt:139:72 Unresolved reference 'minusMinutes'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/notify/PeriodNotifier.kt:142:18 Overload resolution ambiguity between candidates:
+fun <T> Array<out T>.filter(predicate: (T) -> Boolean): List<T>
+fun BooleanArray.filter(predicate: (Boolean) -> Boolean): List<Boolean>
+fun ByteArray.filter(predicate: (Byte) -> Boolean): List<Byte>
+fun CharArray.filter(predicate: (Char) -> Boolean): List<Char>
+fun DoubleArray.filter(predicate: (Double) -> Boolean): List<Double>
+fun FloatArray.filter(predicate: (Float) -> Boolean): List<Float>
+fun IntArray.filter(predicate: (Int) -> Boolean): List<Int>
+fun LongArray.filter(predicate: (Long) -> Boolean): List<Long>
+fun ShortArray.filter(predicate: (Short) -> Boolean): List<Short>
+fun <T> Iterable<T>.filter(predicate: (T) -> Boolean): List<T>
+fun <K, V> Map<out K, V>.filter(predicate: (Map.Entry<K, V>) -> Boolean): Map<K, V>
+fun UByteArray.filter(predicate: (UByte) -> Boolean): List<UByte>
+fun UIntArray.filter(predicate: (UInt) -> Boolean): List<UInt>
+fun ULongArray.filter(predicate: (ULong) -> Boolean): List<ULong>
+fun UShortArray.filter(predicate: (UShort) -> Boolean): List<UShort>
+fun <T> Sequence<T>.filter(predicate: (T) -> Boolean): Sequence<T>
+fun CharSequence.filter(predicate: (Char) -> Boolean): CharSequence
+fun String.filter(predicate: (Char) -> Boolean): String
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/notify/PeriodNotifier.kt:142:25 Unresolved reference 'isAfter'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/notify/PeriodNotifier.kt:142:30 Unresolved reference 'isAfter'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/notify/PeriodNotifier.kt:143:18 Overload resolution ambiguity between candidates:
+fun <T : Comparable<T>> Array<out T>.minOrNull(): T?
+fun Array<out Double>.minOrNull(): Double?
+fun Array<out Float>.minOrNull(): Float?
+fun ByteArray.minOrNull(): Byte?
+fun CharArray.minOrNull(): Char?
+fun DoubleArray.minOrNull(): Double?
+fun FloatArray.minOrNull(): Float?
+fun IntArray.minOrNull(): Int?
+fun LongArray.minOrNull(): Long?
+fun ShortArray.minOrNull(): Short?
+fun <T : Comparable<T>> Iterable<T>.minOrNull(): T?
+fun Iterable<Double>.minOrNull(): Double?
+fun Iterable<Float>.minOrNull(): Float?
+fun UByteArray.minOrNull(): UByte?
+fun UIntArray.minOrNull(): UInt?
+fun ULongArray.minOrNull(): ULong?
+fun UShortArray.minOrNull(): UShort?
+fun <T : Comparable<T>> Sequence<T>.minOrNull(): T?
+fun Sequence<Double>.minOrNull(): Double?
+fun Sequence<Float>.minOrNull(): Float?
+fun CharSequence.minOrNull(): Char?
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/notify/PeriodNotifier.kt:144:39 Return type mismatch: expected 'java.time.LocalDateTime?', actual 'kotlin.Any'.
 
-BUILD SUCCESSFUL in 1m 15s
-49 actionable tasks: 40 executed, 9 from cache
+> Task :app:compileDebugKotlin FAILED
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/tests-1788693455939.json
+
+FAILURE: Build completed with 2 failures.
+
+1: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':app:compileReleaseKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+2: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+BUILD FAILED in 34s
+35 actionable tasks: 19 executed, 16 from cache
