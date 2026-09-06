@@ -31,6 +31,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -148,6 +149,9 @@ private fun EditorScreen() {
     var saved by remember { mutableStateOf(false) }
     var problem by remember { mutableStateOf<String?>(null) }
     var update by remember { mutableStateOf<UpdateChecker.Result?>(null) }
+    var downloading by remember { mutableStateOf(false) }
+    var downloadProgress by remember { mutableStateOf(0f) }
+    var downloadFailed by remember { mutableStateOf(false) }
     val uriHandler = LocalUriHandler.current
 
     LaunchedEffect(Unit) {
@@ -193,6 +197,7 @@ private fun EditorScreen() {
                         containerColor = MaterialTheme.colorScheme.primaryContainer
                     ),
                 ) {
+                  Column {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -205,11 +210,55 @@ private fun EditorScreen() {
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                        Button(
-                            onClick = { uriHandler.openUri(found.page) },
-                            shape = RoundedCornerShape(16.dp),
-                        ) { Text("تحميل") }
+                        when {
+                            downloading -> Text(
+                                "${(downloadProgress * 100).toInt()}%",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                            )
+
+                            found.apkUrl == null -> Button(
+                                onClick = { uriHandler.openUri(found.page) },
+                                shape = RoundedCornerShape(16.dp),
+                            ) { Text("فتح الصفحة") }
+
+                            else -> Button(
+                                onClick = {
+                                    if (!Updater.canInstall(context)) {
+                                        Updater.requestPermission(context)
+                                        return@Button
+                                    }
+                                    downloadFailed = false
+                                    downloading = true
+                                    downloadProgress = 0f
+                                    scope.launch {
+                                        val file = Updater.download(
+                                            context, found.apkUrl, found.size
+                                        ) { downloadProgress = it }
+                                        downloading = false
+                                        if (file != null) Updater.install(context, file)
+                                        else downloadFailed = true
+                                    }
+                                },
+                                shape = RoundedCornerShape(16.dp),
+                            ) { Text("تحديث الآن") }
+                        }
                     }
+                    if (downloading) {
+                        LinearProgressIndicator(
+                            progress = { downloadProgress },
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 14.dp),
+                        )
+                    }
+                    if (downloadFailed) {
+                        Text(
+                            "تعذّر التنزيل — تأكد من الاتصال أو افتح الصفحة يدويًا",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 14.dp),
+                        )
+                    }
+                  }
                 }
             }
         }
