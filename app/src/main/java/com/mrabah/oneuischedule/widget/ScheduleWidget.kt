@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.ImageProvider
 import androidx.glance.LocalSize
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
@@ -153,7 +154,6 @@ private object Vms {
 
 private val Muted = ColorProvider(R.color.widget_muted)
 private val Ink = ColorProvider(R.color.widget_ink)
-private val Panel = ColorProvider(R.color.widget_panel)
 private val RowBg = ColorProvider(R.color.widget_row)
 private val Track = ColorProvider(R.color.widget_progress_track)
 
@@ -182,7 +182,7 @@ private fun WidgetRoot(vm: Vm) {
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
-            .background(Panel)
+            .background(ImageProvider(R.drawable.glass_panel))
             .cornerRadius(28.dp)
             .padding(horizontal = 16.dp, vertical = 14.dp)
             .clickable(actionStartActivity<MainActivity>())
