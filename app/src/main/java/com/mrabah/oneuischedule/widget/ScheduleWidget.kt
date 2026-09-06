@@ -148,6 +148,7 @@ private data class RowVm(
     val label: String,
     val color: Int,
     val inkAlpha: Int,   // past periods recede progressively
+    val note: String = "",
     val isNext: Boolean = false, // the one after the card, emphasised
     val railFill: Float = 1f,    // how full the countdown rail is
     val isBreak: Boolean = false,
@@ -267,6 +268,7 @@ private object Vms {
                         label = s.section ?: "انتظار",
                         color = Sections.color(s.section, glass.light),
                         inkAlpha = alpha,
+                        note = s.note,
                         isNext = isNext,
                         railFill = fill,
                     )
@@ -287,9 +289,9 @@ private object Vms {
                 slot == null -> ""
                 live -> "جارية الآن"
                 ui.isAssembly -> "بعد الطابور"
-                !ui.isToday -> "أول حصة"
+                !ui.isToday -> ""
                 ui.minutesUntilNext != null -> "تبدأ بعد ${ui.minutesUntilNext} دقيقة"
-                else -> "القادمة"
+                else -> ""
             },
             periodLabel = if (slot != null) "الحصة ${slot.period}" else "",
             section = slot?.section ?: "انتظار",
@@ -377,7 +379,7 @@ private fun WidgetRoot(vm: Vm) {
             .fillMaxSize()
             .background(provider(g.panel))
             .cornerRadius(28.dp)
-            .padding(horizontal = 16.dp, vertical = 14.dp)
+            .padding(16.dp)
             .clickable(actionStartActivity<MainActivity>())
     ) {
         Header(vm)
@@ -388,15 +390,19 @@ private fun WidgetRoot(vm: Vm) {
             Column(modifier = GlanceModifier.fillMaxWidth().padding(top = 8.dp)) {
                 vm.rows.forEach { row ->
                     SlotRow(row, g)
-                    Spacer(GlanceModifier.height(7.dp))
+                    Spacer(GlanceModifier.height(8.dp))
                 }
             }
             if (height >= Large.height && vm.footer.isNotEmpty()) {
                 Spacer(GlanceModifier.defaultWeight())
+                Spacer(
+                    GlanceModifier.fillMaxWidth().height(1.dp)
+                        .background(fade(g.ink, 0x1A))
+                )
                 Text(
                     text = vm.footer,
                     style = TextStyle(fontSize = 11.sp, color = provider(g.inkFaint)),
-                    modifier = GlanceModifier.padding(top = 6.dp),
+                    modifier = GlanceModifier.padding(top = 8.dp),
                 )
             }
         }
@@ -413,7 +419,7 @@ private fun Header(vm: Vm) {
         Column {
             Text(
                 text = vm.dayName,
-                style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, color = provider(g.ink)),
+                style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Medium, color = provider(g.ink)),
             )
             Text(
                 text = vm.dateLine,
@@ -432,7 +438,7 @@ private fun Header(vm: Vm) {
 @Composable
 private fun DayBar(vm: Vm, barWidth: Int) {
     val g = vm.glass
-    Column(modifier = GlanceModifier.fillMaxWidth().padding(top = 10.dp, bottom = 10.dp)) {
+    Column(modifier = GlanceModifier.fillMaxWidth().padding(top = 12.dp, bottom = 12.dp)) {
         Row(modifier = GlanceModifier.fillMaxWidth()) {
             vm.segments.forEachIndexed { index, seg ->
                 val current = index + 1 == vm.currentSegment
@@ -487,7 +493,7 @@ private fun Hero(vm: Vm, compact: Boolean = false) {
             .fillMaxWidth()
             .background(provider(vm.heroVeil))
             .cornerRadius(24.dp)
-            .padding(horizontal = 16.dp, vertical = 14.dp)
+            .padding(16.dp)
     ) {
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
@@ -495,7 +501,7 @@ private fun Hero(vm: Vm, compact: Boolean = false) {
         ) {
             Text(
                 text = vm.periodLabel,
-                style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = provider(vm.accent)),
+                style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Medium, color = provider(vm.accent)),
                 modifier = GlanceModifier
                     .background(fade(vm.accent, 0x2E))
                     .cornerRadius(9.dp)
@@ -508,7 +514,7 @@ private fun Hero(vm: Vm, compact: Boolean = false) {
             )
         }
 
-        Spacer(GlanceModifier.height(10.dp))
+        Spacer(GlanceModifier.height(12.dp))
 
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
@@ -531,17 +537,19 @@ private fun Hero(vm: Vm, compact: Boolean = false) {
             }
             Spacer(GlanceModifier.defaultWeight())
             Column(horizontalAlignment = Alignment.Horizontal.End) {
+                // Only the section number is allowed to shout. The clock is
+                // reference, so it stays quiet even while a period runs.
                 Text(
                     text = if (vm.showProgress) vm.minutesLeft else vm.startTime,
                     style = TextStyle(
-                        fontSize = if (vm.showProgress) 32.sp else 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = provider(g.ink),
+                        fontSize = if (vm.showProgress) 26.sp else 16.sp,
+                        fontWeight = if (vm.showProgress) FontWeight.Medium else FontWeight.Normal,
+                        color = provider(if (vm.showProgress) g.ink else g.inkMuted),
                     ),
                 )
                 Text(
                     text = if (vm.showProgress) "دقيقة متبقية" else vm.endTime,
-                    style = TextStyle(fontSize = 12.sp, color = provider(g.inkMuted)),
+                    style = TextStyle(fontSize = 11.sp, color = provider(g.inkFaint)),
                 )
             }
         }
@@ -615,14 +623,16 @@ private fun SlotRow(row: RowVm, g: Glass) {
         Spacer(GlanceModifier.width(10.dp))
         Text(
             text = row.period,
-            style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = fade(g.ink, row.inkAlpha)),
+            style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Normal, color = fade(g.ink, (row.inkAlpha * 3 / 4).coerceAtLeast(0x30))),
         )
-        Spacer(GlanceModifier.width(10.dp))
+        Spacer(GlanceModifier.width(8.dp))
         Text(
             text = row.time,
             style = TextStyle(fontSize = 13.sp, color = fade(g.ink, (row.inkAlpha * 3 / 4).coerceAtLeast(0x30))),
         )
-        Spacer(GlanceModifier.defaultWeight())
+        Spacer(GlanceModifier.width(12.dp))
+        // The section sits next to its time instead of across the row: the eye
+        // should not have to travel to connect "11:40" with "2/1".
         Text(
             text = row.label,
             style = TextStyle(
@@ -631,6 +641,13 @@ private fun SlotRow(row: RowVm, g: Glass) {
                 color = fade(row.color, row.inkAlpha),
             ),
         )
+        Spacer(GlanceModifier.defaultWeight())
+        if (row.note.isNotEmpty()) {
+            Text(
+                text = row.note,
+                style = TextStyle(fontSize = 11.sp, color = fade(g.ink, (row.inkAlpha / 2).coerceAtLeast(0x40))),
+            )
+        }
     }
 }
 
