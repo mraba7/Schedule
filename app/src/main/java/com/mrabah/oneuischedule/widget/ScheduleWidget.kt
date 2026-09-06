@@ -42,10 +42,11 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.mrabah.oneuischedule.MainActivity
-import com.mrabah.oneuischedule.data.BellTimes
+import com.mrabah.oneuischedule.data.Defaults
 import com.mrabah.oneuischedule.data.ScheduleEngine
 import com.mrabah.oneuischedule.data.ScheduleUi
 import com.mrabah.oneuischedule.data.SlotState
+import com.mrabah.oneuischedule.notify.PeriodNotifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -212,7 +213,7 @@ private object Vms {
             },
             periodLabel = if (slot != null) "الحصة ${slot.period}" else "",
             section = slot?.section ?: "انتظار",
-            subject = slot?.subject ?: "لا يوجد فصل",
+            subject = if (slot == null || slot.isStandby) "لا يوجد فصل" else Defaults.SUBJECT,
             startTime = if (slot != null) t(slot.bell.start) else "",
             endTime = if (slot != null) "حتى " + t(slot.bell.end) else "",
             minutesLeft = (ui.minutesLeftInLive ?: 0L).toString(),
@@ -229,7 +230,7 @@ private object Vms {
                         add(
                             RowVm(
                                 period = "",
-                                time = t(BellTimes.of(3).end) + " – " + t(BellTimes.of(4).start),
+                                time = t(ui.config.bell(3).end) + " – " + t(ui.config.bell(4).start),
                                 label = "الفسحة",
                                 done = ui.slots.any { s -> s.period >= 4 && s.state == SlotState.DONE },
                                 isBreak = true,
@@ -280,7 +281,7 @@ class ScheduleWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Responsive(setOf(Compact, Medium, Large))
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val ui = ScheduleEngine.build(LocalDateTime.now(ZoneId.systemDefault()))
+        val ui = ScheduleEngine.build(context, LocalDateTime.now(ZoneId.systemDefault()))
         val vm = Vms.build(context, ui)
         provideContent {
             GlanceTheme { WidgetRoot(vm) }
@@ -307,9 +308,13 @@ private fun WidgetRoot(vm: Vm) {
 
         if (height >= Medium.height && vm.rows.isNotEmpty()) {
             Spacer(GlanceModifier.height(8.dp))
-            vm.rows.forEach { row ->
-                SlotRow(row, g)
-                Spacer(GlanceModifier.height(6.dp))
+            // own container: a Glance layout node accepts only ~10 children,
+            // and the root already spends four on the header and hero
+            Column(modifier = GlanceModifier.fillMaxWidth()) {
+                vm.rows.forEach { row ->
+                    SlotRow(row, g)
+                    Spacer(GlanceModifier.height(6.dp))
+                }
             }
         }
     }
@@ -563,6 +568,7 @@ class ScheduleWidgetReceiver : GlanceAppWidgetReceiver() {
             try {
                 ScheduleWidget().updateAll(context)
                 ScheduleUpdater.schedule(context)
+                PeriodNotifier.sync(context)
             } catch (t: Throwable) {
                 // a failed refresh must never crash the launcher's broadcast
             } finally {
@@ -582,7 +588,7 @@ object ScheduleUpdater {
 
     fun schedule(context: Context) {
         val alarms = context.getSystemService(AlarmManager::class.java) ?: return
-        val at = ScheduleEngine.nextRefresh(LocalDateTime.now(ZoneId.systemDefault()))
+        val at = ScheduleEngine.nextRefresh(context, LocalDateTime.now(ZoneId.systemDefault()))
         val triggerAt = at.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
         try {

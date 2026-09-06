@@ -5,6 +5,7 @@
     <!-- Minute-accurate countdown. Without it the widget falls back to a
          60-second alarm window, which is still fine for classroom use. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:allowBackup="true"
@@ -39,6 +40,14 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/schedule_widget_info" />
+        </receiver>
+        <receiver
+            android:name=".notify.PeriodAlarmReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.mrabah.oneuischedule.BELL" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
         </receiver>
     </application>
 </manifest>
