@@ -47,7 +47,7 @@ import androidx.glance.semantics.semantics
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import androidx.glance.appwidget.unit.ColorProvider
+import androidx.glance.unit.ColorProvider
 import com.mrabah.oneuischedule.MainActivity
 import com.mrabah.oneuischedule.R
 import com.mrabah.oneuischedule.data.ScheduleEngine
@@ -91,8 +91,8 @@ private object Fallback {
 }
 
 /** Muted ink that survives both Monet palettes without fighting the accent. */
-private val Muted = ColorProvider(day = Color(0xFF5C636B), night = Color(0xFF9AA2AC))
-private val Ink = ColorProvider(day = Color(0xFF16181C), night = Color(0xFFE7EAEE))
+private val Muted = ColorProvider(R.color.widget_muted)
+private val Ink = ColorProvider(R.color.widget_ink)
 
 @Composable
 private fun ScheduleTheme(content: @Composable () -> Unit) {
@@ -274,10 +274,7 @@ private fun Hero(ui: ScheduleUi) {
                 progress = ui.progress,
                 modifier = GlanceModifier.fillMaxWidth().height(4.dp).cornerRadius(2.dp),
                 color = GlanceTheme.colors.primary,
-                backgroundColor = ColorProvider(
-                    day = Color(0x33000000),
-                    night = Color(0x33FFFFFF),
-                ),
+                backgroundColor = ColorProvider(R.color.widget_progress_track),
             )
         }
     }
