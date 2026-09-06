@@ -130,16 +130,19 @@ object PeriodNotifier {
         }
         var date = now.toLocalDate()
         repeat(8) {
-            val marks = config.dutiesOn(date.dayOfWeek).keys
-                .mapNotNull { p -> config.bells.firstOrNull { it.period == p } }
-                .flatMap {
-                    buildList {
-                        add(date.atTime(it.start))
-                        add(date.atTime(it.end))
-                        if (config.preAlert) add(date.atTime(it.start).minusMinutes(PRE_ALERT_MINUTES))
+            val day = date
+            val marks: LocalDateTime? = ScheduleEngine.dutiesOn(config, day).keys
+                .mapNotNull { p -> config.bells.firstOrNull { bell -> bell.period == p } }
+                .flatMap { bell ->
+                    buildList<LocalDateTime> {
+                        add(day.atTime(bell.start))
+                        add(day.atTime(bell.end))
+                        if (config.preAlert) {
+                            add(day.atTime(bell.start).minusMinutes(PRE_ALERT_MINUTES))
+                        }
                     }
                 }
-                .filter { it.isAfter(now) }
+                .filter { mark -> mark.isAfter(now) }
                 .minOrNull()
             if (marks != null) return marks
             date = date.plusDays(1)
