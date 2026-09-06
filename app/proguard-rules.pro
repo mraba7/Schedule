@@ -1,4 +1,5 @@
 # The launcher and AlarmManager create these reflectively by class name.
+-keep class com.mrabah.oneuischedule.widget.** extends android.appwidget.AppWidgetProvider { *; }
 -keep class com.mrabah.oneuischedule.widget.ScheduleWidgetReceiver { *; }
 -keep class com.mrabah.oneuischedule.widget.ScheduleWidget { *; }
 -keep class com.mrabah.oneuischedule.notify.PeriodAlarmReceiver { *; }

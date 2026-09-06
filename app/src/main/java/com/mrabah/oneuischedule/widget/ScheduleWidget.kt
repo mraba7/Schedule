@@ -67,7 +67,7 @@ import androidx.compose.ui.graphics.Color as ComposeColor
  *  read the number.
  * ══════════════════════════════════════════════════════════════ */
 
-private object Sections {
+internal object Sections {
 
     private fun base(section: String?): Int = when (section) {
         "2/1" -> 0xFF3B82F6.toInt() // blue
@@ -98,7 +98,7 @@ private object Sections {
  *  Only the ink polarity is read from the system.
  * ══════════════════════════════════════════════════════════════ */
 
-private data class Glass(
+internal data class Glass(
     val light: Boolean,
     val panel: Int,
     val row: Int,
@@ -109,7 +109,7 @@ private data class Glass(
     val inkFaint: Int,
 )
 
-private object GlassPalette {
+internal object GlassPalette {
 
     fun of(context: Context): Glass {
         val light = wallpaperIsLight(context)
@@ -338,12 +338,12 @@ private object Vms {
  *  WIDGET
  * ══════════════════════════════════════════════════════════════ */
 
-private fun provider(argb: Int) = ColorProvider(ComposeColor(argb))
-private fun fade(color: Int, alpha: Int) =
+internal fun provider(argb: Int) = ColorProvider(ComposeColor(argb))
+internal fun fade(color: Int, alpha: Int) =
     provider(ColorUtils.setAlphaComponent(color, alpha))
 
 /** Dims a colour that already carries alpha, instead of replacing it. */
-private fun dim(color: Int, factor: Int) = provider(
+internal fun dim(color: Int, factor: Int) = provider(
     ColorUtils.setAlphaComponent(color, android.graphics.Color.alpha(color) * factor / 0xFF)
 )
 
@@ -668,7 +668,7 @@ class ScheduleWidgetReceiver : GlanceAppWidgetReceiver() {
         val pending = goAsync()
         CoroutineScope(Dispatchers.Default).launch {
             try {
-                ScheduleWidget().updateAll(context)
+                updateEveryWidget(context)
                 ScheduleUpdater.schedule(context)
                 PeriodNotifier.sync(context)
             } catch (t: Throwable) {

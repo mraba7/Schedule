@@ -64,7 +64,7 @@ import com.mrabah.oneuischedule.data.ScheduleStore
 import com.mrabah.oneuischedule.data.SectionProgress
 import com.mrabah.oneuischedule.notify.PeriodNotifier
 import com.mrabah.oneuischedule.widget.ScheduleUpdater
-import com.mrabah.oneuischedule.widget.ScheduleWidget
+import com.mrabah.oneuischedule.widget.updateEveryWidget
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalTime
@@ -333,7 +333,7 @@ private fun EditorScreen() {
                         ScheduleStore.save(context, config)
                         PeriodNotifier.sync(context)
                         ScheduleUpdater.schedule(context)
-                        scope.launch { ScheduleWidget().updateAll(context) }
+                        scope.launch { updateEveryWidget(context) }
                         saved = true
                     },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
