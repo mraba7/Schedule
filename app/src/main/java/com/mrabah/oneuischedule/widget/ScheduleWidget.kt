@@ -2,10 +2,11 @@ package com.mrabah.oneuischedule.widget
 
 import android.app.AlarmManager
 import android.app.PendingIntent
+import android.app.WallpaperColors
 import android.app.WallpaperManager
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
+import android.graphics.Color as AndroidColor
 import android.os.Build
 import android.text.format.DateFormat
 import androidx.compose.runtime.Composable
@@ -16,7 +17,6 @@ import androidx.core.graphics.ColorUtils
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
-import androidx.glance.ImageProvider
 import androidx.glance.LocalSize
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
@@ -42,7 +42,6 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.mrabah.oneuischedule.MainActivity
-import com.mrabah.oneuischedule.R
 import com.mrabah.oneuischedule.data.ScheduleEngine
 import com.mrabah.oneuischedule.data.ScheduleUi
 import com.mrabah.oneuischedule.data.SlotState
@@ -59,66 +58,80 @@ import java.util.Locale
 import androidx.compose.ui.graphics.Color as ComposeColor
 
 /* ══════════════════════════════════════════════════════════════
- *  PALETTE — read from the actual wallpaper
+ *  GLASS PALETTE
  *
- *  Material You is not used. The seed comes from Samsung's own
- *  wallpaper colour extraction (WallpaperManager.getWallpaperColors),
- *  the same source One UI's Colour palette feature reads, so the card
- *  tracks the wallpaper even when the system palette is switched off.
+ *  The widget is not tinted — it is translucent. Every surface is a
+ *  white or black veil, so the wallpaper itself supplies the colour,
+ *  exactly like One UI's own widgets.
+ *
+ *  The only thing read from the system is WallpaperColors.colorHints:
+ *  HINT_SUPPORTS_DARK_TEXT tells us whether the wallpaper behind the
+ *  widget is light. That decides ink colour and veil polarity — the
+ *  one piece of information a translucent widget genuinely needs.
  * ══════════════════════════════════════════════════════════════ */
 
-private data class Palette(
-    val heroBg: Int,
-    val heroInk: Int,
-    val heroChip: Int,
-    val accent: Int,
-    val standbyBg: Int,
-    val standbyInk: Int,
+private data class Glass(
+    val panel: Int,
+    val hero: Int,
+    val row: Int,
+    val rowDone: Int,
+    val chip: Int,
+    val ink: Int,
+    val inkMuted: Int,
+    val inkFaint: Int,
 )
 
-private object Palettes {
+private object GlassPalette {
 
-    fun of(context: Context): Palette {
-        val dark = (context.resources.configuration.uiMode and
-            Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+    private const val WHITE = 0xFFFFFF
+    private const val BLACK = 0x000000
 
-        val hsl = FloatArray(3)
-        val seed = seedColor(context)
-        if (seed != null) {
-            ColorUtils.colorToHSL(seed, hsl)
+    fun of(context: Context): Glass {
+        val lightWallpaper = wallpaperIsLight(context)
+
+        return if (lightWallpaper) {
+            // dark ink on white veils
+            val ink = AndroidColor.rgb(16, 19, 24)
+            Glass(
+                panel = veil(WHITE, 0x73),
+                hero = veil(WHITE, 0xC4),
+                row = veil(WHITE, 0x8A),
+                rowDone = veil(WHITE, 0x40),
+                chip = veil(BLACK, 0x14),
+                ink = ink,
+                inkMuted = ColorUtils.setAlphaComponent(ink, 0xB0),
+                inkFaint = ColorUtils.setAlphaComponent(ink, 0x70),
+            )
         } else {
-            hsl[0] = 168f; hsl[1] = 0.40f; hsl[2] = 0.45f
+            // white ink on white veils — the wallpaper shows through
+            val ink = AndroidColor.WHITE
+            Glass(
+                panel = veil(WHITE, 0x2E),
+                hero = veil(WHITE, 0x59),
+                row = veil(WHITE, 0x1F),
+                rowDone = veil(WHITE, 0x12),
+                chip = veil(WHITE, 0x33),
+                ink = ink,
+                inkMuted = ColorUtils.setAlphaComponent(ink, 0xC0),
+                inkFaint = ColorUtils.setAlphaComponent(ink, 0x80),
+            )
         }
-
-        val hue = hsl[0]
-        val sat = hsl[1].coerceIn(0.18f, 0.60f)
-
-        fun tone(s: Float, l: Float) = ColorUtils.HSLToColor(floatArrayOf(hue, s, l))
-
-        val heroInk = tone(sat * 0.9f, if (dark) 0.93f else 0.16f)
-        return Palette(
-            heroBg = tone(sat * 0.75f, if (dark) 0.20f else 0.88f),
-            heroInk = heroInk,
-            heroChip = ColorUtils.setAlphaComponent(heroInk, 0x24),
-            accent = tone(sat, if (dark) 0.70f else 0.40f),
-            standbyBg = tone(sat * 0.20f, if (dark) 0.18f else 0.90f),
-            standbyInk = tone(sat * 0.20f, if (dark) 0.85f else 0.28f),
-        )
     }
 
-    private fun seedColor(context: Context): Int? = try {
-        WallpaperManager.getInstance(context)
+    private fun veil(rgb: Int, alpha: Int) = ColorUtils.setAlphaComponent(rgb or 0xFF000000.toInt(), alpha)
+
+    private fun wallpaperIsLight(context: Context): Boolean = try {
+        val colors = WallpaperManager.getInstance(context)
             .getWallpaperColors(WallpaperManager.FLAG_SYSTEM)
-            ?.primaryColor
-            ?.toArgb()
+        colors != null &&
+            (colors.colorHints and WallpaperColors.HINT_SUPPORTS_DARK_TEXT) != 0
     } catch (t: Throwable) {
-        null // no permission, live wallpaper, or nothing set
+        false // assume a dark wallpaper; white ink is the safer default
     }
 }
 
 /* ══════════════════════════════════════════════════════════════
- *  VIEW MODEL — all formatting happens here, using the device's
- *  timezone, locale and 12/24-hour setting.
+ *  VIEW MODEL
  * ══════════════════════════════════════════════════════════════ */
 
 private data class RowVm(
@@ -132,6 +145,7 @@ private data class Vm(
     val dayName: String,
     val dateLine: String,
     val remaining: String,
+    val dayDots: String,
     val hasFocus: Boolean,
     val emptyLabel: String,
     val status: String,
@@ -144,7 +158,7 @@ private data class Vm(
     val showProgress: Boolean,
     val progress: Float,
     val rows: List<RowVm>,
-    val palette: Palette,
+    val glass: Glass,
 )
 
 private object Vms {
@@ -162,10 +176,23 @@ private object Vms {
         val hijri = hijri(ui.date, locale)
         val greg = ui.date.format(DateTimeFormatter.ofPattern("d MMMM", locale))
 
+        // one-line map of the whole day: done / live / ahead / no duty
+        val byPeriod = ui.slots.associateBy { it.period }
+        val dots = (1..7).joinToString("  ") { p ->
+            val s = byPeriod[p]
+            when {
+                s == null -> "·"
+                s.state == SlotState.LIVE -> "◉"
+                s.state == SlotState.DONE -> "●"
+                else -> "○"
+            }
+        }
+
         return Vm(
             dayName = ui.dayOfWeek.getDisplayName(JavaTextStyle.FULL, locale),
             dateLine = if (hijri.isEmpty()) greg else "$hijri  ·  $greg",
             remaining = if (ui.remaining > 0) "${ui.remaining} حصص متبقية" else "",
+            dayDots = dots,
             hasFocus = slot != null,
             emptyLabel = if (ui.isToday) "انتهى نصابك اليوم" else "إجازة",
             status = when {
@@ -194,7 +221,7 @@ private object Vms {
                         done = it.state == SlotState.DONE,
                     )
                 },
-            palette = Palettes.of(context),
+            glass = GlassPalette.of(context),
         )
     }
 
@@ -203,7 +230,7 @@ private object Vms {
         return if (locales.isEmpty) Locale.getDefault() else locales[0]
     }
 
-    /** Bidi isolate: stops RTL layout reordering digits around a dash. */
+    /** Bidi isolate: stops RTL layout reordering digits around a colon or dash. */
     private fun ltr(text: String) = "\u2066" + text + "\u2069"
 
     private fun hijri(date: java.time.LocalDate, locale: Locale): String = try {
@@ -216,11 +243,6 @@ private object Vms {
 /* ══════════════════════════════════════════════════════════════
  *  WIDGET
  * ══════════════════════════════════════════════════════════════ */
-
-private val Muted = ColorProvider(R.color.widget_muted)
-private val Ink = ColorProvider(R.color.widget_ink)
-private val RowBg = ColorProvider(R.color.widget_row)
-private val Track = ColorProvider(R.color.widget_progress_track)
 
 private fun provider(argb: Int) = ColorProvider(ComposeColor(argb))
 
@@ -244,23 +266,24 @@ class ScheduleWidget : GlanceAppWidget() {
 @Composable
 private fun WidgetRoot(vm: Vm) {
     val height = LocalSize.current.height
+    val g = vm.glass
 
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
-            .background(ImageProvider(R.drawable.glass_panel))
+            .background(provider(g.panel))
             .cornerRadius(28.dp)
             .padding(horizontal = 16.dp, vertical = 14.dp)
             .clickable(actionStartActivity<MainActivity>())
     ) {
         Header(vm)
-        Spacer(GlanceModifier.height(12.dp))
+        Spacer(GlanceModifier.height(10.dp))
         Hero(vm)
 
         if (height >= Medium.height && vm.rows.isNotEmpty()) {
-            Spacer(GlanceModifier.height(10.dp))
+            Spacer(GlanceModifier.height(8.dp))
             vm.rows.forEach { row ->
-                SlotRow(row, vm.palette)
+                SlotRow(row, g)
                 Spacer(GlanceModifier.height(6.dp))
             }
         }
@@ -269,6 +292,8 @@ private fun WidgetRoot(vm: Vm) {
 
 @Composable
 private fun Header(vm: Vm) {
+    val g = vm.glass
+
     Row(
         modifier = GlanceModifier.fillMaxWidth(),
         verticalAlignment = Alignment.Vertical.CenterVertically,
@@ -276,74 +301,96 @@ private fun Header(vm: Vm) {
         Column {
             Text(
                 text = vm.dayName,
-                style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Ink),
+                style = TextStyle(
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = provider(g.ink),
+                ),
             )
             Text(
                 text = vm.dateLine,
-                style = TextStyle(fontSize = 11.sp, color = Muted),
+                style = TextStyle(fontSize = 11.sp, color = provider(g.inkMuted)),
             )
         }
         Spacer(GlanceModifier.defaultWeight())
-        Text(
-            text = vm.remaining,
-            style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Medium, color = Muted),
-        )
+        Column(horizontalAlignment = Alignment.Horizontal.End) {
+            Text(
+                text = vm.remaining,
+                style = TextStyle(
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = provider(g.inkMuted),
+                ),
+            )
+            // the whole day in one line: filled = done, ring = ahead, dot = free
+            Text(
+                text = vm.dayDots,
+                style = TextStyle(fontSize = 10.sp, color = provider(g.inkFaint)),
+            )
+        }
     }
 }
 
 @Composable
 private fun Hero(vm: Vm) {
-    val p = vm.palette
+    val g = vm.glass
 
     if (!vm.hasFocus) {
         Column(
             modifier = GlanceModifier
                 .fillMaxWidth()
-                .background(RowBg)
+                .background(provider(g.row))
                 .cornerRadius(24.dp)
                 .padding(18.dp)
         ) {
             Text(
                 text = vm.emptyLabel,
-                style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Medium, color = Ink),
+                style = TextStyle(
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = provider(g.ink),
+                ),
             )
         }
         return
     }
 
-    val ink = provider(if (vm.isStandby) p.standbyInk else p.heroInk)
-    val bg = provider(if (vm.isStandby) p.standbyBg else p.heroBg)
-
     Column(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .background(bg)
+            .background(provider(if (vm.isStandby) g.row else g.hero))
             .cornerRadius(24.dp)
             .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
-        // period badge on one edge, live status on the other
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.Vertical.CenterVertically,
         ) {
             Text(
                 text = vm.periodLabel,
-                style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ink),
+                style = TextStyle(
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = provider(g.ink),
+                ),
                 modifier = GlanceModifier
-                    .background(provider(p.heroChip))
+                    .background(provider(g.chip))
                     .cornerRadius(9.dp)
                     .padding(horizontal = 9.dp, vertical = 3.dp),
             )
             Spacer(GlanceModifier.defaultWeight())
             Text(
                 text = vm.status,
-                style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Medium, color = ink),
+                style = TextStyle(
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = provider(g.inkMuted),
+                ),
             )
         }
 
         Spacer(GlanceModifier.height(12.dp))
 
-        // section anchors one edge, the time block the other — the row is full width
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.Vertical.CenterVertically,
@@ -354,23 +401,27 @@ private fun Hero(vm: Vm) {
                     style = TextStyle(
                         fontSize = if (vm.isStandby) 26.sp else 38.sp,
                         fontWeight = FontWeight.Bold,
-                        color = ink,
+                        color = provider(g.ink),
                     ),
                 )
                 Text(
                     text = vm.subject,
-                    style = TextStyle(fontSize = 12.sp, color = ink),
+                    style = TextStyle(fontSize = 12.sp, color = provider(g.inkMuted)),
                 )
             }
             Spacer(GlanceModifier.defaultWeight())
             Column(horizontalAlignment = Alignment.Horizontal.End) {
                 Text(
                     text = vm.startTime,
-                    style = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.Bold, color = ink),
+                    style = TextStyle(
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = provider(g.ink),
+                    ),
                 )
                 Text(
                     text = vm.endTime,
-                    style = TextStyle(fontSize = 12.sp, color = ink),
+                    style = TextStyle(fontSize = 12.sp, color = provider(g.inkMuted)),
                 )
             }
         }
@@ -380,48 +431,42 @@ private fun Hero(vm: Vm) {
             LinearProgressIndicator(
                 progress = vm.progress,
                 modifier = GlanceModifier.fillMaxWidth().height(4.dp),
-                color = provider(p.accent),
-                backgroundColor = provider(p.heroChip),
+                color = provider(g.ink),
+                backgroundColor = provider(g.chip),
             )
         }
     }
 }
 
 @Composable
-private fun SlotRow(row: RowVm, p: Palette) {
+private fun SlotRow(row: RowVm, g: Glass) {
+    val ink = if (row.done) g.inkFaint else g.ink
+
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .background(if (row.done) Track else RowBg)
+            .background(provider(if (row.done) g.rowDone else g.row))
             .cornerRadius(18.dp)
             .padding(horizontal = 12.dp, vertical = 9.dp),
         verticalAlignment = Alignment.Vertical.CenterVertically,
     ) {
         Text(
             text = row.period,
-            style = TextStyle(
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (row.done) Muted else provider(p.accent),
-            ),
+            style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = provider(ink)),
             modifier = GlanceModifier
-                .background(if (row.done) Track else provider(p.heroChip))
+                .background(provider(g.chip))
                 .cornerRadius(8.dp)
                 .padding(horizontal = 8.dp, vertical = 2.dp),
         )
         Spacer(GlanceModifier.width(10.dp))
         Text(
             text = row.time,
-            style = TextStyle(fontSize = 13.sp, color = Muted),
+            style = TextStyle(fontSize = 13.sp, color = provider(g.inkMuted)),
         )
         Spacer(GlanceModifier.defaultWeight())
         Text(
             text = row.label,
-            style = TextStyle(
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (row.done) Muted else Ink,
-            ),
+            style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold, color = provider(ink)),
         )
     }
 }
