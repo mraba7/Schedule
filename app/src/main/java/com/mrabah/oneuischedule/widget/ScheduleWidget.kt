@@ -118,7 +118,7 @@ private object Vms {
             periodLabel = if (slot != null) "الحصة ${slot.period}" else "",
             section = slot?.section ?: "انتظار",
             subject = slot?.subject ?: "لا يوجد فصل",
-            timeRange = if (slot != null) t(slot.bell.start) + " – " + t(slot.bell.end) else "",
+            timeRange = if (slot != null) ltr(t(slot.bell.start) + " – " + t(slot.bell.end)) else "",
             isStandby = slot?.isStandby ?: false,
             showProgress = live,
             progress = ui.progress,
@@ -127,13 +127,16 @@ private object Vms {
                 .map {
                     RowVm(
                         period = "${it.period}",
-                        time = t(it.bell.start),
+                        time = ltr(t(it.bell.start)),
                         label = it.section ?: "انتظار",
                         done = it.state == SlotState.DONE,
                     )
                 },
         )
     }
+
+    /** Wraps text in a bidi isolate so RTL layout can't reorder a time range. */
+    private fun ltr(text: String): String = "\u2066" + text + "\u2069"
 
     private fun deviceLocale(context: Context): Locale {
         val locales = context.resources.configuration.locales
@@ -207,7 +210,7 @@ private fun Header(vm: Vm) {
         modifier = GlanceModifier.fillMaxWidth(),
         verticalAlignment = Alignment.Vertical.CenterVertically,
     ) {
-        Column(modifier = GlanceModifier.defaultWeight()) {
+        Column {
             Text(
                 text = vm.dayName,
                 style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Ink),
@@ -217,6 +220,7 @@ private fun Header(vm: Vm) {
                 style = TextStyle(fontSize = 11.sp, color = Muted),
             )
         }
+        Spacer(GlanceModifier.defaultWeight())
         Text(
             text = vm.remaining,
             style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Medium, color = Muted),
@@ -265,8 +269,8 @@ private fun Hero(vm: Vm) {
             Text(
                 text = vm.status,
                 style = TextStyle(fontSize = 12.sp, color = onHero),
-                modifier = GlanceModifier.defaultWeight(),
             )
+            Spacer(GlanceModifier.defaultWeight())
         }
 
         Spacer(GlanceModifier.height(8.dp))
@@ -279,8 +283,8 @@ private fun Hero(vm: Vm) {
                     fontWeight = FontWeight.Bold,
                     color = onHero,
                 ),
-                modifier = GlanceModifier.defaultWeight(),
             )
+            Spacer(GlanceModifier.defaultWeight())
             Column(horizontalAlignment = Alignment.Horizontal.End) {
                 Text(
                     text = vm.timeRange,
@@ -325,6 +329,7 @@ private fun SlotRow(row: RowVm) {
             style = TextStyle(fontSize = 13.sp, color = Muted),
             modifier = GlanceModifier.width(64.dp),
         )
+        Spacer(GlanceModifier.defaultWeight())
         Text(
             text = row.label,
             style = TextStyle(
@@ -332,7 +337,6 @@ private fun SlotRow(row: RowVm) {
                 fontWeight = FontWeight.Medium,
                 color = if (row.done) Muted else Ink,
             ),
-            modifier = GlanceModifier.defaultWeight(),
         )
     }
 }

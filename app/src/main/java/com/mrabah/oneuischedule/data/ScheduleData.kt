@@ -58,7 +58,7 @@ object Schedule {
     const val TEACHER = "Mohammed Rabah Al-Harbi"
     const val SCHOOL = "Al-Ansar High School"
 
-    private const val BIO = "Biology 1-2"
+    private const val BIO = "أحياء 1-2"
     private fun bio(section: String) = Duty.Teach(BIO, section)
 
     /** Sunday–Thursday. Periods not listed are genuinely off the timetable. */
