@@ -42,11 +42,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -63,6 +65,7 @@ import com.mrabah.oneuischedule.widget.ScheduleWidget
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalTime
+import java.time.temporal.ChronoUnit
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle as JavaTextStyle
 import java.util.Locale
@@ -104,6 +107,13 @@ private fun EditorScreen() {
     val scope = rememberCoroutineScope()
     var config by remember { mutableStateOf(ScheduleStore.load(context)) }
     var saved by remember { mutableStateOf(false) }
+    var problem by remember { mutableStateOf<String?>(null) }
+    var update by remember { mutableStateOf<UpdateChecker.Result?>(null) }
+    val uriHandler = LocalUriHandler.current
+
+    LaunchedEffect(Unit) {
+        update = UpdateChecker.check(context)?.takeIf { it.newer }
+    }
 
     val askNotifications = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -133,6 +143,35 @@ private fun EditorScreen() {
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+        }
+
+        update?.let { found ->
+            item {
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    ),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text("توجد نسخة أحدث: ${found.version}", fontSize = 15.sp)
+                            Text(
+                                "الحالية ${BuildConfig.VERSION_NAME}",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Button(
+                            onClick = { uriHandler.openUri(found.page) },
+                            shape = RoundedCornerShape(16.dp),
+                        ) { Text("تحميل") }
+                    }
+                }
             }
         }
 
@@ -236,8 +275,22 @@ private fun EditorScreen() {
 
         item {
             Column {
+                problem?.let { message ->
+                    Text(
+                        message,
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+                }
                 Button(
                     onClick = {
+                        val issue = validate(config)
+                        if (issue != null) {
+                            problem = issue
+                            return@Button
+                        }
+                        problem = null
                         ScheduleStore.save(context, config)
                         PeriodNotifier.sync(context)
                         ScheduleUpdater.schedule(context)
@@ -538,4 +591,28 @@ private fun ProgressCard(
             },
         )
     }
+}
+
+
+/** Refuses a timetable that cannot exist, with the reason in plain words. */
+private fun validate(config: Config): String? {
+    val ordered = config.bells.sortedBy { it.period }
+
+    ordered.forEach { bell ->
+        if (!bell.end.isAfter(bell.start)) {
+            return "الحصة ${bell.period}: وقت النهاية يجب أن يكون بعد البداية"
+        }
+        val minutes = ChronoUnit.MINUTES.between(bell.start, bell.end)
+        if (minutes < 5) {
+            return "الحصة ${bell.period}: المدة $minutes دقيقة فقط"
+        }
+    }
+
+    ordered.zipWithNext { a, b ->
+        if (b.start.isBefore(a.end)) {
+            return "الحصة ${a.period} والحصة ${b.period} متداخلتان"
+        }
+    }
+
+    return null
 }

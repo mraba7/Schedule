@@ -41,8 +41,13 @@ android {
             }
         }
         release {
-            isMinifyEnabled = false
+            // R8 plus resource shrinking takes the APK from ~9.8 MB to ~3 MB
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (sharedKeystore.exists()) {
+                signingConfig = signingConfigs.getByName("shared")
+            }
         }
     }
 
@@ -57,6 +62,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -74,4 +80,6 @@ dependencies {
     implementation("androidx.glance:glance-material3:1.1.1")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
+
+    testImplementation("junit:junit:4.13.2")
 }

@@ -48,20 +48,43 @@ jobs:
             git push
           fi
 
-      - name: Build debug APK
-        id: build
+      # The schedule is data, and data is where the real bugs were.
+      - name: Run unit tests
+        id: tests
         continue-on-error: true
         run: |
           set -o pipefail
-          gradle assembleDebug --no-daemon --stacktrace 2>&1 | tee build-log.txt
+          gradle test --no-daemon 2>&1 | tee test-log.txt
+
+      - name: Build release APK
+        id: build
+        if: steps.tests.outcome == 'success'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          gradle assembleRelease --no-daemon --stacktrace 2>&1 | tee build-log.txt
 
       - name: Upload APK
         if: steps.build.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: class-schedule-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
+
+      # A permanent, numbered download instead of a 90-day artifact.
+      - name: Publish release
+        if: steps.build.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="1.${{ github.run_number }}"
+          APK=$(ls app/build/outputs/apk/release/*.apk | head -n1)
+          cp "$APK" "class-schedule-$VERSION.apk"
+          gh release create "v$VERSION" "class-schedule-$VERSION.apk" \
+            --title "جدول الحصص $VERSION" \
+            --notes "بناء تلقائي من الفرع main." \
+            --latest
 
       # The raw Actions log lives on a host I can't reach, so the build writes
       # its own output back into the repo where it can be read through the API.
@@ -70,16 +93,18 @@ jobs:
         continue-on-error: true
         run: |
           mkdir -p ci-logs
-          tail -c 60000 build-log.txt > ci-logs/last-build.txt || echo "no log" > ci-logs/last-build.txt
+          tail -c 40000 build-log.txt > ci-logs/last-build.txt 2>/dev/null || echo "no build log" > ci-logs/last-build.txt
+          tail -c 20000 test-log.txt > ci-logs/last-test.txt 2>/dev/null || echo "no test log" > ci-logs/last-test.txt
+          find app/build/reports/tests -name "*.txt" -exec cat {} + > ci-logs/test-detail.txt 2>/dev/null || true
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add -f ci-logs/last-build.txt
+          git add -f ci-logs/
           git commit -m "ci: build log [skip ci]" || exit 0
           for i in 1 2 3; do
             git pull --rebase --autostash && git push && break
             sleep 5
           done
 
-      - name: Fail if build failed
-        if: steps.build.outcome != 'success'
+      - name: Fail if tests or build failed
+        if: steps.tests.outcome != 'success' || steps.build.outcome != 'success'
         run: exit 1
