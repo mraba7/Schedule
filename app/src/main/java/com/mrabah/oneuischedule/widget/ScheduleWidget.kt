@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.text.format.DateFormat
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -40,7 +41,6 @@ import com.mrabah.oneuischedule.MainActivity
 import com.mrabah.oneuischedule.R
 import com.mrabah.oneuischedule.data.ScheduleEngine
 import com.mrabah.oneuischedule.data.ScheduleUi
-import com.mrabah.oneuischedule.data.Slot
 import com.mrabah.oneuischedule.data.SlotState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -48,15 +48,108 @@ import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.chrono.HijrahDate
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle as JavaTextStyle
 import java.util.Locale
 
-/*
- * Built from core Glance constructs only — colour backgrounds, cornerRadius,
- * Column/Row/Text. Drawable-image backgrounds and LazyColumn were the likely
- * source of the composition failure, so they are out of the render path.
- */
+/* ══════════════════════════════════════════════════════════════
+ *  VIEW MODEL
+ *  Every string is formatted here, outside composition, using the
+ *  device's own timezone, locale and 12/24-hour setting. The
+ *  composables below only place text — no formatting, no context.
+ * ══════════════════════════════════════════════════════════════ */
+
+private data class RowVm(
+    val period: String,
+    val time: String,
+    val label: String,
+    val done: Boolean,
+)
+
+private data class Vm(
+    val dayName: String,
+    val gregorian: String,
+    val hijri: String,
+    val remaining: String,
+    val hasFocus: Boolean,
+    val emptyLabel: String,
+    val status: String,
+    val periodLabel: String,
+    val section: String,
+    val subject: String,
+    val timeRange: String,
+    val isStandby: Boolean,
+    val showProgress: Boolean,
+    val progress: Float,
+    val rows: List<RowVm>,
+)
+
+private object Vms {
+
+    fun build(context: Context, ui: ScheduleUi): Vm {
+        val locale = deviceLocale(context)
+        val use24h = DateFormat.is24HourFormat(context)
+        val clock = DateTimeFormatter.ofPattern(if (use24h) "HH:mm" else "h:mm", locale)
+
+        fun t(time: LocalTime) = time.format(clock)
+
+        val slot = ui.focus
+        val live = ui.live != null
+
+        val status = when {
+            slot == null -> ""
+            live -> "الآن · باقي ${ui.minutesLeftInLive} دقيقة"
+            ui.isAssembly -> "بعد الطابور"
+            !ui.isToday -> "أول حصة"
+            ui.minutesUntilNext != null -> "تبدأ بعد ${ui.minutesUntilNext} دقيقة"
+            else -> "الحصة القادمة"
+        }
+
+        return Vm(
+            dayName = ui.dayOfWeek.getDisplayName(JavaTextStyle.FULL, locale),
+            gregorian = ui.date.format(DateTimeFormatter.ofPattern("d MMMM", locale)),
+            hijri = hijri(ui.date, locale),
+            remaining = if (ui.remaining > 0) "${ui.remaining} حصص متبقية" else "",
+            hasFocus = slot != null,
+            emptyLabel = if (ui.isToday) "انتهى نصابك اليوم" else "إجازة",
+            status = status,
+            periodLabel = if (slot != null) "الحصة ${slot.period}" else "",
+            section = slot?.section ?: "انتظار",
+            subject = slot?.subject ?: "لا يوجد فصل",
+            timeRange = if (slot != null) t(slot.bell.start) + " – " + t(slot.bell.end) else "",
+            isStandby = slot?.isStandby ?: false,
+            showProgress = live,
+            progress = ui.progress,
+            rows = ui.slots
+                .filter { it.period != slot?.period }
+                .map {
+                    RowVm(
+                        period = "${it.period}",
+                        time = t(it.bell.start),
+                        label = it.section ?: "انتظار",
+                        done = it.state == SlotState.DONE,
+                    )
+                },
+        )
+    }
+
+    private fun deviceLocale(context: Context): Locale {
+        val locales = context.resources.configuration.locales
+        return if (locales.isEmpty) Locale.getDefault() else locales[0]
+    }
+
+    /** Umm al-Qura date, the calendar One UI shows alongside the Gregorian one. */
+    private fun hijri(date: java.time.LocalDate, locale: Locale): String = try {
+        DateTimeFormatter.ofPattern("d MMMM", locale).format(HijrahDate.from(date))
+    } catch (t: Throwable) {
+        ""
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+ *  WIDGET
+ * ══════════════════════════════════════════════════════════════ */
 
 private val Muted = ColorProvider(R.color.widget_muted)
 private val Ink = ColorProvider(R.color.widget_ink)
@@ -73,16 +166,17 @@ class ScheduleWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Responsive(setOf(Compact, Medium, Large))
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        // State is built outside composition so a data error can't kill the UI.
+        // Device timezone, not a hardcoded one.
         val ui = ScheduleEngine.build(LocalDateTime.now(ZoneId.systemDefault()))
+        val vm = Vms.build(context, ui)
         provideContent {
-            GlanceTheme { WidgetRoot(ui) }
+            GlanceTheme { WidgetRoot(vm) }
         }
     }
 }
 
 @Composable
-private fun WidgetRoot(ui: ScheduleUi) {
+private fun WidgetRoot(vm: Vm) {
     val height = LocalSize.current.height
 
     Column(
@@ -90,122 +184,119 @@ private fun WidgetRoot(ui: ScheduleUi) {
             .fillMaxSize()
             .background(Panel)
             .cornerRadius(28.dp)
-            .padding(14.dp)
+            .padding(horizontal = 16.dp, vertical = 14.dp)
             .clickable(actionStartActivity<MainActivity>())
     ) {
-        Header(ui)
-        Spacer(GlanceModifier.height(10.dp))
-        Hero(ui)
+        Header(vm)
+        Spacer(GlanceModifier.height(12.dp))
+        Hero(vm)
 
-        if (height >= Medium.height) {
+        if (height >= Medium.height && vm.rows.isNotEmpty()) {
             Spacer(GlanceModifier.height(10.dp))
-            DayList(ui)
+            vm.rows.forEach { row ->
+                SlotRow(row)
+                Spacer(GlanceModifier.height(6.dp))
+            }
         }
     }
 }
 
 @Composable
-private fun Header(ui: ScheduleUi) {
-    val locale = Locale.getDefault()
-
+private fun Header(vm: Vm) {
     Row(
         modifier = GlanceModifier.fillMaxWidth(),
         verticalAlignment = Alignment.Vertical.CenterVertically,
     ) {
         Column(modifier = GlanceModifier.defaultWeight()) {
             Text(
-                text = ui.dayOfWeek.getDisplayName(JavaTextStyle.FULL, locale),
-                style = TextStyle(fontSize = 17.sp, fontWeight = FontWeight.Medium, color = Ink),
+                text = vm.dayName,
+                style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Ink),
             )
             Text(
-                text = ui.date.format(DateTimeFormatter.ofPattern("d MMMM", locale)),
+                text = if (vm.hijri.isEmpty()) vm.gregorian else vm.hijri + "  ·  " + vm.gregorian,
                 style = TextStyle(fontSize = 11.sp, color = Muted),
             )
         }
         Text(
-            text = if (ui.remaining > 0) "${ui.remaining} متبقية" else "",
+            text = vm.remaining,
             style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Medium, color = Muted),
         )
     }
 }
 
 @Composable
-private fun Hero(ui: ScheduleUi) {
-    val slot = ui.focus
-
-    if (slot == null) {
+private fun Hero(vm: Vm) {
+    if (!vm.hasFocus) {
         Column(
             modifier = GlanceModifier
                 .fillMaxWidth()
                 .background(RowBg)
                 .cornerRadius(24.dp)
-                .padding(14.dp)
+                .padding(16.dp)
         ) {
             Text(
-                text = "ما عندك حصص باقية اليوم",
-                style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Medium, color = Ink),
+                text = vm.emptyLabel,
+                style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Medium, color = Ink),
             )
         }
         return
     }
 
-    val live = ui.live != null
-    val status = when {
-        live -> "الآن · باقي ${ui.minutesLeftInLive} د"
-        ui.isAssembly -> "الطابور · بعدها"
-        !ui.isToday -> "أول حصة"
-        ui.minutesUntilNext != null -> "بعد ${ui.minutesUntilNext} د"
-        else -> "القادمة"
-    }
+    val onHero =
+        if (vm.isStandby) GlanceTheme.colors.onSurfaceVariant
+        else GlanceTheme.colors.onPrimaryContainer
 
     Column(
         modifier = GlanceModifier
             .fillMaxWidth()
             .background(
-                if (slot.isStandby) GlanceTheme.colors.surfaceVariant
+                if (vm.isStandby) GlanceTheme.colors.surfaceVariant
                 else GlanceTheme.colors.primaryContainer
             )
             .cornerRadius(24.dp)
-            .padding(14.dp)
+            .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
         Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
             Text(
-                text = "الحصة ${slot.period} · $status",
-                style = TextStyle(
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = GlanceTheme.colors.onPrimaryContainer,
-                ),
-                modifier = GlanceModifier.defaultWeight(),
+                text = vm.periodLabel,
+                style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = onHero),
             )
+            Spacer(GlanceModifier.width(8.dp))
             Text(
-                text = slot.bell.start.hhmm() + " - " + slot.bell.end.hhmm(),
-                style = TextStyle(fontSize = 13.sp, color = GlanceTheme.colors.onPrimaryContainer),
+                text = vm.status,
+                style = TextStyle(fontSize = 12.sp, color = onHero),
+                modifier = GlanceModifier.defaultWeight(),
             )
         }
 
-        Spacer(GlanceModifier.height(6.dp))
+        Spacer(GlanceModifier.height(8.dp))
 
         Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
             Text(
-                text = slot.section ?: "انتظار",
+                text = vm.section,
                 style = TextStyle(
-                    fontSize = if (slot.isStandby) 22.sp else 32.sp,
+                    fontSize = if (vm.isStandby) 24.sp else 36.sp,
                     fontWeight = FontWeight.Bold,
-                    color = GlanceTheme.colors.onPrimaryContainer,
+                    color = onHero,
                 ),
                 modifier = GlanceModifier.defaultWeight(),
             )
-            Text(
-                text = slot.subject ?: "لا يوجد فصل",
-                style = TextStyle(fontSize = 13.sp, color = GlanceTheme.colors.onPrimaryContainer),
-            )
+            Column(horizontalAlignment = Alignment.Horizontal.End) {
+                Text(
+                    text = vm.timeRange,
+                    style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Medium, color = onHero),
+                )
+                Text(
+                    text = vm.subject,
+                    style = TextStyle(fontSize = 12.sp, color = onHero),
+                )
+            }
         }
 
-        if (live) {
-            Spacer(GlanceModifier.height(10.dp))
+        if (vm.showProgress) {
+            Spacer(GlanceModifier.height(12.dp))
             LinearProgressIndicator(
-                progress = ui.progress,
+                progress = vm.progress,
                 modifier = GlanceModifier.fillMaxWidth().height(4.dp),
                 color = GlanceTheme.colors.primary,
                 backgroundColor = Track,
@@ -215,55 +306,40 @@ private fun Hero(ui: ScheduleUi) {
 }
 
 @Composable
-private fun DayList(ui: ScheduleUi) {
-    val rest = ui.slots.filter { it.period != ui.focus?.period }
-    if (rest.isEmpty()) return
-
-    Column(modifier = GlanceModifier.fillMaxWidth()) {
-        rest.forEach { slot -> SlotRow(slot) }
-    }
-}
-
-@Composable
-private fun SlotRow(slot: Slot) {
-    val done = slot.state == SlotState.DONE
-
+private fun SlotRow(row: RowVm) {
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .background(if (done) Track else RowBg)
+            .background(if (row.done) Track else RowBg)
             .cornerRadius(18.dp)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = 14.dp, vertical = 9.dp),
         verticalAlignment = Alignment.Vertical.CenterVertically,
     ) {
         Text(
-            text = "${slot.period}",
-            style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Muted),
-            modifier = GlanceModifier.width(24.dp),
+            text = row.period,
+            style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Muted),
+            modifier = GlanceModifier.width(22.dp),
         )
         Text(
-            text = slot.bell.start.hhmm(),
+            text = row.time,
             style = TextStyle(fontSize = 13.sp, color = Muted),
-            modifier = GlanceModifier.width(56.dp),
+            modifier = GlanceModifier.width(64.dp),
         )
         Text(
-            text = slot.section ?: "انتظار",
+            text = row.label,
             style = TextStyle(
-                fontSize = 14.sp,
+                fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
-                color = if (done) Muted else Ink,
+                color = if (row.done) Muted else Ink,
             ),
             modifier = GlanceModifier.defaultWeight(),
         )
     }
 }
 
-private val hourMinute: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("h:mm", Locale.getDefault())
-
-private fun LocalTime.hhmm(): String = format(hourMinute)
-
-/* ══════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+ *  RECEIVER + REFRESH
+ * ══════════════════════════════════════════════════════════════ */
 
 class ScheduleWidgetReceiver : GlanceAppWidgetReceiver() {
 
@@ -296,7 +372,7 @@ class ScheduleWidgetReceiver : GlanceAppWidgetReceiver() {
                 ScheduleWidget().updateAll(context)
                 ScheduleUpdater.schedule(context)
             } catch (t: Throwable) {
-                // never let a refresh crash the launcher's broadcast
+                // a failed refresh must never crash the launcher's broadcast
             } finally {
                 pending.finish()
             }
@@ -314,7 +390,7 @@ object ScheduleUpdater {
 
     fun schedule(context: Context) {
         val alarms = context.getSystemService(AlarmManager::class.java) ?: return
-        val at = ScheduleEngine.nextRefresh(LocalDateTime.now())
+        val at = ScheduleEngine.nextRefresh(LocalDateTime.now(ZoneId.systemDefault()))
         val triggerAt = at.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
         try {
