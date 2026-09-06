@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#0E2F28</color>
+    <!-- widget ink; the -night variants carry the dark mode values -->
+    <color name="widget_ink">#16181C</color>
+    <color name="widget_muted">#5C636B</color>
+    <color name="widget_progress_track">#33000000</color>
 </resources>
