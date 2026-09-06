@@ -721,6 +721,11 @@ private fun ScheduleScreen(config: Config, commit: (Config) -> Unit) {
                         OptionRow("تنبيه قبل الحصة بخمس دقائق", "مع الدرس القادم", draft.preAlert) {
                             edit(draft.copy(preAlert = it))
                         }
+                        OptionRow(
+                            "تنبيه قبل نهاية الحصة بخمس دقائق",
+                            "لتختم الدرس وتوزّع الواجب",
+                            draft.endAlert,
+                        ) { edit(draft.copy(endAlert = it)) }
                         OptionRow("إشعار الحصة الجارية", "شريط تقدّم مستمر", draft.liveUpdate) {
                             edit(draft.copy(liveUpdate = it))
                         }

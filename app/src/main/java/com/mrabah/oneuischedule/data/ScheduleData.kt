@@ -44,6 +44,7 @@ data class Config(
     val notify: Boolean,
     val schoolBell: Boolean = true,
     val preAlert: Boolean = true,
+    val endAlert: Boolean = true,
     val liveUpdate: Boolean = true,
     val progress: Map<String, SectionProgress> = emptyMap(),
 ) {
@@ -240,6 +241,7 @@ object ScheduleStore {
             .put("notify", c.notify)
             .put("schoolBell", c.schoolBell)
             .put("preAlert", c.preAlert)
+            .put("endAlert", c.endAlert)
             .put("liveUpdate", c.liveUpdate)
             .put("progress", progress)
     }
@@ -304,6 +306,7 @@ object ScheduleStore {
             notify = json.optBoolean("notify", false),
             schoolBell = json.optBoolean("schoolBell", true),
             preAlert = json.optBoolean("preAlert", true),
+            endAlert = json.optBoolean("endAlert", true),
             liveUpdate = json.optBoolean("liveUpdate", true),
             progress = progress,
         )

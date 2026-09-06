@@ -42,6 +42,7 @@ object PeriodNotifier {
     private const val ID_LIVE = 4202
 
     private const val PRE_ALERT_MINUTES = 5L
+    private const val END_ALERT_MINUTES = 5L
 
     fun sync(context: Context) {
         val config = ScheduleStore.load(context)
@@ -73,25 +74,52 @@ object PeriodNotifier {
         val time = now.toLocalTime()
 
         if (announce) {
-            ScheduleEngine.dutiesOn(config, today).forEach { (period, duty) ->
+            val duties = ScheduleEngine.dutiesOn(config, today)
+            fun sectionOf(period: Int): String =
+                (duties[period] as? com.mrabah.oneuischedule.data.Duty.Teach)?.section ?: "انتظار"
+
+            var title: String? = null
+            var body: String? = null
+
+            duties.keys.sorted().forEach { period ->
                 val bell = config.bells.firstOrNull { it.period == period } ?: return@forEach
-                val section = (duty as? com.mrabah.oneuischedule.data.Duty.Teach)?.section ?: "انتظار"
+                val section = sectionOf(period)
 
+                // Back-to-back periods make "five before the end" and "five
+                // before the next start" the same instant. One notification
+                // wins, and it carries both facts.
                 when {
-                    near(time, bell.start) ->
-                        ring(context, config, "بدأت الحصة $period", "$section · ${config.subject}")
+                    near(time, bell.start) -> {
+                        title = "بدأت الحصة $period"
+                        body = "$section · ${config.subject}"
+                    }
 
-                    near(time, bell.end) ->
-                        ring(context, config, "انتهت الحصة $period", section)
+                    near(time, bell.end) -> {
+                        title = "انتهت الحصة $period"
+                        body = section
+                    }
 
-                    config.preAlert && near(time, bell.start.minusMinutes(PRE_ALERT_MINUTES)) ->
-                        ring(
-                            context, config,
-                            "بعد $PRE_ALERT_MINUTES دقائق · الحصة $period",
-                            lessonLine(config, section) ?: section,
-                        )
+                    config.endAlert && near(time, bell.end.minusMinutes(END_ALERT_MINUTES)) -> {
+                        val nextPeriod = duties.keys.filter { it > period }.minOrNull()
+                        val nextBell = nextPeriod?.let { p -> config.bells.firstOrNull { it.period == p } }
+                        val backToBack = nextBell != null && nextBell.start == bell.end
+                        title = "باقي $END_ALERT_MINUTES دقائق على نهاية الحصة $period"
+                        body = when {
+                            backToBack -> "$section · التالية ${sectionOf(nextPeriod)}"
+                            else -> section
+                        }
+                    }
+
+                    config.preAlert && near(time, bell.start.minusMinutes(PRE_ALERT_MINUTES)) -> {
+                        if (title == null) {
+                            title = "بعد $PRE_ALERT_MINUTES دقائق · الحصة $period"
+                            body = lessonLine(config, section) ?: section
+                        }
+                    }
                 }
             }
+
+            title?.let { ring(context, config, it, body.orEmpty()) }
         }
 
         // live progress notification
@@ -139,6 +167,9 @@ object PeriodNotifier {
                         add(day.atTime(bell.end))
                         if (config.preAlert) {
                             add(day.atTime(bell.start).minusMinutes(PRE_ALERT_MINUTES))
+                        }
+                        if (config.endAlert) {
+                            add(day.atTime(bell.end).minusMinutes(END_ALERT_MINUTES))
                         }
                     }
                 }
