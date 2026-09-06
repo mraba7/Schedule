@@ -7,13 +7,13 @@ Daemon will be stopped at the end of the build
 > Task :app:generateDebugResValues FROM-CACHE
 > Task :app:checkDebugAarMetadata
 > Task :app:mapDebugSourceSetPaths
-> Task :app:generateDebugResources
+> Task :app:generateDebugResources FROM-CACHE
+> Task :app:mergeDebugResources FROM-CACHE
+> Task :app:packageDebugResources FROM-CACHE
+> Task :app:parseDebugLocalResources FROM-CACHE
 > Task :app:createDebugCompatibleScreenManifests
 > Task :app:extractDeepLinksDebug FROM-CACHE
-> Task :app:mergeDebugResources
 > Task :app:processDebugMainManifest
-> Task :app:packageDebugResources
-> Task :app:parseDebugLocalResources
 > Task :app:processDebugManifest
 > Task :app:javaPreCompileDebug FROM-CACHE
 > Task :app:mergeDebugShaders
@@ -24,8 +24,8 @@ Daemon will be stopped at the end of the build
 > Task :app:compressDebugAssets FROM-CACHE
 > Task :app:desugarDebugFileDependencies FROM-CACHE
 > Task :app:checkDebugDuplicateClasses
-> Task :app:mergeExtDexDebug FROM-CACHE
 > Task :app:processDebugResources
+> Task :app:mergeExtDexDebug FROM-CACHE
 > Task :app:mergeLibDexDebug FROM-CACHE
 > Task :app:mergeDebugJniLibFolders
 > Task :app:mergeDebugNativeLibs
@@ -38,7 +38,7 @@ Unable to strip the following libraries, packaging them as they are: libandroidx
 > Task :app:writeDebugSigningConfigVersions
 
 > Task :app:compileDebugKotlin
-w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/widget/ScheduleWidget.kt:555:20 'static field ACTION_WALLPAPER_CHANGED: String' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/widget/ScheduleWidget.kt:577:20 'static field ACTION_WALLPAPER_CHANGED: String' is deprecated. Deprecated in Java.
 
 > Task :app:compileDebugJavaWithJavac NO-SOURCE
 > Task :app:dexBuilderDebug
@@ -49,7 +49,7 @@ w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneui
 > Task :app:packageDebug
 > Task :app:createDebugApkListingFileRedirect
 > Task :app:assembleDebug
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1788689266788.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1788689592131.json
 
-BUILD SUCCESSFUL in 59s
-35 actionable tasks: 27 executed, 8 from cache
+BUILD SUCCESSFUL in 47s
+35 actionable tasks: 23 executed, 12 from cache
