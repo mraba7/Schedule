@@ -29,7 +29,7 @@ Daemon will be stopped at the end of the build
 > Task :app:stripReleaseDebugSymbols
 Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so.
 
-> Task :app:extractReleaseNativeSymbolTables
+> Task :app:extractReleaseNativeSymbolTables FROM-CACHE
 > Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
 > Task :app:checkReleaseDuplicateClasses
 > Task :app:mergeReleaseArtProfile
@@ -39,16 +39,16 @@ Unable to strip the following libraries, packaging them as they are: libandroidx
 > Task :app:mergeReleaseJavaResource
 > Task :app:mergeReleaseStartupProfile
 > Task :app:lintVitalAnalyzeRelease
-> Task :app:minifyReleaseWithR8
 > Task :app:lintVitalReportRelease
 > Task :app:lintVitalRelease
 > Task :app:mergeReleaseShaders
 > Task :app:compileReleaseShaders NO-SOURCE
 > Task :app:generateReleaseAssets UP-TO-DATE
 > Task :app:mergeReleaseAssets
-> Task :app:compressReleaseAssets
+> Task :app:compressReleaseAssets FROM-CACHE
 > Task :app:extractReleaseVersionControlInfo
 > Task :app:convertLinkedResourcesToProtoRelease
+> Task :app:minifyReleaseWithR8
 > Task :app:collectReleaseDependencies
 > Task :app:sdkReleaseDependencyData
 > Task :app:validateSigningRelease
@@ -61,7 +61,7 @@ Unable to strip the following libraries, packaging them as they are: libandroidx
 > Task :app:packageRelease
 > Task :app:createReleaseApkListingFileRedirect
 > Task :app:assembleRelease
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1788690949346.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1788691516993.json
 
-BUILD SUCCESSFUL in 3m 21s
-51 actionable tasks: 32 executed, 19 up-to-date
+BUILD SUCCESSFUL in 2m 21s
+51 actionable tasks: 30 executed, 2 from cache, 19 up-to-date
