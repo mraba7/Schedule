@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Class schedule</string>
+    <string name="widget_label">Class schedule</string>
+    <string name="widget_description">Today\'s periods, sections and standby duty.</string>
+    <string name="standby">Standby</string>
+    <string name="done_today">Done for today</string>
+    <string name="assembly">Assembly</string>
+</resources>

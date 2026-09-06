@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">جدول الحصص</string>
+    <string name="widget_label">جدول الحصص</string>
+    <string name="widget_description">حصص اليوم والفصول وحصص الانتظار.</string>
+    <string name="standby">انتظار</string>
+    <string name="done_today">انتهى دوام اليوم</string>
+    <string name="assembly">الطابور</string>
+</resources>
