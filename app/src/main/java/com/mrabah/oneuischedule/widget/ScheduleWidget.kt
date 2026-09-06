@@ -287,6 +287,11 @@ private fun provider(argb: Int) = ColorProvider(ComposeColor(argb))
 private fun fade(color: Int, alpha: Int) =
     provider(ColorUtils.setAlphaComponent(color, alpha))
 
+/** Dims a colour that already carries alpha, instead of replacing it. */
+private fun dim(color: Int, factor: Int) = provider(
+    ColorUtils.setAlphaComponent(color, android.graphics.Color.alpha(color) * factor / 0xFF)
+)
+
 private val Compact = DpSize(260.dp, 120.dp)
 private val Medium = DpSize(260.dp, 200.dp)
 private val Large = DpSize(300.dp, 300.dp)
@@ -497,7 +502,7 @@ private fun SlotRow(row: RowVm, g: Glass) {
         modifier = GlanceModifier
             .fillMaxWidth()
             .padding(bottom = 6.dp)
-            .background(fade(g.row, row.inkAlpha))
+            .background(dim(g.row, row.inkAlpha))
             .cornerRadius(18.dp)
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.Vertical.CenterVertically,
