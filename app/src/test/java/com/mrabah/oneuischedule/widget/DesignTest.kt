@@ -80,6 +80,7 @@ class DesignTest {
             val info=context.packageManager.getReceiverInfo(ComponentName(context,receiver),android.content.pm.PackageManager.GET_META_DATA)
             assertTrue(info.metaData.containsKey("android.appwidget.provider"))
             val id=100+style.ordinal
+            org.robolectric.Shadows.shadowOf(manager).bindAppWidgetId(id,ComponentName(context,receiver))
             manager.updateAppWidgetOptions(id,Bundle().apply{
                 putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH,320)
                 putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT,320)

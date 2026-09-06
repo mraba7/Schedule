@@ -33,6 +33,10 @@ internal class DesignRenderer(context: Context) {
         val scale = minOf(width, height) / 360f
         c.translate((width - 360 * scale) / 2, (height - 360 * scale) / 2)
         c.scale(scale, scale)
+        if(day.focus==null) {
+            empty(design)
+            return bitmap
+        }
         when (design) {
             Design.TICKET -> ticket()
             Design.ORBIT -> orbit()
@@ -72,13 +76,14 @@ internal class DesignRenderer(context: Context) {
         val alignment=when(align) { "center"->Layout.Alignment.ALIGN_CENTER; "left"->Layout.Alignment.ALIGN_NORMAL; else->Layout.Alignment.ALIGN_OPPOSITE }
         // Fixed paragraph LTR gives ALIGN_OPPOSITE a physical right edge, while
         // Unicode's bidi algorithm still shapes each Arabic run correctly.
-        val layout=StaticLayout.Builder.obtain(value,0,value.length,tp,w.toInt().coerceAtLeast(1))
+        val display=if(value.any{it in '\u0600'..'\u06FF'}) "\u2067$value\u2069" else value
+        val layout=StaticLayout.Builder.obtain(display,0,display.length,tp,w.toInt().coerceAtLeast(1))
             .setAlignment(alignment).setTextDirection(TextDirectionHeuristics.LTR)
             .setIncludePad(false).setMaxLines(1).setEllipsize(TextUtils.TruncateAt.END).build()
         c.save(); c.clipRect(x,y,x+w,y+h); c.translate(x,y+(h-layout.height)/2f); layout.draw(c); c.restore()
     }
     private fun clock(value: String,x:Float,y:Float,w:Float,h:Float,size:Float,color:String=ink,strong:Boolean=true) =
-        text("\u2066$value\u2069",x,y,w,h,size,color,strong,"center",size.coerceAtMost(12f))
+        text(if(value.any{it in '\u0600'..'\u06FF'}) value else "\u2066$value\u2069",x,y,w,h,size,color,strong,"center",size.coerceAtMost(12f))
     private fun section(value:String,x:Float,y:Float,w:Float,h:Float,size:Float,color:String=ink) =
         clock(value,x,y,w,h,size,color)
     private fun icon(type:String,x:Float,y:Float,color:String,s:Float=18f) {
@@ -113,6 +118,23 @@ internal class DesignRenderer(context: Context) {
             if(i<2) line(x,y+6,x,y+42,muted,.35f)
         }
         if(d.upcoming.isEmpty()) text("هذه آخر حصة",22f,y,316f,44f,14f,muted,align="center")
+    }
+
+    private fun empty(design:Design) {
+        val (bg,fg)=when(design){
+            Design.TICKET->"#F7F5EC" to "#103F32"
+            Design.ORBIT->"#0B1220" to "#76DBFF"
+            Design.EDITORIAL->"#FFFFFF" to "#202124"
+            Design.BENTO->"#EEF0F4" to "#275CF5"
+            Design.ROUTE->"#14171D" to "#FFC15A"
+            Design.SPORT->"#080808" to "#D6FF42"
+            Design.BLUEPRINT->"#E9F2FC" to "#174BA0"
+        }
+        rect(0f,0f,360f,360f,bg,24f)
+        text(design.title,24f,24f,312f,34f,24f,fg,true)
+        icon("calendar",157f,114f,fg,46f)
+        text(d.ui.holiday?.label ?: "لا توجد حصص",28f,185f,304f,40f,27f,fg,true,"center")
+        text("افتح التطبيق لمراجعة جدولك",28f,235f,304f,28f,15f,fg,align="center")
     }
 
     private fun ticket() {
@@ -209,9 +231,9 @@ internal class DesignRenderer(context: Context) {
         icon("coffee",28f,172f,"#624334",21f)
         text(d.freeLabel,54f,173f,74f,23f,15f,"#624334",true)
         clock(d.freeValue,25f,204f,106f,29f,22f,"#624334",false)
-        rect(16f,250f,328f,63f,"#FFFFFF",17f)
+        rect(16f,250f,328f,68f,"#FFFFFF",17f)
         text("الحصص القادمة",197f,251f,133f,18f,12f,fg,true)
-        futureCells(269f,fg,muted)
+        futureCells(268f,fg,muted)
         task(320f,"#FFFFFF",fg)
     }
     private fun route() {
