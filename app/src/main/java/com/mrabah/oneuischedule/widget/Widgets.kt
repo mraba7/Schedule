@@ -20,6 +20,7 @@ import androidx.glance.appwidget.updateAll
 import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
+import androidx.glance.layout.ColumnScope
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
@@ -99,7 +100,7 @@ private fun upcoming(config: Config, now: LocalDateTime, count: Int): List<Upcom
 }
 
 @Composable
-private fun Panel(g: Glass, padding: Int = 14, content: @Composable () -> Unit) {
+private fun Panel(g: Glass, padding: Int = 14, content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
@@ -107,7 +108,7 @@ private fun Panel(g: Glass, padding: Int = 14, content: @Composable () -> Unit) 
             .cornerRadius(28.dp)
             .padding(padding.dp)
             .clickable(actionStartActivity<MainActivity>()),
-        content = { content() },
+        content = content,
     )
 }
 
