@@ -155,6 +155,7 @@ private data class Vm(
     val periodLabel: String,
     val section: String,
     val subject: String,
+    val lesson: String,
     val startTime: String,
     val endTime: String,
     val minutesLeft: String,
@@ -214,6 +215,7 @@ private object Vms {
             periodLabel = if (slot != null) "الحصة ${slot.period}" else "",
             section = slot?.section ?: "انتظار",
             subject = if (slot == null || slot.isStandby) "لا يوجد فصل" else Defaults.SUBJECT,
+            lesson = slot?.section?.let { ui.config.progress[it]?.next }?.takeIf { it.isNotBlank() } ?: "",
             startTime = if (slot != null) t(slot.bell.start) else "",
             endTime = if (slot != null) "حتى " + t(slot.bell.end) else "",
             minutesLeft = (ui.minutesLeftInLive ?: 0L).toString(),
@@ -435,7 +437,7 @@ private fun Hero(vm: Vm) {
                     ),
                 )
                 Text(
-                    text = vm.subject,
+                    text = if (vm.lesson.isNotEmpty()) vm.lesson else vm.subject,
                     style = TextStyle(fontSize = 12.sp, color = provider(g.inkMuted)),
                 )
             }

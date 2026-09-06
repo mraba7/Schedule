@@ -25,11 +25,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -54,6 +56,7 @@ import com.mrabah.oneuischedule.data.Config
 import com.mrabah.oneuischedule.data.Defaults
 import com.mrabah.oneuischedule.data.Duty
 import com.mrabah.oneuischedule.data.ScheduleStore
+import com.mrabah.oneuischedule.data.SectionProgress
 import com.mrabah.oneuischedule.notify.PeriodNotifier
 import com.mrabah.oneuischedule.widget.ScheduleUpdater
 import com.mrabah.oneuischedule.widget.ScheduleWidget
@@ -181,6 +184,52 @@ private fun EditorScreen() {
                             }
                         },
                     )
+                }
+            }
+        }
+
+        if (config.notify) {
+            item {
+                Card(shape = RoundedCornerShape(20.dp)) {
+                    Column(Modifier.padding(vertical = 4.dp)) {
+                        OptionRow(
+                            title = "صوت جرس المدرسة",
+                            subtitle = "بدل نغمة الإشعارات المعتادة",
+                            checked = config.schoolBell,
+                        ) { apply(config.copy(schoolBell = it)) }
+                        OptionRow(
+                            title = "تنبيه قبل الحصة بخمس دقائق",
+                            subtitle = "مع اسم الدرس القادم لتلك الشعبة",
+                            checked = config.preAlert,
+                        ) { apply(config.copy(preAlert = it)) }
+                        OptionRow(
+                            title = "إشعار الحصة الجارية",
+                            subtitle = "شريط تقدّم مستمر يتحدّث كل دقيقة",
+                            checked = config.liveUpdate,
+                        ) { apply(config.copy(liveUpdate = it)) }
+                    }
+                }
+            }
+        }
+
+        item { SectionTitle("تقدّم المنهج") }
+
+        item {
+            Text(
+                "سجّل الدرس بعد كل حصة، والتطبيق يوضّح أي شعبة تأخّرت",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        for (section in Defaults.SECTIONS) {
+            item(key = "prog-$section") {
+                ProgressCard(
+                    section = section,
+                    progress = config.progress[section] ?: SectionProgress(),
+                    lead = config.progress.values.maxOfOrNull { it.taught } ?: 0,
+                ) { updated ->
+                    apply(config.copy(progress = config.progress + (section to updated)))
                 }
             }
         }
@@ -356,5 +405,137 @@ private fun Cell(
                 else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+
+@Composable
+private fun OptionRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, fontSize = 15.sp)
+            Text(
+                subtitle,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(checked = checked, onCheckedChange = onChange)
+    }
+}
+
+@Composable
+private fun ProgressCard(
+    section: String,
+    progress: SectionProgress,
+    lead: Int,
+    onChange: (SectionProgress) -> Unit,
+) {
+    var editing by remember { mutableStateOf(false) }
+    var draft by remember(progress.next) { mutableStateOf(progress.next) }
+
+    val lag = lead - progress.taught
+
+    Card(shape = RoundedCornerShape(20.dp)) {
+        Column(Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(section, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    "${progress.taught} درسًا",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.weight(1f))
+                if (lag > 0) {
+                    Text(
+                        "متأخرة $lag",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            Text(
+                if (progress.next.isBlank()) "لم تحدّد الدرس القادم"
+                else "القادم: ${progress.next}",
+                fontSize = 14.sp,
+            )
+            if (progress.last.isNotBlank()) {
+                Text(
+                    "الأخير: ${progress.last}",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = {
+                        onChange(
+                            progress.copy(
+                                taught = progress.taught + 1,
+                                last = progress.next.ifBlank { "درس ${progress.taught + 1}" },
+                                next = "",
+                            )
+                        )
+                        editing = true
+                    },
+                    enabled = true,
+                    shape = RoundedCornerShape(16.dp),
+                ) {
+                    Text("سجّل الدرس")
+                }
+                OutlinedButton(
+                    onClick = { editing = true },
+                    shape = RoundedCornerShape(16.dp),
+                ) {
+                    Text("الدرس القادم")
+                }
+                if (progress.taught > 0) {
+                    TextButton(onClick = {
+                        onChange(progress.copy(taught = progress.taught - 1))
+                    }) {
+                        Text("تراجع")
+                    }
+                }
+            }
+        }
+    }
+
+    if (editing) {
+        AlertDialog(
+            onDismissRequest = { editing = false },
+            title = { Text("الدرس القادم لـ $section") },
+            text = {
+                OutlinedTextField(
+                    value = draft,
+                    onValueChange = { draft = it },
+                    singleLine = true,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onChange(progress.copy(next = draft.trim()))
+                    editing = false
+                }) { Text("حفظ") }
+            },
+            dismissButton = {
+                TextButton(onClick = { editing = false }) { Text("إلغاء") }
+            },
+        )
     }
 }

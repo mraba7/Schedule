@@ -19,11 +19,22 @@ sealed interface Duty {
     data object Standby : Duty
 }
 
+/** How far each section has got through the syllabus. */
+data class SectionProgress(
+    val taught: Int = 0,
+    val last: String = "",
+    val next: String = "",
+)
+
 /** Everything the user can edit, in one immutable snapshot. */
 data class Config(
     val bells: List<Bell>,
     val week: Map<DayOfWeek, Map<Int, Duty>>,
     val notify: Boolean,
+    val schoolBell: Boolean = true,
+    val preAlert: Boolean = true,
+    val liveUpdate: Boolean = true,
+    val progress: Map<String, SectionProgress> = emptyMap(),
 ) {
     fun bell(period: Int): Bell = bells.first { it.period == period }
     fun dutiesOn(day: DayOfWeek): Map<Int, Duty> = week[day].orEmpty()
@@ -134,10 +145,21 @@ object ScheduleStore {
             }
             week.put(day.name, duties)
         }
+        val progress = JSONObject()
+        c.progress.forEach { (section, p) ->
+            progress.put(
+                section,
+                JSONObject().put("n", p.taught).put("last", p.last).put("next", p.next)
+            )
+        }
         return JSONObject()
             .put("bells", bells)
             .put("week", week)
             .put("notify", c.notify)
+            .put("schoolBell", c.schoolBell)
+            .put("preAlert", c.preAlert)
+            .put("liveUpdate", c.liveUpdate)
+            .put("progress", progress)
     }
 
     private fun parse(json: JSONObject): Config {
@@ -158,7 +180,30 @@ object ScheduleStore {
             }
         }
 
-        return Config(bells, week, json.optBoolean("notify", false))
+        val progressJson = json.optJSONObject("progress") ?: JSONObject()
+        val progress = buildMap {
+            progressJson.keys().forEach { section ->
+                val o = progressJson.getJSONObject(section)
+                put(
+                    section,
+                    SectionProgress(
+                        taught = o.optInt("n", 0),
+                        last = o.optString("last", ""),
+                        next = o.optString("next", ""),
+                    )
+                )
+            }
+        }
+
+        return Config(
+            bells = bells,
+            week = week,
+            notify = json.optBoolean("notify", false),
+            schoolBell = json.optBoolean("schoolBell", true),
+            preAlert = json.optBoolean("preAlert", true),
+            liveUpdate = json.optBoolean("liveUpdate", true),
+            progress = progress,
+        )
     }
 }
 
