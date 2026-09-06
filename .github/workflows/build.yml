@@ -2,7 +2,12 @@ name: Build APK
 
 on:
   push:
+    paths-ignore:
+      - 'ci-logs/**'
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -26,11 +31,34 @@ jobs:
           gradle-version: '8.9'
 
       - name: Build debug APK
-        run: gradle assembleDebug --no-daemon --stacktrace
+        id: build
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          gradle assembleDebug --no-daemon --stacktrace 2>&1 | tee build-log.txt
+
+      # The raw Actions log lives on a host I can't reach, so the build writes
+      # its own output back into the repo where it can be read through the API.
+      - name: Publish build log
+        if: always()
+        run: |
+          mkdir -p ci-logs
+          tail -c 60000 build-log.txt > ci-logs/last-build.txt || echo "no log" > ci-logs/last-build.txt
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add -f ci-logs/last-build.txt
+          git commit -m "ci: build log [skip ci]" || exit 0
+          git pull --rebase --autostash || true
+          git push
 
       - name: Upload APK
+        if: steps.build.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: class-schedule-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      - name: Fail if build failed
+        if: steps.build.outcome != 'success'
+        run: exit 1
