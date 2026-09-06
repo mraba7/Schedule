@@ -70,15 +70,15 @@ object Schedule {
             4 to bio("2/4"),
         ),
         DayOfWeek.MONDAY to mapOf(
-            1 to bio("2/3"),
-            2 to bio("2/4"),
+            2 to bio("2/3"),
+            3 to bio("2/4"),
             6 to bio("2/1"),
             7 to bio("2/2"),
         ),
         DayOfWeek.TUESDAY to mapOf(
-            1 to bio("2/4"),
-            2 to bio("2/2"),
-            3 to bio("2/1"),
+            2 to bio("2/4"),
+            3 to bio("2/2"),
+            4 to bio("2/1"),
         ),
         DayOfWeek.WEDNESDAY to mapOf(
             1 to bio("2/4"),
