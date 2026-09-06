@@ -43,8 +43,8 @@ Unable to strip the following libraries, packaging them as they are: libandroidx
 > Task :app:compressReleaseAssets FROM-CACHE
 > Task :app:extractReleaseVersionControlInfo
 > Task :app:convertLinkedResourcesToProtoRelease
-> Task :app:mergeReleaseJavaResource
 > Task :app:expandReleaseArtProfileWildcards
+> Task :app:mergeReleaseJavaResource
 > Task :app:collectReleaseDependencies
 > Task :app:sdkReleaseDependencyData
 > Task :app:validateSigningRelease
@@ -61,7 +61,7 @@ Unable to strip the following libraries, packaging them as they are: libandroidx
 > Task :app:packageRelease
 > Task :app:createReleaseApkListingFileRedirect
 > Task :app:assembleRelease
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1788698743682.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1788699599804.json
 
-BUILD SUCCESSFUL in 1m 54s
+BUILD SUCCESSFUL in 2m 4s
 51 actionable tasks: 30 executed, 2 from cache, 19 up-to-date
