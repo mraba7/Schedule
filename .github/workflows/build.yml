@@ -4,6 +4,7 @@ on:
   push:
     paths-ignore:
       - 'ci-logs/**'
+      - 'keystore/**'
   workflow_dispatch:
 
 permissions:
@@ -29,6 +30,23 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+
+      # Created once, then reused forever, so every APK carries the same
+      # signature and installs over the previous one.
+      - name: Ensure a stable signing key
+        run: |
+          if [ ! -f keystore/schedule.jks ]; then
+            mkdir -p keystore
+            keytool -genkeypair -v -keystore keystore/schedule.jks \
+              -storepass schedule -keypass schedule -alias schedule \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Class Schedule, O=mraba7, C=SA"
+            git config user.name "github-actions"
+            git config user.email "actions@github.com"
+            git add -f keystore/schedule.jks
+            git commit -m "ci: add shared signing key [skip ci]"
+            git push
+          fi
 
       - name: Build debug APK
         id: build

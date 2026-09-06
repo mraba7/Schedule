@@ -42,6 +42,7 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.mrabah.oneuischedule.MainActivity
+import com.mrabah.oneuischedule.data.BellTimes
 import com.mrabah.oneuischedule.data.ScheduleEngine
 import com.mrabah.oneuischedule.data.ScheduleUi
 import com.mrabah.oneuischedule.data.SlotState
@@ -139,6 +140,7 @@ private data class RowVm(
     val time: String,
     val label: String,
     val done: Boolean,
+    val isBreak: Boolean = false,
 )
 
 private data class Vm(
@@ -154,6 +156,9 @@ private data class Vm(
     val subject: String,
     val startTime: String,
     val endTime: String,
+    val minutesLeft: String,
+    val startedAt: String,
+    val endsAt: String,
     val isStandby: Boolean,
     val showProgress: Boolean,
     val progress: Float,
@@ -189,7 +194,9 @@ private object Vms {
         }
 
         return Vm(
-            dayName = ui.dayOfWeek.getDisplayName(JavaTextStyle.FULL, locale),
+            dayName = if (!ui.isToday && ui.date == java.time.LocalDate.now().plusDays(1))
+                "غدًا · " + ui.dayOfWeek.getDisplayName(JavaTextStyle.FULL, locale)
+            else ui.dayOfWeek.getDisplayName(JavaTextStyle.FULL, locale),
             dateLine = if (hijri.isEmpty()) greg else "$hijri  ·  $greg",
             remaining = if (ui.remaining > 0) "${ui.remaining} حصص متبقية" else "",
             dayDots = dots,
@@ -208,19 +215,37 @@ private object Vms {
             subject = slot?.subject ?: "لا يوجد فصل",
             startTime = if (slot != null) t(slot.bell.start) else "",
             endTime = if (slot != null) "حتى " + t(slot.bell.end) else "",
+            minutesLeft = (ui.minutesLeftInLive ?: 0L).toString(),
+            startedAt = if (slot != null) "بدأت " + t(slot.bell.start) else "",
+            endsAt = if (slot != null) "تنتهي " + t(slot.bell.end) else "",
             isStandby = slot?.isStandby ?: false,
             showProgress = live,
             progress = ui.progress,
-            rows = ui.slots
-                .filter { it.period != slot?.period }
-                .map {
-                    RowVm(
-                        period = "${it.period}",
-                        time = t(it.bell.start),
-                        label = it.section ?: "انتظار",
-                        done = it.state == SlotState.DONE,
+            rows = buildList {
+                var crossedBreak = false
+                ui.slots.filter { it.period != slot?.period }.forEach {
+                    if (!crossedBreak && it.period >= 4) {
+                        crossedBreak = true
+                        add(
+                            RowVm(
+                                period = "",
+                                time = t(BellTimes.of(3).end) + " – " + t(BellTimes.of(4).start),
+                                label = "الفسحة",
+                                done = ui.slots.any { s -> s.period >= 4 && s.state == SlotState.DONE },
+                                isBreak = true,
+                            )
+                        )
+                    }
+                    add(
+                        RowVm(
+                            period = "${it.period}",
+                            time = t(it.bell.start),
+                            label = it.section ?: "انتظار",
+                            done = it.state == SlotState.DONE,
+                        )
                     )
-                },
+                }
+            },
             glass = GlassPalette.of(context),
         )
     }
@@ -412,15 +437,15 @@ private fun Hero(vm: Vm) {
             Spacer(GlanceModifier.defaultWeight())
             Column(horizontalAlignment = Alignment.Horizontal.End) {
                 Text(
-                    text = vm.startTime,
+                    text = if (vm.showProgress) vm.minutesLeft else vm.startTime,
                     style = TextStyle(
-                        fontSize = 22.sp,
+                        fontSize = if (vm.showProgress) 30.sp else 22.sp,
                         fontWeight = FontWeight.Bold,
                         color = provider(g.ink),
                     ),
                 )
                 Text(
-                    text = vm.endTime,
+                    text = if (vm.showProgress) "دقيقة متبقية" else vm.endTime,
                     style = TextStyle(fontSize = 12.sp, color = provider(g.inkMuted)),
                 )
             }
@@ -434,6 +459,18 @@ private fun Hero(vm: Vm) {
                 color = provider(g.ink),
                 backgroundColor = provider(g.chip),
             )
+            Spacer(GlanceModifier.height(6.dp))
+            Row(modifier = GlanceModifier.fillMaxWidth()) {
+                Text(
+                    text = vm.startedAt,
+                    style = TextStyle(fontSize = 11.sp, color = provider(g.inkFaint)),
+                )
+                Spacer(GlanceModifier.defaultWeight())
+                Text(
+                    text = vm.endsAt,
+                    style = TextStyle(fontSize = 11.sp, color = provider(g.inkFaint)),
+                )
+            }
         }
     }
 }
@@ -441,6 +478,25 @@ private fun Hero(vm: Vm) {
 @Composable
 private fun SlotRow(row: RowVm, g: Glass) {
     val ink = if (row.done) g.inkFaint else g.ink
+
+    if (row.isBreak) {
+        Row(
+            modifier = GlanceModifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.Vertical.CenterVertically,
+        ) {
+            Text(
+                text = row.label,
+                style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Medium, color = provider(g.inkFaint)),
+            )
+            Spacer(GlanceModifier.width(8.dp))
+            Text(
+                text = row.time,
+                style = TextStyle(fontSize = 11.sp, color = provider(g.inkFaint)),
+            )
+            Spacer(GlanceModifier.defaultWeight())
+        }
+        return
+    }
 
     Row(
         modifier = GlanceModifier
