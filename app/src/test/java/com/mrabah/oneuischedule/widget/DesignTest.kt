@@ -54,6 +54,10 @@ class DesignTest {
         PreparationStore.save(context,key,"أدوات التجربة","ملاحظة")
         assertFalse(PreparationStore.done(context,key))
     }
+    @Test fun approachingLessonRefreshesEveryMinute() {
+        val now=LocalDateTime.of(2026,9,7,7,55)
+        assertEquals(now.plusMinutes(1),com.mrabah.oneuischedule.data.ScheduleEngine.nextRefresh(context,now))
+    }
     @Test fun renderEveryDesignAndState() {
         val states=mapOf("live" to at(8,30),"before" to at(7,55),"break" to at(10,0),
             "last" to at(12,40),"tomorrow" to at(15,0),

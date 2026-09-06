@@ -126,7 +126,7 @@ class MainActivity : ComponentActivity() {
             val scheme = if (isSystemInDarkTheme()) dynamicDarkColorScheme(context)
             else dynamicLightColorScheme(context)
             MaterialTheme(colorScheme = scheme, typography = typographyOf(MaterialTheme.typography)) {
-                AppShell()
+                AppShell(intent.getIntExtra("open_tab", 0))
             }
         }
     }
@@ -137,10 +137,10 @@ class MainActivity : ComponentActivity() {
  * ══════════════════════════════════════════════════════════════ */
 
 @Composable
-private fun AppShell() {
+private fun AppShell(initialTab: Int = 0) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var tab by remember { mutableStateOf(0) }
+    var tab by remember { mutableStateOf(initialTab.coerceIn(0, 3)) }
     var config by remember { mutableStateOf(ScheduleStore.load(context)) }
 
     fun commit(next: Config) {

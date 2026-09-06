@@ -82,6 +82,19 @@ internal object DesignWidgets {
             .putExtra("key",day.key).putExtra("title","${day.day} · ${day.period} · ${day.section}")
         val open=PendingIntent.getActivity(c,0,intent,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         views.setOnClickPendingIntent(R.id.design_image,open)
+        views.setViewVisibility(R.id.design_schedule,if(style==Design.TICKET && day.key!=null) View.VISIBLE else View.GONE)
+        if(style==Design.TICKET && day.key!=null) {
+            val scale=minOf(width,height)/360f
+            views.setViewLayoutWidth(R.id.design_schedule,146f*scale,TypedValue.COMPLEX_UNIT_DIP)
+            views.setViewLayoutHeight(R.id.design_schedule,26f*scale,TypedValue.COMPLEX_UNIT_DIP)
+            views.setViewLayoutMargin(R.id.design_schedule,RemoteViews.MARGIN_LEFT,(width-360*scale)/2+16*scale,TypedValue.COMPLEX_UNIT_DIP)
+            views.setViewLayoutMargin(R.id.design_schedule,RemoteViews.MARGIN_TOP,(height-360*scale)/2+334*scale,TypedValue.COMPLEX_UNIT_DIP)
+            views.setContentDescription(R.id.design_schedule,"فتح الجدول")
+            val scheduleIntent=Intent(c,com.mrabah.oneuischedule.MainActivity::class.java)
+                .setData(Uri.parse("schedule-design://schedule"))
+                .putExtra("open_tab",1)
+            views.setOnClickPendingIntent(R.id.design_schedule,PendingIntent.getActivity(c,0,scheduleIntent,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+        }
         // A real, accessible touch target laid over the painted task checkbox.
         val taskY=when(style){Design.TICKET->296f;Design.BENTO->320f;Design.BLUEPRINT->286f;else->null}
         views.setViewVisibility(R.id.design_task,if(taskY!=null && day.key!=null) View.VISIBLE else View.GONE)

@@ -9,4 +9,8 @@
         android:layout_height="40dp" android:layout_gravity="top|left"
         android:background="@android:color/transparent" android:visibility="gone"
         android:clickable="true" android:focusable="true" />
+    <TextView android:id="@+id/design_schedule" android:layout_width="140dp"
+        android:layout_height="26dp" android:layout_gravity="top|left"
+        android:background="@android:color/transparent" android:visibility="gone"
+        android:clickable="true" android:focusable="true" />
 </FrameLayout>

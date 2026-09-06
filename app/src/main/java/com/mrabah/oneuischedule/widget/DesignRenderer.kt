@@ -162,7 +162,7 @@ internal class DesignRenderer(context: Context) {
         task(296f,"#E8DCC6",green)
         icon("note",297f,338f,green,15f)
         text("ملاحظة",225f,334f,66f,23f,12f,green)
-        text("تفاصيل الحصة",28f,334f,133f,23f,12f,green)
+        text("الجدول",28f,334f,133f,23f,12f,green)
         // The whole face opens this lesson; the task hit area toggles completion.
     }
     private fun orbit() {
