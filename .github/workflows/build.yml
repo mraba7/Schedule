@@ -31,22 +31,19 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      # Created once, then reused forever, so every APK carries the same
-      # signature and installs over the previous one.
-      - name: Ensure a stable signing key
+      # The key is decrypted from repository secrets for this run only. It
+      # is never committed, so the repository can be public without handing
+      # anyone the ability to sign a fake update.
+      - name: Restore signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
         run: |
-          if [ ! -f keystore/schedule.jks ]; then
-            mkdir -p keystore
-            keytool -genkeypair -v -keystore keystore/schedule.jks \
-              -storepass schedule -keypass schedule -alias schedule \
-              -keyalg RSA -keysize 2048 -validity 10000 \
-              -dname "CN=Class Schedule, O=mraba7, C=SA"
-            git config user.name "github-actions"
-            git config user.email "actions@github.com"
-            git add -f keystore/schedule.jks
-            git commit -m "ci: add shared signing key [skip ci]"
-            git push
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "ANDROID_KEYSTORE_B64 secret is missing"; exit 1
           fi
+          mkdir -p keystore
+          echo "$KEYSTORE_B64" | base64 -d > keystore/schedule.jks
+          ls -l keystore/schedule.jks
 
       # The schedule is data, and data is where the real bugs were.
       - name: Run unit tests
@@ -60,6 +57,8 @@ jobs:
         id: build
         if: steps.tests.outcome == 'success'
         continue-on-error: true
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
           set -o pipefail
           gradle assembleRelease --no-daemon --stacktrace 2>&1 | tee build-log.txt
@@ -88,6 +87,10 @@ jobs:
 
       # The raw Actions log lives on a host I can't reach, so the build writes
       # its own output back into the repo where it can be read through the API.
+      - name: Wipe the signing key
+        if: always()
+        run: rm -f keystore/schedule.jks
+
       - name: Publish build log
         if: always()
         continue-on-error: true

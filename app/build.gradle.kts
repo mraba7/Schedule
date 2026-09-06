@@ -4,11 +4,12 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
-// A fixed signing key committed to the repo. Without it every CI run signs
-// with a fresh throwaway key, Android sees a different signature, and each
-// build has to be installed as a new app. With it, builds install over
-// each other like a normal update.
+// The signing key lives in GitHub's encrypted secrets, never in the repo:
+// CI writes it to this path at build time and the file is git-ignored. The
+// password comes from the environment for the same reason. A stable key is
+// what lets each build install over the last one instead of beside it.
 val sharedKeystore = rootProject.file("keystore/schedule.jks")
+val keystorePassword: String = System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: "schedule"
 
 android {
     namespace = "com.mrabah.oneuischedule"
@@ -18,9 +19,9 @@ android {
         create("shared") {
             if (sharedKeystore.exists()) {
                 storeFile = sharedKeystore
-                storePassword = "schedule"
+                storePassword = keystorePassword
                 keyAlias = "schedule"
-                keyPassword = "schedule"
+                keyPassword = keystorePassword
             }
         }
     }
