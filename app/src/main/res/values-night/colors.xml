@@ -3,4 +3,6 @@
     <color name="widget_ink">#E7EAEE</color>
     <color name="widget_muted">#9AA2AC</color>
     <color name="widget_progress_track">#33FFFFFF</color>
+    <color name="widget_panel">#A60E1013</color>
+    <color name="widget_row">#14FFFFFF</color>
 </resources>

@@ -5,4 +5,6 @@
     <color name="widget_ink">#16181C</color>
     <color name="widget_muted">#5C636B</color>
     <color name="widget_progress_track">#33000000</color>
+    <color name="widget_panel">#F2FFFFFF</color>
+    <color name="widget_row">#0D000000</color>
 </resources>
