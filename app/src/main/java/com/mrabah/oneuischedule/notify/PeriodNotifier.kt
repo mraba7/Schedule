@@ -59,6 +59,51 @@ object PeriodNotifier {
         alarms(context)?.cancel(alarmIntent(context))
     }
 
+    /* ── testing and diagnostics ────────────────────────────── */
+
+    enum class Preview { START, END_SOON, END, PRE, LIVE }
+
+    /** Fires a sample of each notification so it can be heard, not imagined. */
+    fun preview(context: Context, kind: Preview) {
+        val config = ScheduleStore.load(context)
+        ensureChannels(context)
+        val sample = config.sections.firstOrNull() ?: "2/1"
+        when (kind) {
+            Preview.START -> ring(context, config, "بدأت الحصة 2", "$sample · ${config.subject}")
+            Preview.END_SOON -> ring(
+                context, config,
+                "باقي 5 دقائق على نهاية الحصة 2",
+                "$sample · التالية ${config.sections.getOrNull(1) ?: sample}",
+            )
+            Preview.END -> ring(context, config, "انتهت الحصة 2", sample)
+            Preview.PRE -> ring(context, config, "بعد 5 دقائق · الحصة 2", sample)
+            Preview.LIVE -> postLive(context, config, sample, 2, 0.45f, 22)
+        }
+    }
+
+    data class Diagnostics(
+        val notificationsAllowed: Boolean,
+        val exactAlarmsAllowed: Boolean,
+        val enabled: Boolean,
+        val nextEvent: String,
+    )
+
+    fun diagnostics(context: Context): Diagnostics {
+        val config = ScheduleStore.load(context)
+        val manager = context.getSystemService(NotificationManager::class.java)
+        val next = nextEvent(config, LocalDateTime.now(ZoneId.systemDefault()))
+        return Diagnostics(
+            notificationsAllowed = NotificationManagerCompat.from(context).areNotificationsEnabled(),
+            exactAlarmsAllowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+                (alarms(context)?.canScheduleExactAlarms() ?: false),
+            enabled = config.notify && manager != null,
+            nextEvent = next?.let {
+                it.dayOfMonth.toString() + "/" + it.monthValue + " " +
+                    String.format("%02d:%02d", it.hour, it.minute)
+            } ?: "لا يوجد",
+        )
+    }
+
     /** Called by the alarm. Works out what just happened, then arms the next. */
     fun onAlarm(context: Context) {
         val config = ScheduleStore.load(context)

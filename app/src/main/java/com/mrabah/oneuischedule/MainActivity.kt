@@ -734,6 +734,11 @@ private fun ScheduleScreen(config: Config, commit: (Config) -> Unit) {
             }
         }
 
+        if (draft.notify) {
+            item { SectionTitle("اختبار التنبيهات") }
+            item { NotificationTestCard() }
+        }
+
         item { SectionTitle("نسخ احتياطي") }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1144,4 +1149,81 @@ private fun validate(config: Config): String? {
     }
     if (config.sections.isEmpty()) return "أضف شعبة واحدة على الأقل"
     return null
+}
+
+
+/**
+ * Notifications are the one feature you cannot verify by looking at the app —
+ * they happen hours later, once. This fires each one on demand and states
+ * plainly whether the system is even letting them through.
+ */
+@Composable
+private fun NotificationTestCard() {
+    val context = LocalContext.current
+    var diagnostics by remember { mutableStateOf(PeriodNotifier.diagnostics(context)) }
+
+    Card(shape = RoundedCornerShape(20.dp)) {
+        Column(Modifier.padding(16.dp)) {
+            DiagnosticRow("إذن الإشعارات", diagnostics.notificationsAllowed)
+            DiagnosticRow("المنبّهات الدقيقة", diagnostics.exactAlarmsAllowed)
+            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                Text("التنبيه القادم", fontSize = 13.sp, modifier = Modifier.weight(1f))
+                Text(
+                    diagnostics.nextEvent,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+
+            Spacer(Modifier.height(10.dp))
+            Text("جرّب الآن", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(6.dp))
+
+            val samples = listOf(
+                "بداية حصة" to PeriodNotifier.Preview.START,
+                "باقي 5 دقائق" to PeriodNotifier.Preview.END_SOON,
+                "نهاية حصة" to PeriodNotifier.Preview.END,
+                "قبل الحصة" to PeriodNotifier.Preview.PRE,
+                "الحصة الجارية" to PeriodNotifier.Preview.LIVE,
+            )
+            samples.chunked(2).forEach { row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    row.forEach { (label, kind) ->
+                        OutlinedButton(
+                            onClick = {
+                                PeriodNotifier.preview(context, kind)
+                                diagnostics = PeriodNotifier.diagnostics(context)
+                            },
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.weight(1f),
+                        ) { Text(label, fontSize = 12.sp) }
+                    }
+                    if (row.size == 1) Spacer(Modifier.weight(1f))
+                }
+            }
+
+            Text(
+                "التنبيهات تصل صامتة إن كان الجوال على الوضع الصامت أو عدم الإزعاج",
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun DiagnosticRow(label: String, ok: Boolean) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Text(label, fontSize = 13.sp, modifier = Modifier.weight(1f))
+        Text(
+            if (ok) "مسموح" else "ممنوع",
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+            color = if (ok) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+        )
+    }
 }
