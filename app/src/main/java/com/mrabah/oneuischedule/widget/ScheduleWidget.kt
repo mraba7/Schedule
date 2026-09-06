@@ -69,7 +69,7 @@ import androidx.compose.ui.graphics.Color as ComposeColor
 
 private object Sections {
 
-    fun color(section: String?): Int = when (section) {
+    private fun base(section: String?): Int = when (section) {
         "2/1" -> 0xFF3B82F6.toInt() // blue
         "2/2" -> 0xFF10B981.toInt() // green
         "2/3" -> 0xFFF59E0B.toInt() // amber
@@ -77,14 +77,20 @@ private object Sections {
         else -> 0xFF94A3B8.toInt()  // standby / unknown
     }
 
-    fun heroDrawable(section: String?, standby: Boolean): Int = when {
-        standby -> R.drawable.hero_standby
-        section == "2/1" -> R.drawable.hero_s21
-        section == "2/2" -> R.drawable.hero_s22
-        section == "2/3" -> R.drawable.hero_s23
-        section == "2/4" -> R.drawable.hero_s24
-        else -> R.drawable.hero_standby
+    /**
+     * The tint is carried by the text and the rail, never by a wash behind
+     * them: amber over a purple wallpaper turns to mud however light the
+     * wash is. Lightness is re-pinned to the wallpaper's polarity so every
+     * section colour stays legible on either.
+     */
+    fun color(section: String?, lightWallpaper: Boolean): Int {
+        val hsl = FloatArray(3)
+        ColorUtils.colorToHSL(base(section), hsl)
+        hsl[1] = hsl[1].coerceAtMost(0.85f)
+        hsl[2] = if (lightWallpaper) 0.42f else 0.74f
+        return ColorUtils.HSLToColor(hsl)
     }
+
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -93,8 +99,10 @@ private object Sections {
  * ══════════════════════════════════════════════════════════════ */
 
 private data class Glass(
+    val light: Boolean,
     val panel: Int,
     val row: Int,
+    val heroVeil: Int,
     val chip: Int,
     val ink: Int,
     val inkMuted: Int,
@@ -107,8 +115,10 @@ private object GlassPalette {
         val light = wallpaperIsLight(context)
         val ink = if (light) android.graphics.Color.rgb(16, 19, 24) else android.graphics.Color.WHITE
         return Glass(
+            light = light,
             panel = veil(0xFFFFFF, if (light) 0x73 else 0x2E),
             row = veil(0xFFFFFF, if (light) 0x8A else 0x1F),
+            heroVeil = veil(0xFFFFFF, if (light) 0xB0 else 0x38),
             chip = veil(if (light) 0x000000 else 0xFFFFFF, if (light) 0x14 else 0x33),
             ink = ink,
             inkMuted = ColorUtils.setAlphaComponent(ink, 0xC0),
@@ -160,10 +170,11 @@ private data class Vm(
     val startedAt: String,
     val endsAt: String,
     val isStandby: Boolean,
-    val heroDrawable: Int,
+    val accent: Int,
     val showProgress: Boolean,
     val progress: Float,
     val rows: List<RowVm>,
+    val footer: String,
     val glass: Glass,
 )
 
@@ -187,9 +198,9 @@ private object Vms {
             val s = byPeriod[p]
             when {
                 s == null -> SegVm(glass.ink, 0x1F)
-                s.state == SlotState.LIVE -> SegVm(Sections.color(s.section), 0xFF)
-                s.state == SlotState.DONE -> SegVm(Sections.color(s.section), 0x8C)
-                else -> SegVm(Sections.color(s.section), 0x4D)
+                s.state == SlotState.LIVE -> SegVm(Sections.color(s.section, glass.light), 0xFF)
+                s.state == SlotState.DONE -> SegVm(Sections.color(s.section, glass.light), 0x8C)
+                else -> SegVm(Sections.color(s.section, glass.light), 0x4D)
             }
         }
 
@@ -222,7 +233,7 @@ private object Vms {
                         period = "${s.period}",
                         time = t(s.bell.start),
                         label = s.section ?: "انتظار",
-                        color = Sections.color(s.section),
+                        color = Sections.color(s.section, glass.light),
                         inkAlpha = alpha,
                     )
                 )
@@ -257,10 +268,13 @@ private object Vms {
             startedAt = if (slot != null) "بدأت " + t(slot.bell.start) else "",
             endsAt = if (slot != null) "تنتهي " + t(slot.bell.end) else "",
             isStandby = slot?.isStandby ?: false,
-            heroDrawable = Sections.heroDrawable(slot?.section, slot?.isStandby ?: false),
+            accent = Sections.color(slot?.section, glass.light),
             showProgress = live,
             progress = ui.progress,
             rows = rows,
+            footer = ui.slots.lastOrNull()?.let { last ->
+                "${ui.slots.size} حصص · ينتهي دوامك " + t(last.bell.end)
+            } ?: "",
             glass = glass,
         )
     }
@@ -329,6 +343,14 @@ private fun WidgetRoot(vm: Vm) {
         if (height >= Medium.height && vm.rows.isNotEmpty()) {
             Column(modifier = GlanceModifier.fillMaxWidth().padding(top = 8.dp)) {
                 vm.rows.forEach { row -> SlotRow(row, g) }
+            }
+            if (height >= Large.height && vm.footer.isNotEmpty()) {
+                Spacer(GlanceModifier.defaultWeight())
+                Text(
+                    text = vm.footer,
+                    style = TextStyle(fontSize = 11.sp, color = provider(g.inkFaint)),
+                    modifier = GlanceModifier.padding(top = 6.dp),
+                )
             }
         }
     }
@@ -399,7 +421,7 @@ private fun Hero(vm: Vm) {
     Column(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .background(ImageProvider(vm.heroDrawable))
+            .background(provider(g.heroVeil))
             .cornerRadius(24.dp)
             .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
@@ -409,9 +431,9 @@ private fun Hero(vm: Vm) {
         ) {
             Text(
                 text = vm.periodLabel,
-                style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = provider(g.ink)),
+                style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = provider(vm.accent)),
                 modifier = GlanceModifier
-                    .background(provider(g.chip))
+                    .background(fade(vm.accent, 0x2E))
                     .cornerRadius(9.dp)
                     .padding(horizontal = 9.dp, vertical = 3.dp),
             )
@@ -435,7 +457,7 @@ private fun Hero(vm: Vm) {
                     style = TextStyle(
                         fontSize = if (vm.isStandby) 30.sp else 52.sp,
                         fontWeight = FontWeight.Bold,
-                        color = provider(g.ink),
+                        color = provider(vm.accent),
                     ),
                 )
                 Text(
