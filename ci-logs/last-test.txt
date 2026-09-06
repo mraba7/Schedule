@@ -18,8 +18,8 @@ Daemon will be stopped at the end of the build
 > Task :app:javaPreCompileDebug FROM-CACHE
 > Task :app:preDebugUnitTestBuild UP-TO-DATE
 > Task :app:javaPreCompileDebugUnitTest FROM-CACHE
-> Task :app:buildKotlinToolingMetadata
 > Task :app:processDebugManifestForPackage
+> Task :app:buildKotlinToolingMetadata
 > Task :app:preReleaseBuild UP-TO-DATE
 > Task :app:generateReleaseBuildConfig
 > Task :app:checkReleaseAarMetadata
@@ -63,7 +63,7 @@ w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneui
 > Task :app:processReleaseUnitTestJavaRes
 > Task :app:testReleaseUnitTest
 > Task :app:test
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/tests-1788694837306.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/tests-1788695630849.json
 
-BUILD SUCCESSFUL in 1m 7s
+BUILD SUCCESSFUL in 1m 18s
 49 actionable tasks: 33 executed, 16 from cache
