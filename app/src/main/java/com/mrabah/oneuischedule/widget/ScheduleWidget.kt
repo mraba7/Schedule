@@ -6,7 +6,6 @@ import android.app.WallpaperColors
 import android.app.WallpaperManager
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color as AndroidColor
 import android.os.Build
 import android.text.format.DateFormat
 import androidx.compose.runtime.Composable
@@ -17,12 +16,12 @@ import androidx.core.graphics.ColorUtils
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.ImageProvider
 import androidx.glance.LocalSize
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
-import androidx.glance.appwidget.LinearProgressIndicator
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
@@ -32,6 +31,7 @@ import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
+import androidx.glance.layout.fillMaxHeight
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
@@ -42,6 +42,7 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.mrabah.oneuischedule.MainActivity
+import com.mrabah.oneuischedule.R
 import com.mrabah.oneuischedule.data.Defaults
 import com.mrabah.oneuischedule.data.ScheduleEngine
 import com.mrabah.oneuischedule.data.ScheduleUi
@@ -60,23 +61,40 @@ import java.util.Locale
 import androidx.compose.ui.graphics.Color as ComposeColor
 
 /* ══════════════════════════════════════════════════════════════
- *  GLASS PALETTE
- *
- *  The widget is not tinted — it is translucent. Every surface is a
- *  white or black veil, so the wallpaper itself supplies the colour,
- *  exactly like One UI's own widgets.
- *
- *  The only thing read from the system is WallpaperColors.colorHints:
- *  HINT_SUPPORTS_DARK_TEXT tells us whether the wallpaper behind the
- *  widget is light. That decides ink colour and veil polarity — the
- *  one piece of information a translucent widget genuinely needs.
+ *  SECTION IDENTITY
+ *  Each class keeps one colour everywhere: the card tint, the row
+ *  edge, the day bar. You recognise where you are going before you
+ *  read the number.
+ * ══════════════════════════════════════════════════════════════ */
+
+private object Sections {
+
+    fun color(section: String?): Int = when (section) {
+        "2/1" -> 0xFF3B82F6.toInt() // blue
+        "2/2" -> 0xFF10B981.toInt() // green
+        "2/3" -> 0xFFF59E0B.toInt() // amber
+        "2/4" -> 0xFF8B5CF6.toInt() // violet
+        else -> 0xFF94A3B8.toInt()  // standby / unknown
+    }
+
+    fun heroDrawable(section: String?, standby: Boolean): Int = when {
+        standby -> R.drawable.hero_standby
+        section == "2/1" -> R.drawable.hero_s21
+        section == "2/2" -> R.drawable.hero_s22
+        section == "2/3" -> R.drawable.hero_s23
+        section == "2/4" -> R.drawable.hero_s24
+        else -> R.drawable.hero_standby
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+ *  GLASS — the widget is translucent, so the wallpaper is the colour.
+ *  Only the ink polarity is read from the system.
  * ══════════════════════════════════════════════════════════════ */
 
 private data class Glass(
     val panel: Int,
-    val hero: Int,
     val row: Int,
-    val rowDone: Int,
     val chip: Int,
     val ink: Int,
     val inkMuted: Int,
@@ -85,50 +103,28 @@ private data class Glass(
 
 private object GlassPalette {
 
-    private const val WHITE = 0xFFFFFF
-    private const val BLACK = 0x000000
-
     fun of(context: Context): Glass {
-        val lightWallpaper = wallpaperIsLight(context)
-
-        return if (lightWallpaper) {
-            // dark ink on white veils
-            val ink = AndroidColor.rgb(16, 19, 24)
-            Glass(
-                panel = veil(WHITE, 0x73),
-                hero = veil(WHITE, 0xC4),
-                row = veil(WHITE, 0x8A),
-                rowDone = veil(WHITE, 0x40),
-                chip = veil(BLACK, 0x14),
-                ink = ink,
-                inkMuted = ColorUtils.setAlphaComponent(ink, 0xB0),
-                inkFaint = ColorUtils.setAlphaComponent(ink, 0x70),
-            )
-        } else {
-            // white ink on white veils — the wallpaper shows through
-            val ink = AndroidColor.WHITE
-            Glass(
-                panel = veil(WHITE, 0x2E),
-                hero = veil(WHITE, 0x59),
-                row = veil(WHITE, 0x1F),
-                rowDone = veil(WHITE, 0x12),
-                chip = veil(WHITE, 0x33),
-                ink = ink,
-                inkMuted = ColorUtils.setAlphaComponent(ink, 0xC0),
-                inkFaint = ColorUtils.setAlphaComponent(ink, 0x80),
-            )
-        }
+        val light = wallpaperIsLight(context)
+        val ink = if (light) android.graphics.Color.rgb(16, 19, 24) else android.graphics.Color.WHITE
+        return Glass(
+            panel = veil(0xFFFFFF, if (light) 0x73 else 0x2E),
+            row = veil(0xFFFFFF, if (light) 0x8A else 0x1F),
+            chip = veil(if (light) 0x000000 else 0xFFFFFF, if (light) 0x14 else 0x33),
+            ink = ink,
+            inkMuted = ColorUtils.setAlphaComponent(ink, 0xC0),
+            inkFaint = ColorUtils.setAlphaComponent(ink, 0x80),
+        )
     }
 
-    private fun veil(rgb: Int, alpha: Int) = ColorUtils.setAlphaComponent(rgb or 0xFF000000.toInt(), alpha)
+    private fun veil(rgb: Int, alpha: Int) =
+        ColorUtils.setAlphaComponent(rgb or 0xFF000000.toInt(), alpha)
 
     private fun wallpaperIsLight(context: Context): Boolean = try {
         val colors = WallpaperManager.getInstance(context)
             .getWallpaperColors(WallpaperManager.FLAG_SYSTEM)
-        colors != null &&
-            (colors.colorHints and WallpaperColors.HINT_SUPPORTS_DARK_TEXT) != 0
+        colors != null && (colors.colorHints and WallpaperColors.HINT_SUPPORTS_DARK_TEXT) != 0
     } catch (t: Throwable) {
-        false // assume a dark wallpaper; white ink is the safer default
+        false
     }
 }
 
@@ -140,28 +136,31 @@ private data class RowVm(
     val period: String,
     val time: String,
     val label: String,
-    val done: Boolean,
+    val color: Int,
+    val inkAlpha: Int, // past periods recede progressively
     val isBreak: Boolean = false,
 )
+
+private data class SegVm(val color: Int, val alpha: Int)
 
 private data class Vm(
     val dayName: String,
     val dateLine: String,
     val remaining: String,
-    val dayDots: String,
+    val segments: List<SegVm>,
     val hasFocus: Boolean,
     val emptyLabel: String,
     val status: String,
     val periodLabel: String,
     val section: String,
     val subject: String,
-    val lesson: String,
     val startTime: String,
     val endTime: String,
     val minutesLeft: String,
     val startedAt: String,
     val endsAt: String,
     val isStandby: Boolean,
+    val heroDrawable: Int,
     val showProgress: Boolean,
     val progress: Float,
     val rows: List<RowVm>,
@@ -175,23 +174,58 @@ private object Vms {
         val clock = DateTimeFormatter.ofPattern(
             if (DateFormat.is24HourFormat(context)) "HH:mm" else "h:mm", locale
         )
-
         fun t(time: LocalTime) = ltr(time.format(clock))
 
+        val glass = GlassPalette.of(context)
         val slot = ui.focus
         val live = ui.live != null
         val hijri = hijri(ui.date, locale)
         val greg = ui.date.format(DateTimeFormatter.ofPattern("d MMMM", locale))
 
-        // one-line map of the whole day: done / live / ahead / no duty
         val byPeriod = ui.slots.associateBy { it.period }
-        val dots = (1..7).joinToString("  ") { p ->
+        val segments = (1..7).map { p ->
             val s = byPeriod[p]
             when {
-                s == null -> "·"
-                s.state == SlotState.LIVE -> "◉"
-                s.state == SlotState.DONE -> "●"
-                else -> "○"
+                s == null -> SegVm(glass.ink, 0x1F)
+                s.state == SlotState.LIVE -> SegVm(Sections.color(s.section), 0xFF)
+                s.state == SlotState.DONE -> SegVm(Sections.color(s.section), 0x8C)
+                else -> SegVm(Sections.color(s.section), 0x4D)
+            }
+        }
+
+        // past periods fade further the older they are
+        var doneSeen = 0
+        val doneTotal = ui.slots.count { it.state == SlotState.DONE }
+        val rows = buildList {
+            var crossedBreak = false
+            ui.slots.filter { it.period != slot?.period }.forEach { s ->
+                if (!crossedBreak && s.period >= 4) {
+                    crossedBreak = true
+                    ui.config.bells.firstOrNull { it.period == 3 }?.let { third ->
+                        ui.config.bells.firstOrNull { it.period == 4 }?.let { fourth ->
+                            add(
+                                RowVm(
+                                    period = "", time = t(third.end) + " – " + t(fourth.start),
+                                    label = "الفسحة", color = glass.ink,
+                                    inkAlpha = 0x66, isBreak = true,
+                                )
+                            )
+                        }
+                    }
+                }
+                val alpha = if (s.state == SlotState.DONE) {
+                    doneSeen++
+                    (0x40 + (0x38 * doneSeen / (doneTotal + 1))).coerceIn(0x30, 0x90)
+                } else 0xFF
+                add(
+                    RowVm(
+                        period = "${s.period}",
+                        time = t(s.bell.start),
+                        label = s.section ?: "انتظار",
+                        color = Sections.color(s.section),
+                        inkAlpha = alpha,
+                    )
+                )
             }
         }
 
@@ -201,12 +235,12 @@ private object Vms {
             else ui.dayOfWeek.getDisplayName(JavaTextStyle.FULL, locale),
             dateLine = if (hijri.isEmpty()) greg else "$hijri  ·  $greg",
             remaining = if (ui.remaining > 0) "${ui.remaining} حصص متبقية" else "",
-            dayDots = dots,
+            segments = segments,
             hasFocus = slot != null,
             emptyLabel = if (ui.isToday) "انتهى نصابك اليوم" else "إجازة",
             status = when {
                 slot == null -> ""
-                live -> "باقي ${ui.minutesLeftInLive} دقيقة"
+                live -> "جارية الآن"
                 ui.isAssembly -> "بعد الطابور"
                 !ui.isToday -> "أول حصة"
                 ui.minutesUntilNext != null -> "تبدأ بعد ${ui.minutesUntilNext} دقيقة"
@@ -214,42 +248,20 @@ private object Vms {
             },
             periodLabel = if (slot != null) "الحصة ${slot.period}" else "",
             section = slot?.section ?: "انتظار",
-            subject = if (slot == null || slot.isStandby) "لا يوجد فصل" else Defaults.SUBJECT,
-            lesson = slot?.section?.let { ui.config.progress[it]?.next }?.takeIf { it.isNotBlank() } ?: "",
+            subject = slot?.section?.let { ui.config.progress[it]?.next }
+                ?.takeIf { it.isNotBlank() }
+                ?: if (slot == null || slot.isStandby) "لا يوجد فصل" else Defaults.SUBJECT,
             startTime = if (slot != null) t(slot.bell.start) else "",
             endTime = if (slot != null) "حتى " + t(slot.bell.end) else "",
             minutesLeft = (ui.minutesLeftInLive ?: 0L).toString(),
             startedAt = if (slot != null) "بدأت " + t(slot.bell.start) else "",
             endsAt = if (slot != null) "تنتهي " + t(slot.bell.end) else "",
             isStandby = slot?.isStandby ?: false,
+            heroDrawable = Sections.heroDrawable(slot?.section, slot?.isStandby ?: false),
             showProgress = live,
             progress = ui.progress,
-            rows = buildList {
-                var crossedBreak = false
-                ui.slots.filter { it.period != slot?.period }.forEach {
-                    if (!crossedBreak && it.period >= 4) {
-                        crossedBreak = true
-                        add(
-                            RowVm(
-                                period = "",
-                                time = t(ui.config.bell(3).end) + " – " + t(ui.config.bell(4).start),
-                                label = "الفسحة",
-                                done = ui.slots.any { s -> s.period >= 4 && s.state == SlotState.DONE },
-                                isBreak = true,
-                            )
-                        )
-                    }
-                    add(
-                        RowVm(
-                            period = "${it.period}",
-                            time = t(it.bell.start),
-                            label = it.section ?: "انتظار",
-                            done = it.state == SlotState.DONE,
-                        )
-                    )
-                }
-            },
-            glass = GlassPalette.of(context),
+            rows = rows,
+            glass = glass,
         )
     }
 
@@ -258,7 +270,6 @@ private object Vms {
         return if (locales.isEmpty) Locale.getDefault() else locales[0]
     }
 
-    /** Bidi isolate: stops RTL layout reordering digits around a colon or dash. */
     private fun ltr(text: String) = "\u2066" + text + "\u2069"
 
     private fun hijri(date: java.time.LocalDate, locale: Locale): String = try {
@@ -273,6 +284,8 @@ private object Vms {
  * ══════════════════════════════════════════════════════════════ */
 
 private fun provider(argb: Int) = ColorProvider(ComposeColor(argb))
+private fun fade(color: Int, alpha: Int) =
+    provider(ColorUtils.setAlphaComponent(color, alpha))
 
 private val Compact = DpSize(260.dp, 120.dp)
 private val Medium = DpSize(260.dp, 200.dp)
@@ -305,18 +318,12 @@ private fun WidgetRoot(vm: Vm) {
             .clickable(actionStartActivity<MainActivity>())
     ) {
         Header(vm)
-        Spacer(GlanceModifier.height(10.dp))
+        DayBar(vm)
         Hero(vm)
 
         if (height >= Medium.height && vm.rows.isNotEmpty()) {
-            Spacer(GlanceModifier.height(8.dp))
-            // own container: a Glance layout node accepts only ~10 children,
-            // and the root already spends four on the header and hero
-            Column(modifier = GlanceModifier.fillMaxWidth()) {
-                vm.rows.forEach { row ->
-                    SlotRow(row, g)
-                    Spacer(GlanceModifier.height(6.dp))
-                }
+            Column(modifier = GlanceModifier.fillMaxWidth().padding(top = 8.dp)) {
+                vm.rows.forEach { row -> SlotRow(row, g) }
             }
         }
     }
@@ -325,7 +332,6 @@ private fun WidgetRoot(vm: Vm) {
 @Composable
 private fun Header(vm: Vm) {
     val g = vm.glass
-
     Row(
         modifier = GlanceModifier.fillMaxWidth(),
         verticalAlignment = Alignment.Vertical.CenterVertically,
@@ -333,11 +339,7 @@ private fun Header(vm: Vm) {
         Column {
             Text(
                 text = vm.dayName,
-                style = TextStyle(
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = provider(g.ink),
-                ),
+                style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, color = provider(g.ink)),
             )
             Text(
                 text = vm.dateLine,
@@ -345,19 +347,25 @@ private fun Header(vm: Vm) {
             )
         }
         Spacer(GlanceModifier.defaultWeight())
-        Column(horizontalAlignment = Alignment.Horizontal.End) {
-            Text(
-                text = vm.remaining,
-                style = TextStyle(
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = provider(g.inkMuted),
-                ),
-            )
-            // the whole day in one line: filled = done, ring = ahead, dot = free
-            Text(
-                text = vm.dayDots,
-                style = TextStyle(fontSize = 10.sp, color = provider(g.inkFaint)),
+        Text(
+            text = vm.remaining,
+            style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Medium, color = provider(g.inkMuted)),
+        )
+    }
+}
+
+/** Seven segments, one per period: the whole day as a single bar. */
+@Composable
+private fun DayBar(vm: Vm) {
+    Row(modifier = GlanceModifier.fillMaxWidth().padding(top = 10.dp, bottom = 12.dp)) {
+        vm.segments.forEach { seg ->
+            Spacer(
+                GlanceModifier
+                    .defaultWeight()
+                    .height(5.dp)
+                    .padding(horizontal = 1.dp)
+                    .background(fade(seg.color, seg.alpha))
+                    .cornerRadius(3.dp)
             )
         }
     }
@@ -377,11 +385,7 @@ private fun Hero(vm: Vm) {
         ) {
             Text(
                 text = vm.emptyLabel,
-                style = TextStyle(
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = provider(g.ink),
-                ),
+                style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Medium, color = provider(g.ink)),
             )
         }
         return
@@ -390,7 +394,7 @@ private fun Hero(vm: Vm) {
     Column(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .background(provider(if (vm.isStandby) g.row else g.hero))
+            .background(ImageProvider(vm.heroDrawable))
             .cornerRadius(24.dp)
             .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
@@ -400,11 +404,7 @@ private fun Hero(vm: Vm) {
         ) {
             Text(
                 text = vm.periodLabel,
-                style = TextStyle(
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = provider(g.ink),
-                ),
+                style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = provider(g.ink)),
                 modifier = GlanceModifier
                     .background(provider(g.chip))
                     .cornerRadius(9.dp)
@@ -413,31 +413,28 @@ private fun Hero(vm: Vm) {
             Spacer(GlanceModifier.defaultWeight())
             Text(
                 text = vm.status,
-                style = TextStyle(
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = provider(g.inkMuted),
-                ),
+                style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Medium, color = provider(g.inkMuted)),
             )
         }
 
-        Spacer(GlanceModifier.height(12.dp))
+        Spacer(GlanceModifier.height(10.dp))
 
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.Vertical.CenterVertically,
         ) {
             Column {
+                // the section is the picture, not a caption
                 Text(
                     text = vm.section,
                     style = TextStyle(
-                        fontSize = if (vm.isStandby) 26.sp else 38.sp,
+                        fontSize = if (vm.isStandby) 30.sp else 52.sp,
                         fontWeight = FontWeight.Bold,
                         color = provider(g.ink),
                     ),
                 )
                 Text(
-                    text = if (vm.lesson.isNotEmpty()) vm.lesson else vm.subject,
+                    text = vm.subject,
                     style = TextStyle(fontSize = 12.sp, color = provider(g.inkMuted)),
                 )
             }
@@ -446,7 +443,7 @@ private fun Hero(vm: Vm) {
                 Text(
                     text = if (vm.showProgress) vm.minutesLeft else vm.startTime,
                     style = TextStyle(
-                        fontSize = if (vm.showProgress) 30.sp else 22.sp,
+                        fontSize = if (vm.showProgress) 32.sp else 22.sp,
                         fontWeight = FontWeight.Bold,
                         color = provider(g.ink),
                     ),
@@ -459,14 +456,7 @@ private fun Hero(vm: Vm) {
         }
 
         if (vm.showProgress) {
-            Spacer(GlanceModifier.height(14.dp))
-            LinearProgressIndicator(
-                progress = vm.progress,
-                modifier = GlanceModifier.fillMaxWidth().height(4.dp),
-                color = provider(g.ink),
-                backgroundColor = provider(g.chip),
-            )
-            Spacer(GlanceModifier.height(6.dp))
+            Spacer(GlanceModifier.height(10.dp))
             Row(modifier = GlanceModifier.fillMaxWidth()) {
                 Text(
                     text = vm.startedAt,
@@ -484,11 +474,9 @@ private fun Hero(vm: Vm) {
 
 @Composable
 private fun SlotRow(row: RowVm, g: Glass) {
-    val ink = if (row.done) g.inkFaint else g.ink
-
     if (row.isBreak) {
         Row(
-            modifier = GlanceModifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 2.dp),
+            modifier = GlanceModifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 4.dp),
             verticalAlignment = Alignment.Vertical.CenterVertically,
         ) {
             Text(
@@ -508,28 +496,38 @@ private fun SlotRow(row: RowVm, g: Glass) {
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .background(provider(if (row.done) g.rowDone else g.row))
+            .padding(bottom = 6.dp)
+            .background(fade(g.row, row.inkAlpha))
             .cornerRadius(18.dp)
-            .padding(horizontal = 12.dp, vertical = 9.dp),
+            .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.Vertical.CenterVertically,
     ) {
+        // slim colour rail instead of a numbered badge
+        Spacer(
+            GlanceModifier
+                .width(3.dp)
+                .height(24.dp)
+                .background(fade(row.color, row.inkAlpha))
+                .cornerRadius(2.dp)
+        )
+        Spacer(GlanceModifier.width(10.dp))
         Text(
             text = row.period,
-            style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = provider(ink)),
-            modifier = GlanceModifier
-                .background(provider(g.chip))
-                .cornerRadius(8.dp)
-                .padding(horizontal = 8.dp, vertical = 2.dp),
+            style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = fade(g.ink, row.inkAlpha)),
         )
         Spacer(GlanceModifier.width(10.dp))
         Text(
             text = row.time,
-            style = TextStyle(fontSize = 13.sp, color = provider(g.inkMuted)),
+            style = TextStyle(fontSize = 13.sp, color = fade(g.ink, (row.inkAlpha * 3 / 4).coerceAtLeast(0x30))),
         )
         Spacer(GlanceModifier.defaultWeight())
         Text(
             text = row.label,
-            style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold, color = provider(ink)),
+            style = TextStyle(
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold,
+                color = fade(g.ink, row.inkAlpha),
+            ),
         )
     }
 }
@@ -572,7 +570,7 @@ class ScheduleWidgetReceiver : GlanceAppWidgetReceiver() {
                 ScheduleUpdater.schedule(context)
                 PeriodNotifier.sync(context)
             } catch (t: Throwable) {
-                // a failed refresh must never crash the launcher's broadcast
+                // never crash the launcher's broadcast
             } finally {
                 pending.finish()
             }
@@ -600,7 +598,7 @@ object ScheduleUpdater {
                 alarms.setWindow(AlarmManager.RTC, triggerAt, 60_000L, pendingIntent(context))
             }
         } catch (t: Throwable) {
-            // exact-alarm permission revoked mid-flight; updatePeriodMillis covers it
+            // exact-alarm permission revoked; updatePeriodMillis covers it
         }
     }
 
@@ -608,14 +606,10 @@ object ScheduleUpdater {
         context.getSystemService(AlarmManager::class.java)?.cancel(pendingIntent(context))
     }
 
-    private fun pendingIntent(context: Context): PendingIntent {
-        val intent = Intent(context, ScheduleWidgetReceiver::class.java)
-            .setAction(ScheduleWidgetReceiver.ACTION_TICK)
-        return PendingIntent.getBroadcast(
-            context,
-            REQUEST_CODE,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-    }
+    private fun pendingIntent(context: Context): PendingIntent = PendingIntent.getBroadcast(
+        context,
+        REQUEST_CODE,
+        Intent(context, ScheduleWidgetReceiver::class.java).setAction(ScheduleWidgetReceiver.ACTION_TICK),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
 }

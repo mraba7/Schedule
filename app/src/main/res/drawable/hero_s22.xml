@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Section identity tint over the glass panel. A diagonal gradient, the same
+     depth trick Samsung uses on the weather widget. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <corners android:radius="24dp" />
+    <gradient
+        android:type="linear"
+        android:angle="315"
+        android:startColor="#7310B981"
+        android:centerColor="#4D10B981"
+        android:endColor="#1F10B981" />
+</shape>
