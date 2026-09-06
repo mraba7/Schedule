@@ -4,8 +4,8 @@ Daemon will be stopped at the end of the build
 > Task :app:preDebugBuild UP-TO-DATE
 > Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
 > Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
-> Task :app:checkDebugAarMetadata
 > Task :app:generateDebugResValues FROM-CACHE
+> Task :app:checkDebugAarMetadata
 > Task :app:mapDebugSourceSetPaths
 > Task :app:generateDebugResources FROM-CACHE
 > Task :app:mergeDebugResources FROM-CACHE
@@ -13,12 +13,11 @@ Daemon will be stopped at the end of the build
 > Task :app:parseDebugLocalResources FROM-CACHE
 > Task :app:createDebugCompatibleScreenManifests
 > Task :app:extractDeepLinksDebug FROM-CACHE
-> Task :app:processDebugMainManifest FROM-CACHE
-> Task :app:processDebugManifest FROM-CACHE
-> Task :app:processDebugManifestForPackage FROM-CACHE
-> Task :app:processDebugResources FROM-CACHE
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
 > Task :app:javaPreCompileDebug FROM-CACHE
 > Task :app:mergeDebugShaders
+> Task :app:processDebugManifestForPackage
 > Task :app:compileDebugShaders NO-SOURCE
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
@@ -26,6 +25,7 @@ Daemon will be stopped at the end of the build
 > Task :app:desugarDebugFileDependencies FROM-CACHE
 > Task :app:checkDebugDuplicateClasses
 > Task :app:mergeExtDexDebug FROM-CACHE
+> Task :app:processDebugResources
 > Task :app:mergeLibDexDebug FROM-CACHE
 > Task :app:mergeDebugJniLibFolders
 > Task :app:mergeDebugNativeLibs
@@ -38,7 +38,7 @@ Unable to strip the following libraries, packaging them as they are: libandroidx
 > Task :app:writeDebugSigningConfigVersions
 
 > Task :app:compileDebugKotlin
-w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/widget/ScheduleWidget.kt:489:20 'static field ACTION_WALLPAPER_CHANGED: String' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/widget/ScheduleWidget.kt:545:20 'static field ACTION_WALLPAPER_CHANGED: String' is deprecated. Deprecated in Java.
 
 > Task :app:compileDebugJavaWithJavac NO-SOURCE
 > Task :app:dexBuilderDebug
@@ -49,7 +49,7 @@ w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneui
 > Task :app:packageDebug
 > Task :app:createDebugApkListingFileRedirect
 > Task :app:assembleDebug
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1788684424107.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1788684950787.json
 
-BUILD SUCCESSFUL in 42s
-35 actionable tasks: 19 executed, 16 from cache
+BUILD SUCCESSFUL in 45s
+35 actionable tasks: 23 executed, 12 from cache
