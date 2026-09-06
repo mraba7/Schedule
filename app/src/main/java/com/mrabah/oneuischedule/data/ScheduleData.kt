@@ -376,8 +376,11 @@ object ScheduleEngine {
             .maxOrNull()
 
         val showToday = lastEnd != null && now.toLocalTime() < lastEnd
+        // Rolling forward past a holiday must not lose the fact that today is
+        // one — the app still needs to say why the day is empty.
+        val todayHoliday = config.holidayOn(today)
         return if (showToday) forDay(config, today, now)
-        else forDay(config, nextWorkday(config, today), null)
+        else forDay(config, nextWorkday(config, today), null, todayHoliday)
     }
 
     fun nextRefresh(context: Context, now: LocalDateTime): LocalDateTime {
@@ -426,7 +429,12 @@ object ScheduleEngine {
         return d
     }
 
-    private fun forDay(config: Config, date: LocalDate, now: LocalDateTime?): ScheduleUi {
+    private fun forDay(
+        config: Config,
+        date: LocalDate,
+        now: LocalDateTime?,
+        holidayOverride: Holiday? = null,
+    ): ScheduleUi {
         val clock = now?.toLocalTime()
 
         val slots = dutiesOn(config, date)
@@ -472,7 +480,7 @@ object ScheduleEngine {
                 ChronoUnit.MINUTES.between(clock, next.bell.start).coerceAtLeast(0) else null,
             isAssembly = clock != null &&
                 !clock.isBefore(Defaults.assemblyStart) && clock.isBefore(Defaults.assemblyEnd),
-            holiday = config.holidayOn(date),
+            holiday = holidayOverride ?: config.holidayOn(date),
             config = config,
         )
     }
