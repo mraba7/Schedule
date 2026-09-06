@@ -264,10 +264,25 @@ object ScheduleEngine {
         if (build(config, now).live != null) {
             return now.truncatedTo(ChronoUnit.MINUTES).plusMinutes(1)
         }
-        return boundaries(config, now.toLocalDate())
+        val nextBoundary = boundaries(config, now.toLocalDate())
             .filter { it.isAfter(now) }
             .minOrNull()
             ?: now.toLocalDate().plusDays(1).atTime(0, 1)
+
+        // inside school hours the card intensity and the day marker move
+        // continuously, so tick every five minutes; outside them, never.
+        val date = now.toLocalDate()
+        if (date.dayOfWeek in config.workdays) {
+            val opens = Defaults.assemblyStart
+            val closes = config.bells.maxOfOrNull { it.end }
+            if (closes != null &&
+                !now.toLocalTime().isBefore(opens) && now.toLocalTime().isBefore(closes)
+            ) {
+                val tick = now.truncatedTo(ChronoUnit.MINUTES).plusMinutes(5)
+                return minOf(nextBoundary, tick)
+            }
+        }
+        return nextBoundary
     }
 
     /** Every bell of a given day, used by both the widget and the notifier. */

@@ -147,7 +147,9 @@ private data class RowVm(
     val time: String,
     val label: String,
     val color: Int,
-    val inkAlpha: Int, // past periods recede progressively
+    val inkAlpha: Int,   // past periods recede progressively
+    val isNext: Boolean = false, // the one after the card, emphasised
+    val railFill: Float = 1f,    // how full the countdown rail is
     val isBreak: Boolean = false,
 )
 
@@ -175,6 +177,9 @@ private data class Vm(
     val progress: Float,
     val rows: List<RowVm>,
     val footer: String,
+    val dayFraction: Float,  // position of "now" along the day bar
+    val heroVeil: Int,       // intensity rises as the period approaches
+    val currentSegment: Int, // which of the seven is live or next
     val glass: Glass,
 )
 
@@ -192,6 +197,26 @@ private object Vms {
         val live = ui.live != null
         val hijri = hijri(ui.date, locale)
         val greg = ui.date.format(DateTimeFormatter.ofPattern("d MMMM", locale))
+
+        // how far "now" sits along the school day, 0..1
+        val dayOpen = Defaults.assemblyStart
+        val dayClose = ui.config.bells.maxOfOrNull { it.end } ?: dayOpen
+        val nowTime = java.time.LocalTime.now()
+        val dayFraction = if (!ui.isToday) 0f else {
+            val span = (dayClose.toSecondOfDay() - dayOpen.toSecondOfDay()).toFloat()
+            if (span <= 0f) 0f
+            else ((nowTime.toSecondOfDay() - dayOpen.toSecondOfDay()) / span).coerceIn(0f, 1f)
+        }
+
+        // the card grows more present as its period nears
+        val minutesAway = ui.minutesUntilNext ?: 0L
+        val nearness = when {
+            live -> 1f
+            !ui.isToday -> 0.35f
+            minutesAway <= 5 -> 1f
+            minutesAway >= 60 -> 0.35f
+            else -> 1f - (minutesAway - 5).toFloat() / 55f * 0.65f
+        }
 
         val byPeriod = ui.slots.associateBy { it.period }
         val segments = (1..7).map { p ->
@@ -228,6 +253,13 @@ private object Vms {
                     doneSeen++
                     (0x40 + (0x38 * doneSeen / (doneTotal + 1))).coerceIn(0x30, 0x90)
                 } else 0xFF
+                val isNext = ui.isToday && s.state == SlotState.AHEAD &&
+                    s.period == ui.slots.firstOrNull { it.state == SlotState.AHEAD }?.period
+                val fill = if (!isNext) 1f else {
+                    val away = java.time.temporal.ChronoUnit.MINUTES
+                        .between(nowTime, s.bell.start).coerceAtLeast(0L)
+                    (1f - away / 60f).coerceIn(0.12f, 1f)
+                }
                 add(
                     RowVm(
                         period = "${s.period}",
@@ -235,6 +267,8 @@ private object Vms {
                         label = s.section ?: "انتظار",
                         color = Sections.color(s.section, glass.light),
                         inkAlpha = alpha,
+                        isNext = isNext,
+                        railFill = fill,
                     )
                 )
             }
@@ -272,6 +306,13 @@ private object Vms {
             showProgress = live,
             progress = ui.progress,
             rows = rows,
+            dayFraction = dayFraction,
+            heroVeil = ColorUtils.setAlphaComponent(
+                glass.heroVeil,
+                (android.graphics.Color.alpha(glass.heroVeil) * (0.55f + 0.45f * nearness)).toInt()
+                    .coerceIn(0x14, 0xFF),
+            ),
+            currentSegment = (ui.live ?: ui.next)?.period ?: 0,
             footer = ui.slots.lastOrNull()?.let { last ->
                 "${ui.slots.size} حصص · ينتهي دوامك " + t(last.bell.end)
             } ?: "",
@@ -325,7 +366,10 @@ class ScheduleWidget : GlanceAppWidget() {
 
 @Composable
 private fun WidgetRoot(vm: Vm) {
-    val height = LocalSize.current.height
+    val size = LocalSize.current
+    val height = size.height
+    val compact = height < Medium.height
+    val barWidth = (size.width.value.toInt() - 32).coerceAtLeast(80)
     val g = vm.glass
 
     Column(
@@ -337,8 +381,8 @@ private fun WidgetRoot(vm: Vm) {
             .clickable(actionStartActivity<MainActivity>())
     ) {
         Header(vm)
-        DayBar(vm)
-        Hero(vm)
+        if (!compact) DayBar(vm, barWidth) else Spacer(GlanceModifier.height(10.dp))
+        Hero(vm, compact)
 
         if (height >= Medium.height && vm.rows.isNotEmpty()) {
             Column(modifier = GlanceModifier.fillMaxWidth().padding(top = 8.dp)) {
@@ -386,23 +430,40 @@ private fun Header(vm: Vm) {
 
 /** Seven segments, one per period: the whole day as a single bar. */
 @Composable
-private fun DayBar(vm: Vm) {
-    Row(modifier = GlanceModifier.fillMaxWidth().padding(top = 10.dp, bottom = 12.dp)) {
-        vm.segments.forEach { seg ->
-            Spacer(
-                GlanceModifier
-                    .defaultWeight()
-                    .height(5.dp)
-                    .padding(horizontal = 1.dp)
-                    .background(fade(seg.color, seg.alpha))
-                    .cornerRadius(3.dp)
-            )
+private fun DayBar(vm: Vm, barWidth: Int) {
+    val g = vm.glass
+    Column(modifier = GlanceModifier.fillMaxWidth().padding(top = 10.dp, bottom = 10.dp)) {
+        Row(modifier = GlanceModifier.fillMaxWidth()) {
+            vm.segments.forEachIndexed { index, seg ->
+                val current = index + 1 == vm.currentSegment
+                Spacer(
+                    GlanceModifier
+                        .defaultWeight()
+                        .height(if (current) 7.dp else 5.dp)
+                        .padding(horizontal = 1.dp)
+                        .background(fade(seg.color, seg.alpha))
+                        .cornerRadius(4.dp)
+                )
+            }
+        }
+        // a hairline that walks the bar with the clock, not with the periods
+        if (vm.dayFraction > 0f) {
+            Row(modifier = GlanceModifier.fillMaxWidth().padding(top = 3.dp)) {
+                Spacer(GlanceModifier.width((barWidth * vm.dayFraction).toInt().dp))
+                Spacer(
+                    GlanceModifier
+                        .width(2.dp)
+                        .height(4.dp)
+                        .background(provider(g.ink))
+                        .cornerRadius(1.dp)
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun Hero(vm: Vm) {
+private fun Hero(vm: Vm, compact: Boolean = false) {
     val g = vm.glass
 
     if (!vm.hasFocus) {
@@ -424,7 +485,7 @@ private fun Hero(vm: Vm) {
     Column(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .background(provider(g.heroVeil))
+            .background(provider(vm.heroVeil))
             .cornerRadius(24.dp)
             .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
@@ -458,7 +519,7 @@ private fun Hero(vm: Vm) {
                 Text(
                     text = vm.section,
                     style = TextStyle(
-                        fontSize = if (vm.isStandby) 30.sp else 52.sp,
+                        fontSize = if (vm.isStandby) 30.sp else if (compact) 40.sp else 52.sp,
                         fontWeight = FontWeight.Bold,
                         color = provider(vm.accent),
                     ),
@@ -523,22 +584,34 @@ private fun SlotRow(row: RowVm, g: Glass) {
         return
     }
 
+    val railHeight = if (row.isNext) 30 else 24
+    val filled = (railHeight * row.railFill).toInt().coerceAtLeast(3)
+
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .background(dim(g.row, row.inkAlpha))
+            .background(dim(g.row, if (row.isNext) 0xFF else row.inkAlpha))
             .cornerRadius(18.dp)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = 12.dp, vertical = if (row.isNext) 13.dp else 10.dp),
         verticalAlignment = Alignment.Vertical.CenterVertically,
     ) {
-        // slim colour rail instead of a numbered badge
-        Spacer(
-            GlanceModifier
-                .width(3.dp)
-                .height(24.dp)
-                .background(fade(row.color, row.inkAlpha))
-                .cornerRadius(2.dp)
-        )
+        // the rail doubles as a countdown: it fills as the period approaches
+        Column(modifier = GlanceModifier.width(3.dp)) {
+            Spacer(
+                GlanceModifier
+                    .width(3.dp)
+                    .height((railHeight - filled).dp)
+                    .background(fade(row.color, 0x33))
+                    .cornerRadius(2.dp)
+            )
+            Spacer(
+                GlanceModifier
+                    .width(3.dp)
+                    .height(filled.dp)
+                    .background(fade(row.color, row.inkAlpha))
+                    .cornerRadius(2.dp)
+            )
+        }
         Spacer(GlanceModifier.width(10.dp))
         Text(
             text = row.period,
@@ -553,9 +626,9 @@ private fun SlotRow(row: RowVm, g: Glass) {
         Text(
             text = row.label,
             style = TextStyle(
-                fontSize = 17.sp,
+                fontSize = if (row.isNext) 19.sp else 17.sp,
                 fontWeight = FontWeight.Bold,
-                color = fade(g.ink, row.inkAlpha),
+                color = fade(row.color, row.inkAlpha),
             ),
         )
     }
