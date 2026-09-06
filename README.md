@@ -49,6 +49,15 @@ reference rather than overwriting — you'll want to switch back in May.
 - Refresh fires on **bell boundaries**, not a fixed cycle, so the card flips
   exactly when the bell rings. One-minute ticks only while a period is running.
 
+## Daily widget styles
+
+The widget picker also offers three visual treatments backed by the same live
+schedule engine:
+
+- **Luxury glass** — deep violet glass, gold focus, cyan upcoming rails.
+- **Cards** — a bright, high-contrast agenda with one card per period.
+- **Compact** — a 4×2 glance with the current period and the next one.
+
 ## Two platform limits, handled honestly
 
 - Widgets can't cast real shadows → depth is faked with a 1dp top hairline and
