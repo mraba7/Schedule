@@ -3,6 +3,9 @@ package com.mrabah.oneuischedule
 import android.Manifest
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import android.content.Intent
+import android.media.RingtoneManager
+import android.net.Uri
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
@@ -546,7 +549,11 @@ private fun ScheduleScreen(config: Config, commit: (Config) -> Unit) {
 
     val askNotifications = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { granted -> draft = draft.copy(notify = granted); saved = false }
+    ) { granted ->
+        val next = draft.copy(notify = granted)
+        draft = next
+        commit(next)
+    }
 
     val exportFile = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
@@ -572,6 +579,15 @@ private fun ScheduleScreen(config: Config, commit: (Config) -> Unit) {
                 problem = "الملف غير صالح"
             }
         }
+    }
+
+    val pickTone = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val uri: Uri? = result.data?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+        val next = draft.copy(bellUri = uri?.toString().orEmpty())
+        draft = next
+        commit(next)
     }
 
     fun edit(next: Config) {
@@ -707,30 +723,34 @@ private fun ScheduleScreen(config: Config, commit: (Config) -> Unit) {
         item {
             Card(shape = RoundedCornerShape(20.dp)) {
                 Column(Modifier.padding(vertical = 4.dp)) {
+                    // These save on tap. Waiting for the Save button meant a
+                    // switch silently reverted whenever the app was closed.
                     OptionRow("تنبيه صوتي عند الحصص", "بداية كل حصة ونهايتها", draft.notify) { want ->
                         if (want && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                             askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
                         } else {
-                            edit(draft.copy(notify = want))
+                            val next = draft.copy(notify = want)
+                            draft = next
+                            commit(next)
                         }
                     }
                     if (draft.notify) {
                         OptionRow("صوت جرس المدرسة", "بدل نغمة الإشعارات", draft.schoolBell) {
-                            edit(draft.copy(schoolBell = it))
+                            { val next = draft.copy(schoolBell = it); draft = next; commit(next) }()
                         }
                         OptionRow("تنبيه قبل الحصة بخمس دقائق", "مع الدرس القادم", draft.preAlert) {
-                            edit(draft.copy(preAlert = it))
+                            { val next = draft.copy(preAlert = it); draft = next; commit(next) }()
                         }
                         OptionRow(
                             "تنبيه قبل نهاية الحصة بخمس دقائق",
                             "لتختم الدرس وتوزّع الواجب",
                             draft.endAlert,
-                        ) { edit(draft.copy(endAlert = it)) }
+                        ) { { val next = draft.copy(endAlert = it); draft = next; commit(next) }() }
                         OptionRow(
                             "نطق التنبيه بصوت",
                             "يقرأ التنبيه بالعربية بدل الاكتفاء بالجرس",
                             draft.speak,
-                        ) { edit(draft.copy(speak = it)) }
+                        ) { { val next = draft.copy(speak = it); draft = next; commit(next) }() }
                         OptionRow("إشعار الحصة الجارية", "شريط تقدّم مستمر", draft.liveUpdate) {
                             edit(draft.copy(liveUpdate = it))
                         }
@@ -740,6 +760,52 @@ private fun ScheduleScreen(config: Config, commit: (Config) -> Unit) {
         }
 
         if (draft.notify) {
+            item { SectionTitle("نغمة الجرس") }
+            item {
+                Card(shape = RoundedCornerShape(20.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                if (draft.bellUri.isBlank()) "الجرس المدمج"
+                                else "نغمة مختارة من جهازك",
+                                fontSize = 15.sp,
+                            )
+                            Text(
+                                "سجّل جرس مدرستك الحقيقي واخترْه من هنا",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER)
+                                    .putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALL)
+                                    .putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "اختر نغمة الجرس")
+                                    .putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, false)
+                                    .putExtra(
+                                        RingtoneManager.EXTRA_RINGTONE_EXISTING_URI,
+                                        draft.bellUri.takeIf { it.isNotBlank() }?.let { Uri.parse(it) },
+                                    )
+                                pickTone.launch(intent)
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                        ) { Text("اختيار") }
+                    }
+                }
+            }
+            if (draft.bellUri.isNotBlank()) {
+                item {
+                    TextButton(onClick = {
+                        val next = draft.copy(bellUri = "")
+                        draft = next
+                        commit(next)
+                    }) { Text("العودة للجرس المدمج") }
+                }
+            }
+
             item { SectionTitle("اختبار التنبيهات") }
             item { NotificationTestCard() }
         }

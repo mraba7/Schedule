@@ -33,7 +33,7 @@ import java.time.ZoneId
  */
 object PeriodNotifier {
 
-    private const val CH_BELL = "bells_school_v3"   // synthesised bell
+    private const val CH_BELL_BASE = "bells_v4"    // suffixed per chosen sound
     private const val CH_PLAIN = "bells_system_v3"  // device notification tone
     private const val CH_LIVE = "live_class_v1"     // silent, ongoing
 
@@ -245,7 +245,7 @@ object PeriodNotifier {
     /* ── notifications ──────────────────────────────────────── */
 
     private fun ring(context: Context, config: Config, title: String, body: String) {
-        val channel = if (config.schoolBell) CH_BELL else CH_PLAIN
+        val channel = if (config.schoolBell) bellChannelId(config) else CH_PLAIN
         val notification = NotificationCompat.Builder(context, channel)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(title)
@@ -297,15 +297,29 @@ object PeriodNotifier {
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
 
+    /**
+     * Android freezes a channel's sound when it is created and ignores every
+     * later change, so each distinct tone needs its own channel id.
+     */
+    private fun bellChannelId(config: Config): String =
+        CH_BELL_BASE + "_" + (if (config.bellUri.isBlank()) "builtin"
+        else Integer.toHexString(config.bellUri.hashCode()))
+
+    private fun bellSoundUri(context: Context, config: Config): Uri =
+        if (config.bellUri.isNotBlank()) Uri.parse(config.bellUri)
+        else Uri.parse(
+            "${ContentResolver.SCHEME_ANDROID_RESOURCE}://${context.packageName}/${R.raw.school_bell}"
+        )
+
     private fun ensureChannels(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
+        val config = ScheduleStore.load(context)
+        val channelId = bellChannelId(config)
 
-        if (manager.getNotificationChannel(CH_BELL) == null) {
-            val bellUri = Uri.parse(
-                "${ContentResolver.SCHEME_ANDROID_RESOURCE}://${context.packageName}/${R.raw.school_bell}"
-            )
+        if (manager.getNotificationChannel(channelId) == null) {
+            val bellUri = bellSoundUri(context, config)
             manager.createNotificationChannel(
-                NotificationChannel(CH_BELL, "جرس المدرسة", NotificationManager.IMPORTANCE_HIGH).apply {
+                NotificationChannel(channelId, "جرس المدرسة", NotificationManager.IMPORTANCE_HIGH).apply {
                     description = "صوت جرس عند بداية الحصة ونهايتها"
                     enableVibration(true)
                     setSound(

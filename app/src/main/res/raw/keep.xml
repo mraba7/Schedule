@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  R.raw.school_bell is compiled into an integer constant, so the resource
+  shrinker cannot see that anything references the file and strips it from
+  the release APK. The channel then points at a resource that no longer
+  exists and plays nothing. This pins it.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@raw/school_bell"
+    tools:shrinkMode="strict" />
