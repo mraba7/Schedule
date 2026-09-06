@@ -47,6 +47,7 @@ data class Config(
     val endAlert: Boolean = true,
     val speak: Boolean = false,
     val bellUri: String = "", // empty = the built-in bell
+    val voiceId: String = "", // empty = the engine default
     val liveUpdate: Boolean = true,
     val progress: Map<String, SectionProgress> = emptyMap(),
 ) {
@@ -246,6 +247,7 @@ object ScheduleStore {
             .put("endAlert", c.endAlert)
             .put("speak", c.speak)
             .put("bellUri", c.bellUri)
+            .put("voiceId", c.voiceId)
             .put("liveUpdate", c.liveUpdate)
             .put("progress", progress)
     }
@@ -313,6 +315,7 @@ object ScheduleStore {
             endAlert = json.optBoolean("endAlert", true),
             speak = json.optBoolean("speak", false),
             bellUri = json.optString("bellUri", ""),
+            voiceId = json.optString("voiceId", ""),
             liveUpdate = json.optBoolean("liveUpdate", true),
             progress = progress,
         )

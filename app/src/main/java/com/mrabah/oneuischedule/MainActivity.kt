@@ -39,6 +39,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -72,6 +73,7 @@ import com.mrabah.oneuischedule.data.ScheduleStore
 import com.mrabah.oneuischedule.data.SectionProgress
 import com.mrabah.oneuischedule.data.SlotState
 import com.mrabah.oneuischedule.notify.PeriodNotifier
+import com.mrabah.oneuischedule.notify.Speaker
 import com.mrabah.oneuischedule.widget.ScheduleUpdater
 import com.mrabah.oneuischedule.widget.updateEveryWidget
 import kotlinx.coroutines.launch
@@ -806,6 +808,17 @@ private fun ScheduleScreen(config: Config, commit: (Config) -> Unit) {
                 }
             }
 
+            if (draft.speak) {
+                item { SectionTitle("صوت النطق") }
+                item {
+                    VoicePicker(draft.voiceId) { id ->
+                        val next = draft.copy(voiceId = id)
+                        draft = next
+                        commit(next)
+                    }
+                }
+            }
+
             item { SectionTitle("اختبار التنبيهات") }
             item { NotificationTestCard() }
         }
@@ -1297,5 +1310,77 @@ private fun DiagnosticRow(label: String, ok: Boolean) {
             fontWeight = FontWeight.Bold,
             color = if (ok) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
         )
+    }
+}
+
+
+/**
+ * Android ships several Arabic voices, not one, and they differ enormously:
+ * the network ones are neural and close to human, the local ones older and
+ * flatter. Listing them with a preview is the only honest way to choose —
+ * quality cannot be judged from a name.
+ */
+@Composable
+private fun VoicePicker(selected: String, onSelect: (String) -> Unit) {
+    val context = LocalContext.current
+    var voices by remember { mutableStateOf<List<Speaker.VoiceOption>?>(null) }
+
+    LaunchedEffect(Unit) {
+        Speaker.voices(context) { voices = it }
+    }
+
+    Card(shape = RoundedCornerShape(20.dp)) {
+        Column(Modifier.padding(16.dp)) {
+            when {
+                voices == null -> Text("يبحث عن الأصوات المتاحة…", fontSize = 13.sp)
+
+                voices!!.isEmpty() -> Column {
+                    Text("لا يوجد صوت عربي مثبّت", fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.error)
+                    Text(
+                        "الإعدادات ← الإدارة العامة ← تحويل النص إلى كلام ← " +
+                            "ثبّت محرك Google ونزّل اللغة العربية",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                else -> Column {
+                    voices!!.take(8).forEach { voice ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                                .clickable { onSelect(voice.id) }
+                                .padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(
+                                selected = voice.id == selected,
+                                onClick = { onSelect(voice.id) },
+                            )
+                            Column(Modifier.weight(1f)) {
+                                Text(voice.label, fontSize = 13.sp)
+                                Text(
+                                    voice.id,
+                                    fontSize = 10.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            TextButton(onClick = {
+                                Speaker.say(
+                                    context,
+                                    "باقي خمس دقائق على نهاية الحصة الثانية",
+                                    voice.id,
+                                )
+                            }) { Text("استمع", fontSize = 12.sp) }
+                        }
+                    }
+                    Text(
+                        "أصوات الشبكة أقرب للصوت البشري لكنها تحتاج إنترنت لحظة النطق",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
     }
 }

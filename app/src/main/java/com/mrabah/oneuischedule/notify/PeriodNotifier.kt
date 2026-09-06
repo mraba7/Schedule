@@ -79,7 +79,7 @@ object PeriodNotifier {
             Preview.PRE -> ring(context, config, "بعد 5 دقائق · الحصة 2", sample)
             Preview.LIVE -> postLive(context, config, sample, 2, 0.45f, 22)
             Preview.SPEAK -> Speaker.say(
-                context, "باقي خمس دقائق على نهاية الحصة الثانية. $sample"
+                context, "باقي خمس دقائق على نهاية الحصة الثانية. $sample", config.voiceId
             )
         }
     }
@@ -169,7 +169,7 @@ object PeriodNotifier {
 
             title?.let { text ->
                 ring(context, config, text, body.orEmpty())
-                if (config.speak) Speaker.say(context, spoken(text, body.orEmpty()))
+                if (config.speak) Speaker.say(context, spoken(text, body.orEmpty()), config.voiceId)
             }
         }
 
