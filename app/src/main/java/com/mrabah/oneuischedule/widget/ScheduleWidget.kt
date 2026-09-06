@@ -2,14 +2,17 @@ package com.mrabah.oneuischedule.widget
 
 import android.app.AlarmManager
 import android.app.PendingIntent
+import android.app.WallpaperManager
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Build
 import android.text.format.DateFormat
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.ColorUtils
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
@@ -53,12 +56,69 @@ import java.time.chrono.HijrahDate
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle as JavaTextStyle
 import java.util.Locale
+import androidx.compose.ui.graphics.Color as ComposeColor
 
 /* ══════════════════════════════════════════════════════════════
- *  VIEW MODEL
- *  Every string is formatted here, outside composition, using the
- *  device's own timezone, locale and 12/24-hour setting. The
- *  composables below only place text — no formatting, no context.
+ *  PALETTE — read from the actual wallpaper
+ *
+ *  Material You is not used. The seed comes from Samsung's own
+ *  wallpaper colour extraction (WallpaperManager.getWallpaperColors),
+ *  the same source One UI's Colour palette feature reads, so the card
+ *  tracks the wallpaper even when the system palette is switched off.
+ * ══════════════════════════════════════════════════════════════ */
+
+private data class Palette(
+    val heroBg: Int,
+    val heroInk: Int,
+    val heroChip: Int,
+    val accent: Int,
+    val standbyBg: Int,
+    val standbyInk: Int,
+)
+
+private object Palettes {
+
+    fun of(context: Context): Palette {
+        val dark = (context.resources.configuration.uiMode and
+            Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+
+        val hsl = FloatArray(3)
+        val seed = seedColor(context)
+        if (seed != null) {
+            ColorUtils.colorToHSL(seed, hsl)
+        } else {
+            hsl[0] = 168f; hsl[1] = 0.40f; hsl[2] = 0.45f
+        }
+
+        val hue = hsl[0]
+        val sat = hsl[1].coerceIn(0.18f, 0.60f)
+
+        fun tone(s: Float, l: Float) = ColorUtils.HSLToColor(floatArrayOf(hue, s, l))
+
+        val heroInk = tone(sat * 0.9f, if (dark) 0.93f else 0.16f)
+        return Palette(
+            heroBg = tone(sat * 0.75f, if (dark) 0.20f else 0.88f),
+            heroInk = heroInk,
+            heroChip = ColorUtils.setAlphaComponent(heroInk, 0x24),
+            accent = tone(sat, if (dark) 0.70f else 0.40f),
+            standbyBg = tone(sat * 0.20f, if (dark) 0.18f else 0.90f),
+            standbyInk = tone(sat * 0.20f, if (dark) 0.85f else 0.28f),
+        )
+    }
+
+    private fun seedColor(context: Context): Int? = try {
+        WallpaperManager.getInstance(context)
+            .getWallpaperColors(WallpaperManager.FLAG_SYSTEM)
+            ?.primaryColor
+            ?.toArgb()
+    } catch (t: Throwable) {
+        null // no permission, live wallpaper, or nothing set
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+ *  VIEW MODEL — all formatting happens here, using the device's
+ *  timezone, locale and 12/24-hour setting.
  * ══════════════════════════════════════════════════════════════ */
 
 private data class RowVm(
@@ -70,8 +130,7 @@ private data class RowVm(
 
 private data class Vm(
     val dayName: String,
-    val gregorian: String,
-    val hijri: String,
+    val dateLine: String,
     val remaining: String,
     val hasFocus: Boolean,
     val emptyLabel: String,
@@ -79,46 +138,49 @@ private data class Vm(
     val periodLabel: String,
     val section: String,
     val subject: String,
-    val timeRange: String,
+    val startTime: String,
+    val endTime: String,
     val isStandby: Boolean,
     val showProgress: Boolean,
     val progress: Float,
     val rows: List<RowVm>,
+    val palette: Palette,
 )
 
 private object Vms {
 
     fun build(context: Context, ui: ScheduleUi): Vm {
         val locale = deviceLocale(context)
-        val use24h = DateFormat.is24HourFormat(context)
-        val clock = DateTimeFormatter.ofPattern(if (use24h) "HH:mm" else "h:mm", locale)
+        val clock = DateTimeFormatter.ofPattern(
+            if (DateFormat.is24HourFormat(context)) "HH:mm" else "h:mm", locale
+        )
 
-        fun t(time: LocalTime) = time.format(clock)
+        fun t(time: LocalTime) = ltr(time.format(clock))
 
         val slot = ui.focus
         val live = ui.live != null
-
-        val status = when {
-            slot == null -> ""
-            live -> "الآن · باقي ${ui.minutesLeftInLive} دقيقة"
-            ui.isAssembly -> "بعد الطابور"
-            !ui.isToday -> "أول حصة"
-            ui.minutesUntilNext != null -> "تبدأ بعد ${ui.minutesUntilNext} دقيقة"
-            else -> "الحصة القادمة"
-        }
+        val hijri = hijri(ui.date, locale)
+        val greg = ui.date.format(DateTimeFormatter.ofPattern("d MMMM", locale))
 
         return Vm(
             dayName = ui.dayOfWeek.getDisplayName(JavaTextStyle.FULL, locale),
-            gregorian = ui.date.format(DateTimeFormatter.ofPattern("d MMMM", locale)),
-            hijri = hijri(ui.date, locale),
+            dateLine = if (hijri.isEmpty()) greg else "$hijri  ·  $greg",
             remaining = if (ui.remaining > 0) "${ui.remaining} حصص متبقية" else "",
             hasFocus = slot != null,
             emptyLabel = if (ui.isToday) "انتهى نصابك اليوم" else "إجازة",
-            status = status,
+            status = when {
+                slot == null -> ""
+                live -> "باقي ${ui.minutesLeftInLive} دقيقة"
+                ui.isAssembly -> "بعد الطابور"
+                !ui.isToday -> "أول حصة"
+                ui.minutesUntilNext != null -> "تبدأ بعد ${ui.minutesUntilNext} دقيقة"
+                else -> "القادمة"
+            },
             periodLabel = if (slot != null) "الحصة ${slot.period}" else "",
             section = slot?.section ?: "انتظار",
             subject = slot?.subject ?: "لا يوجد فصل",
-            timeRange = if (slot != null) ltr(t(slot.bell.start) + " – " + t(slot.bell.end)) else "",
+            startTime = if (slot != null) t(slot.bell.start) else "",
+            endTime = if (slot != null) "حتى " + t(slot.bell.end) else "",
             isStandby = slot?.isStandby ?: false,
             showProgress = live,
             progress = ui.progress,
@@ -127,23 +189,23 @@ private object Vms {
                 .map {
                     RowVm(
                         period = "${it.period}",
-                        time = ltr(t(it.bell.start)),
+                        time = t(it.bell.start),
                         label = it.section ?: "انتظار",
                         done = it.state == SlotState.DONE,
                     )
                 },
+            palette = Palettes.of(context),
         )
     }
-
-    /** Wraps text in a bidi isolate so RTL layout can't reorder a time range. */
-    private fun ltr(text: String): String = "\u2066" + text + "\u2069"
 
     private fun deviceLocale(context: Context): Locale {
         val locales = context.resources.configuration.locales
         return if (locales.isEmpty) Locale.getDefault() else locales[0]
     }
 
-    /** Umm al-Qura date, the calendar One UI shows alongside the Gregorian one. */
+    /** Bidi isolate: stops RTL layout reordering digits around a dash. */
+    private fun ltr(text: String) = "\u2066" + text + "\u2069"
+
     private fun hijri(date: java.time.LocalDate, locale: Locale): String = try {
         DateTimeFormatter.ofPattern("d MMMM", locale).format(HijrahDate.from(date))
     } catch (t: Throwable) {
@@ -160,6 +222,8 @@ private val Ink = ColorProvider(R.color.widget_ink)
 private val RowBg = ColorProvider(R.color.widget_row)
 private val Track = ColorProvider(R.color.widget_progress_track)
 
+private fun provider(argb: Int) = ColorProvider(ComposeColor(argb))
+
 private val Compact = DpSize(260.dp, 120.dp)
 private val Medium = DpSize(260.dp, 200.dp)
 private val Large = DpSize(300.dp, 300.dp)
@@ -169,7 +233,6 @@ class ScheduleWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Responsive(setOf(Compact, Medium, Large))
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        // Device timezone, not a hardcoded one.
         val ui = ScheduleEngine.build(LocalDateTime.now(ZoneId.systemDefault()))
         val vm = Vms.build(context, ui)
         provideContent {
@@ -197,7 +260,7 @@ private fun WidgetRoot(vm: Vm) {
         if (height >= Medium.height && vm.rows.isNotEmpty()) {
             Spacer(GlanceModifier.height(10.dp))
             vm.rows.forEach { row ->
-                SlotRow(row)
+                SlotRow(row, vm.palette)
                 Spacer(GlanceModifier.height(6.dp))
             }
         }
@@ -216,7 +279,7 @@ private fun Header(vm: Vm) {
                 style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Ink),
             )
             Text(
-                text = if (vm.hijri.isEmpty()) vm.gregorian else vm.hijri + "  ·  " + vm.gregorian,
+                text = vm.dateLine,
                 style = TextStyle(fontSize = 11.sp, color = Muted),
             )
         }
@@ -230,13 +293,15 @@ private fun Header(vm: Vm) {
 
 @Composable
 private fun Hero(vm: Vm) {
+    val p = vm.palette
+
     if (!vm.hasFocus) {
         Column(
             modifier = GlanceModifier
                 .fillMaxWidth()
                 .background(RowBg)
                 .cornerRadius(24.dp)
-                .padding(16.dp)
+                .padding(18.dp)
         ) {
             Text(
                 text = vm.emptyLabel,
@@ -246,95 +311,115 @@ private fun Hero(vm: Vm) {
         return
     }
 
-    val onHero =
-        if (vm.isStandby) GlanceTheme.colors.onSurfaceVariant
-        else GlanceTheme.colors.onPrimaryContainer
+    val ink = provider(if (vm.isStandby) p.standbyInk else p.heroInk)
+    val bg = provider(if (vm.isStandby) p.standbyBg else p.heroBg)
 
     Column(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .background(
-                if (vm.isStandby) GlanceTheme.colors.surfaceVariant
-                else GlanceTheme.colors.primaryContainer
-            )
+            .background(bg)
             .cornerRadius(24.dp)
             .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
-        Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
+        // period badge on one edge, live status on the other
+        Row(
+            modifier = GlanceModifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Vertical.CenterVertically,
+        ) {
             Text(
                 text = vm.periodLabel,
-                style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = onHero),
+                style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ink),
+                modifier = GlanceModifier
+                    .background(provider(p.heroChip))
+                    .cornerRadius(9.dp)
+                    .padding(horizontal = 9.dp, vertical = 3.dp),
             )
-            Spacer(GlanceModifier.width(8.dp))
+            Spacer(GlanceModifier.defaultWeight())
             Text(
                 text = vm.status,
-                style = TextStyle(fontSize = 12.sp, color = onHero),
+                style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Medium, color = ink),
             )
-            Spacer(GlanceModifier.defaultWeight())
         }
 
-        Spacer(GlanceModifier.height(8.dp))
+        Spacer(GlanceModifier.height(12.dp))
 
-        Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
-            Text(
-                text = vm.section,
-                style = TextStyle(
-                    fontSize = if (vm.isStandby) 24.sp else 36.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = onHero,
-                ),
-            )
-            Spacer(GlanceModifier.defaultWeight())
-            Column(horizontalAlignment = Alignment.Horizontal.End) {
+        // section anchors one edge, the time block the other — the row is full width
+        Row(
+            modifier = GlanceModifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Vertical.CenterVertically,
+        ) {
+            Column {
                 Text(
-                    text = vm.timeRange,
-                    style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Medium, color = onHero),
+                    text = vm.section,
+                    style = TextStyle(
+                        fontSize = if (vm.isStandby) 26.sp else 38.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = ink,
+                    ),
                 )
                 Text(
                     text = vm.subject,
-                    style = TextStyle(fontSize = 12.sp, color = onHero),
+                    style = TextStyle(fontSize = 12.sp, color = ink),
+                )
+            }
+            Spacer(GlanceModifier.defaultWeight())
+            Column(horizontalAlignment = Alignment.Horizontal.End) {
+                Text(
+                    text = vm.startTime,
+                    style = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.Bold, color = ink),
+                )
+                Text(
+                    text = vm.endTime,
+                    style = TextStyle(fontSize = 12.sp, color = ink),
                 )
             }
         }
 
         if (vm.showProgress) {
-            Spacer(GlanceModifier.height(12.dp))
+            Spacer(GlanceModifier.height(14.dp))
             LinearProgressIndicator(
                 progress = vm.progress,
                 modifier = GlanceModifier.fillMaxWidth().height(4.dp),
-                color = GlanceTheme.colors.primary,
-                backgroundColor = Track,
+                color = provider(p.accent),
+                backgroundColor = provider(p.heroChip),
             )
         }
     }
 }
 
 @Composable
-private fun SlotRow(row: RowVm) {
+private fun SlotRow(row: RowVm, p: Palette) {
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
             .background(if (row.done) Track else RowBg)
             .cornerRadius(18.dp)
-            .padding(horizontal = 14.dp, vertical = 9.dp),
+            .padding(horizontal = 12.dp, vertical = 9.dp),
         verticalAlignment = Alignment.Vertical.CenterVertically,
     ) {
         Text(
             text = row.period,
-            style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Muted),
-            modifier = GlanceModifier.width(22.dp),
+            style = TextStyle(
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (row.done) Muted else provider(p.accent),
+            ),
+            modifier = GlanceModifier
+                .background(if (row.done) Track else provider(p.heroChip))
+                .cornerRadius(8.dp)
+                .padding(horizontal = 8.dp, vertical = 2.dp),
         )
+        Spacer(GlanceModifier.width(10.dp))
         Text(
             text = row.time,
             style = TextStyle(fontSize = 13.sp, color = Muted),
-            modifier = GlanceModifier.width(64.dp),
         )
         Spacer(GlanceModifier.defaultWeight())
         Text(
             text = row.label,
             style = TextStyle(
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Medium,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
                 color = if (row.done) Muted else Ink,
             ),
         )
@@ -355,7 +440,9 @@ class ScheduleWidgetReceiver : GlanceAppWidgetReceiver() {
             ACTION_TICK,
             Intent.ACTION_BOOT_COMPLETED,
             Intent.ACTION_TIME_CHANGED,
-            Intent.ACTION_TIMEZONE_CHANGED -> refresh(context)
+            Intent.ACTION_TIMEZONE_CHANGED,
+            Intent.ACTION_WALLPAPER_CHANGED,
+            Intent.ACTION_CONFIGURATION_CHANGED -> refresh(context)
         }
     }
 
