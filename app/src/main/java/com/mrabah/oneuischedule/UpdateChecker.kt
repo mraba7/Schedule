@@ -30,20 +30,37 @@ object UpdateChecker {
         val size: Long,
     )
 
+    /** Why a check failed, in words the user can act on. */
+    var lastError: String = ""
+        private set
+
     suspend fun check(context: Context): Result? = withContext(Dispatchers.IO) {
         try {
             val connection = (URL(LATEST).openConnection() as HttpURLConnection).apply {
-                connectTimeout = 6000
-                readTimeout = 6000
+                connectTimeout = 12000
+                readTimeout = 12000
                 setRequestProperty("Accept", "application/vnd.github+json")
+                // GitHub rejects API calls with no User-Agent
+                setRequestProperty("User-Agent", "ClassSchedule/" + BuildConfig.VERSION_NAME)
             }
+
+            val code = connection.responseCode
+            if (code != 200) {
+                lastError = "الخادم ردّ بالرمز $code"
+                connection.disconnect()
+                return@withContext null
+            }
+
             val body = connection.inputStream.bufferedReader().use { it.readText() }
             connection.disconnect()
 
             val json = JSONObject(body)
             val tag = json.optString("tag_name").removePrefix("v")
             val page = json.optString("html_url")
-            if (tag.isBlank()) return@withContext null
+            if (tag.isBlank()) {
+                lastError = "لا يوجد إصدار منشور بعد"
+                return@withContext null
+            }
 
             val assets = json.optJSONArray("assets")
             var apk: String? = null
@@ -67,7 +84,13 @@ object UpdateChecker {
                 size = size,
             )
         } catch (t: Throwable) {
-            null // offline, rate limited, no release yet — all the same to the user
+            lastError = when (t) {
+                is java.net.UnknownHostException -> "لا يوجد اتصال بالإنترنت"
+                is java.net.SocketTimeoutException -> "انتهت مهلة الاتصال"
+                is javax.net.ssl.SSLException -> "فشل الاتصال الآمن — قد تكون الشبكة تحجب GitHub"
+                else -> t.javaClass.simpleName
+            }
+            null
         }
     }
 

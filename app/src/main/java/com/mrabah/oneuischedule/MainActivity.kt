@@ -220,13 +220,14 @@ private fun TodayScreen(config: Config, commit: (Config) -> Unit) {
                             Text(
                                 when {
                                     checking -> "يبحث عن تحديث…"
-                                    checkFailed -> "تعذّر الوصول إلى الخادم"
+                                    checkFailed -> UpdateChecker.lastError.ifBlank { "تعذّر الفحص" }
                                     else -> "أنت على أحدث نسخة"
                                 },
                                 fontSize = 14.sp,
                             )
                             Text(
-                                "النسخة ${BuildConfig.VERSION_NAME}",
+                                if (checkFailed) "النسخة ${BuildConfig.VERSION_NAME} · جرّب بيانات الجوال"
+                                else "النسخة ${BuildConfig.VERSION_NAME}",
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
