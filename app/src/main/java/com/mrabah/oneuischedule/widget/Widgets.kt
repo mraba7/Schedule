@@ -87,7 +87,7 @@ private fun upcoming(config: Config, now: LocalDateTime, count: Int): List<Upcom
     var date = now.toLocalDate()
     var guard = 0
     while (out.size < count && guard++ < 10) {
-        config.dutiesOn(date.dayOfWeek).toSortedMap().forEach { (period, duty) ->
+        ScheduleEngine.dutiesOn(config, date).toSortedMap().forEach { (period, duty) ->
             val bell = config.bells.firstOrNull { it.period == period } ?: return@forEach
             val at = date.atTime(bell.start)
             if (at.isAfter(now) && out.size < count) {
@@ -272,7 +272,7 @@ class WeekGridWidget : GlanceAppWidget() {
                                 ),
                                 modifier = GlanceModifier.width(38.dp),
                             )
-                            val duties = config.dutiesOn(day)
+                            val duties = config.templateOn(day)
                             (1..7).forEach { period ->
                                 val duty = duties[period]
                                 val section = (duty as? Duty.Teach)?.section
@@ -478,7 +478,7 @@ class SyllabusWidget : GlanceAppWidget() {
                     )
                     Spacer(GlanceModifier.height(10.dp))
                     Row(modifier = GlanceModifier.fillMaxWidth()) {
-                        Defaults.SECTIONS.forEach { section ->
+                        config.sections.take(5).forEach { section ->
                             val taught = config.progress[section]?.taught ?: 0
                             val behind = lead - taught
                             val color = Sections.color(section, g.light)

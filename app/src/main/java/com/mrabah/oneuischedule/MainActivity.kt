@@ -1,6 +1,7 @@
 package com.mrabah.oneuischedule
 
 import android.Manifest
+import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Context
 import android.os.Build
@@ -29,22 +30,24 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Typography
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Typography
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -56,31 +59,32 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.glance.appwidget.updateAll
 import com.mrabah.oneuischedule.data.Bell
 import com.mrabah.oneuischedule.data.Config
 import com.mrabah.oneuischedule.data.Defaults
 import com.mrabah.oneuischedule.data.Duty
+import com.mrabah.oneuischedule.data.Holiday
+import com.mrabah.oneuischedule.data.ScheduleEngine
 import com.mrabah.oneuischedule.data.ScheduleStore
 import com.mrabah.oneuischedule.data.SectionProgress
+import com.mrabah.oneuischedule.data.SlotState
 import com.mrabah.oneuischedule.notify.PeriodNotifier
 import com.mrabah.oneuischedule.widget.ScheduleUpdater
 import com.mrabah.oneuischedule.widget.updateEveryWidget
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
-import java.time.temporal.ChronoUnit
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle as JavaTextStyle
+import java.time.temporal.ChronoUnit
 import java.util.Locale
 
 /**
- * IBM Plex Sans Arabic: open licence, four weights, and — the reason it was
- * chosen over the geometric alternatives — Arabic and Latin drawn as one
- * family, so "الحصة 2" and "8:05" share a baseline and a colour of text.
- *
- * The widget cannot use this. App widgets are drawn by the launcher's process,
- * which only reaches system fonts, so it keeps inheriting One UI Sans.
+ * IBM Plex Sans Arabic: Arabic and Latin drawn as one family, so "الحصة 2"
+ * and "8:05" share a baseline. The widget cannot use it — the launcher's
+ * process only reaches system fonts.
  */
 private val PlexArabic = FontFamily(
     Font(R.font.plex_arabic_regular, FontWeight.Normal),
@@ -107,17 +111,7 @@ private fun typographyOf(base: Typography) = Typography(
     labelSmall = base.labelSmall.copy(fontFamily = PlexArabic),
 )
 
-private val DAYS = listOf(
-    DayOfWeek.SUNDAY, DayOfWeek.MONDAY, DayOfWeek.TUESDAY,
-    DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY,
-)
-
-/** Tapping a cell walks this list, so no dropdown is needed on a phone. */
-private val CYCLE = listOf<Duty?>(
-    null,
-    Duty.Teach("2/1"), Duty.Teach("2/2"), Duty.Teach("2/3"), Duty.Teach("2/4"),
-    Duty.Standby,
-)
+private val CANCELLED = "CANCELLED"
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -126,69 +120,83 @@ class MainActivity : ComponentActivity() {
             val context = LocalContext.current
             val scheme = if (isSystemInDarkTheme()) dynamicDarkColorScheme(context)
             else dynamicLightColorScheme(context)
-            MaterialTheme(
-                colorScheme = scheme,
-                typography = typographyOf(MaterialTheme.typography),
-            ) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background,
-                ) {
-                    EditorScreen()
-                }
+            MaterialTheme(colorScheme = scheme, typography = typographyOf(MaterialTheme.typography)) {
+                AppShell()
             }
         }
     }
 }
 
+/* ══════════════════════════════════════════════════════════════
+ *  SHELL — the app opens on the day, not on a settings form
+ * ══════════════════════════════════════════════════════════════ */
+
 @Composable
-private fun EditorScreen() {
+private fun AppShell() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    var tab by remember { mutableStateOf(0) }
     var config by remember { mutableStateOf(ScheduleStore.load(context)) }
-    var saved by remember { mutableStateOf(false) }
-    var problem by remember { mutableStateOf<String?>(null) }
+
+    fun commit(next: Config) {
+        config = next
+        ScheduleStore.save(context, next)
+        PeriodNotifier.sync(context)
+        ScheduleUpdater.schedule(context)
+        scope.launch { updateEveryWidget(context) }
+    }
+
+    Scaffold(
+        bottomBar = {
+            NavigationBar {
+                listOf("اليوم", "الجدول", "المنهج").forEachIndexed { index, label ->
+                    NavigationBarItem(
+                        selected = tab == index,
+                        onClick = { tab = index },
+                        icon = {},
+                        label = { Text(label, fontSize = 13.sp) },
+                    )
+                }
+            }
+        }
+    ) { padding ->
+        Box(Modifier.padding(padding)) {
+            when (tab) {
+                0 -> TodayScreen(config, ::commit)
+                1 -> ScheduleScreen(config, ::commit)
+                else -> SyllabusScreen(config, ::commit)
+            }
+        }
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+ *  1. TODAY
+ * ══════════════════════════════════════════════════════════════ */
+
+@Composable
+private fun TodayScreen(config: Config, commit: (Config) -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val locale = Locale.getDefault()
+    val clock = DateTimeFormatter.ofPattern("h:mm", locale)
+    val now = LocalDateTime.now()
+    val ui = ScheduleEngine.build(config, now)
+
     var update by remember { mutableStateOf<UpdateChecker.Result?>(null) }
     var downloading by remember { mutableStateOf(false) }
-    var downloadProgress by remember { mutableStateOf(0f) }
-    var downloadFailed by remember { mutableStateOf(false) }
+    var progress by remember { mutableStateOf(0f) }
+    var failed by remember { mutableStateOf(false) }
     val uriHandler = LocalUriHandler.current
 
-    LaunchedEffect(Unit) {
-        update = UpdateChecker.check(context)?.takeIf { it.newer }
-    }
+    LaunchedEffect(Unit) { update = UpdateChecker.check(context)?.takeIf { it.newer } }
 
-    val askNotifications = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        config = config.copy(notify = granted)
-    }
-
-    fun apply(next: Config) {
-        config = next
-        saved = false
-    }
+    var editing by remember { mutableStateOf<Int?>(null) }
 
     LazyColumn(
         contentPadding = PaddingValues(20.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item {
-            Column {
-                Text(
-                    "جدول الحصص",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                Text(
-                    "عدّل الأوقات والفصول، ثم احفظ — الودجت يتحدّث فورًا",
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-
         update?.let { found ->
             item {
                 Card(
@@ -197,96 +205,342 @@ private fun EditorScreen() {
                         containerColor = MaterialTheme.colorScheme.primaryContainer
                     ),
                 ) {
-                  Column {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(Modifier.weight(1f)) {
-                            Text("توجد نسخة أحدث: ${found.version}", fontSize = 15.sp)
-                            Text(
-                                "الحالية ${BuildConfig.VERSION_NAME}",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text("توجد نسخة أحدث: ${found.version}", fontSize = 15.sp)
+                                Text(
+                                    "الحالية ${BuildConfig.VERSION_NAME}",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            when {
+                                downloading -> Text(
+                                    "${(progress * 100).toInt()}%",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                )
+
+                                found.apkUrl == null -> Button(
+                                    onClick = { uriHandler.openUri(found.page) },
+                                    shape = RoundedCornerShape(16.dp),
+                                ) { Text("فتح الصفحة") }
+
+                                else -> Button(
+                                    onClick = {
+                                        if (!Updater.canInstall(context)) {
+                                            Updater.requestPermission(context)
+                                            return@Button
+                                        }
+                                        failed = false
+                                        downloading = true
+                                        progress = 0f
+                                        scope.launch {
+                                            val file = Updater.download(
+                                                context, found.apkUrl, found.size
+                                            ) { progress = it }
+                                            downloading = false
+                                            if (file != null) Updater.install(context, file)
+                                            else failed = true
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(16.dp),
+                                ) { Text("تحديث الآن") }
+                            }
+                        }
+                        if (downloading) {
+                            LinearProgressIndicator(
+                                progress = { progress },
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(horizontal = 16.dp).padding(bottom = 14.dp),
                             )
                         }
-                        when {
-                            downloading -> Text(
-                                "${(downloadProgress * 100).toInt()}%",
-                                fontSize = 15.sp,
+                        if (failed) {
+                            Text(
+                                "تعذّر التنزيل — افتح الصفحة يدويًا",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 14.dp),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        item {
+            Column {
+                Text(
+                    ui.dayOfWeek.getDisplayName(JavaTextStyle.FULL, locale) +
+                        if (ui.isToday) "" else " · القادم",
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    ui.date.format(DateTimeFormatter.ofPattern("d MMMM yyyy", locale)),
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        ui.holiday?.let { holiday ->
+            item {
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    ),
+                ) {
+                    Column(Modifier.padding(18.dp)) {
+                        Text(holiday.label, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            "${holiday.from} إلى ${holiday.to}",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
+
+        ui.focus?.let { slot ->
+            item {
+                Card(
+                    shape = RoundedCornerShape(26.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    ),
+                ) {
+                    Column(Modifier.padding(20.dp)) {
+                        Text(
+                            if (ui.live != null) "الآن · باقي ${ui.minutesLeftInLive} دقيقة"
+                            else "القادمة · الحصة ${slot.period}",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                slot.section ?: "انتظار",
+                                fontSize = 44.sp,
                                 fontWeight = FontWeight.Bold,
                             )
-
-                            found.apkUrl == null -> Button(
-                                onClick = { uriHandler.openUri(found.page) },
-                                shape = RoundedCornerShape(16.dp),
-                            ) { Text("فتح الصفحة") }
-
-                            else -> Button(
-                                onClick = {
-                                    if (!Updater.canInstall(context)) {
-                                        Updater.requestPermission(context)
-                                        return@Button
-                                    }
-                                    downloadFailed = false
-                                    downloading = true
-                                    downloadProgress = 0f
-                                    scope.launch {
-                                        val file = Updater.download(
-                                            context, found.apkUrl, found.size
-                                        ) { downloadProgress = it }
-                                        downloading = false
-                                        if (file != null) Updater.install(context, file)
-                                        else downloadFailed = true
-                                    }
-                                },
-                                shape = RoundedCornerShape(16.dp),
-                            ) { Text("تحديث الآن") }
+                            Spacer(Modifier.weight(1f))
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(slot.bell.start.format(clock), fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                                Text("حتى ${slot.bell.end.format(clock)}", fontSize = 12.sp)
+                            }
+                        }
+                        if (slot.note.isNotBlank()) {
+                            Spacer(Modifier.height(8.dp))
+                            Text(slot.note, fontSize = 14.sp)
+                        }
+                        if (ui.live != null) {
+                            Spacer(Modifier.height(12.dp))
+                            LinearProgressIndicator(
+                                progress = { ui.progress },
+                                modifier = Modifier.fillMaxWidth(),
+                            )
                         }
                     }
-                    if (downloading) {
-                        LinearProgressIndicator(
-                            progress = { downloadProgress },
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 14.dp),
-                        )
+                }
+            }
+        }
+
+        items@ for (slot in ui.slots) {
+            item(key = "slot-${slot.period}") {
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (slot.state == SlotState.DONE)
+                            MaterialTheme.colorScheme.surfaceContainerLow
+                        else MaterialTheme.colorScheme.surfaceContainerHigh
+                    ),
+                ) {
+                    Column(
+                        Modifier.fillMaxWidth().clickable { editing = slot.period }.padding(16.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                "${slot.period}",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.width(24.dp),
+                            )
+                            Text(
+                                "${slot.bell.start.format(clock)} – ${slot.bell.end.format(clock)}",
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(Modifier.weight(1f))
+                            if (slot.overridden) {
+                                Text("معدّلة اليوم", fontSize = 10.sp, color = MaterialTheme.colorScheme.primary)
+                                Spacer(Modifier.width(8.dp))
+                            }
+                            Text(
+                                slot.section ?: "انتظار",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                        if (slot.note.isNotBlank()) {
+                            Text(
+                                slot.note,
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 4.dp),
+                            )
+                        }
                     }
-                    if (downloadFailed) {
-                        Text(
-                            "تعذّر التنزيل — تأكد من الاتصال أو افتح الصفحة يدويًا",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 14.dp),
-                        )
+                }
+            }
+        }
+
+        item {
+            Text(
+                "اضغط أي حصة لتعديلها اليوم فقط أو لإضافة ملاحظة",
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+
+    editing?.let { period ->
+        DayEditDialog(
+            config = config,
+            date = ui.date,
+            period = period,
+            onDismiss = { editing = null },
+            onApply = { next -> commit(next); editing = null },
+        )
+    }
+}
+
+/** One-day change plus a recurring note, in a single sheet. */
+@Composable
+private fun DayEditDialog(
+    config: Config,
+    date: LocalDate,
+    period: Int,
+    onDismiss: () -> Unit,
+    onApply: (Config) -> Unit,
+) {
+    val key = "$date#$period"
+    val noteKey = "${date.dayOfWeek.name}#$period"
+    var note by remember { mutableStateOf(config.notes[noteKey].orEmpty()) }
+
+    val options = buildList {
+        add(null to "ملغاة اليوم")
+        add(Duty.Standby as Duty? to "انتظار")
+        config.sections.forEach { add(Duty.Teach(it) as Duty? to it) }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("الحصة $period · ${date}") },
+        text = {
+            Column {
+                Text("تبديل لهذا اليوم فقط", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(6.dp))
+                options.chunked(3).forEach { rowItems ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        rowItems.forEach { (duty, label) ->
+                            OutlinedButton(
+                                onClick = {
+                                    onApply(config.copy(overrides = config.overrides + (key to duty)))
+                                },
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier.weight(1f),
+                            ) { Text(label, fontSize = 11.sp) }
+                        }
                     }
-                  }
                 }
+                Spacer(Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = note,
+                    onValueChange = { note = it },
+                    label = { Text("ملاحظة تتكرر كل أسبوع") },
+                    singleLine = true,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onApply(config.copy(notes = config.notes + (noteKey to note.trim())))
+            }) { Text("حفظ الملاحظة") }
+        },
+        dismissButton = {
+            TextButton(onClick = {
+                onApply(config.copy(overrides = config.overrides - key))
+            }) { Text("إلغاء التبديل") }
+        },
+    )
+}
+
+/* ══════════════════════════════════════════════════════════════
+ *  2. SCHEDULE — bells, week, sections, timetables, holidays
+ * ══════════════════════════════════════════════════════════════ */
+
+@Composable
+private fun ScheduleScreen(config: Config, commit: (Config) -> Unit) {
+    val context = LocalContext.current
+    var draft by remember(config) { mutableStateOf(config) }
+    var problem by remember { mutableStateOf<String?>(null) }
+    var saved by remember { mutableStateOf(false) }
+    var addingSection by remember { mutableStateOf(false) }
+    var addingHoliday by remember { mutableStateOf(false) }
+
+    val askNotifications = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted -> draft = draft.copy(notify = granted); saved = false }
+
+    val exportFile = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        uri?.let {
+            context.contentResolver.openOutputStream(it)?.use { out ->
+                out.write(ScheduleStore.exportJson(draft).toByteArray())
             }
         }
+    }
 
-        item { SectionTitle("أوقات الحصص") }
-
-        items@ for (bell in config.bells) {
-            item(key = "bell-${bell.period}") {
-                BellRow(bell) { updated ->
-                    apply(config.copy(bells = config.bells.map { if (it.period == updated.period) updated else it }))
-                }
+    val importFile = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            val text = context.contentResolver.openInputStream(it)
+                ?.bufferedReader()?.use { r -> r.readText() }
+            val loaded = text?.let { t -> ScheduleStore.importJson(t) }
+            if (loaded != null) {
+                draft = loaded
+                commit(loaded)
+            } else {
+                problem = "الملف غير صالح"
             }
         }
+    }
 
-        item { SectionTitle("الجدول الأسبوعي") }
+    fun edit(next: Config) {
+        draft = next
+        saved = false
+    }
 
-        for (day in DAYS) {
-            item(key = "day-${day.name}") {
-                DayCard(day, config) { period, duty ->
-                    val duties = config.dutiesOn(day).toMutableMap()
-                    if (duty == null) duties.remove(period) else duties[period] = duty
-                    apply(config.copy(week = config.week + (day to duties)))
-                }
-            }
-        }
+    LazyColumn(
+        contentPadding = PaddingValues(20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item { Header("الجدول", "عدّل ثم احفظ — الودجتات تتحدّث فورًا") }
 
-        item { SectionTitle("التنبيهات") }
-
+        item { SectionTitle("التوقيت النشط") }
         item {
             Card(shape = RoundedCornerShape(20.dp)) {
                 Row(
@@ -294,78 +548,161 @@ private fun EditorScreen() {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {
-                        Text("تنبيه صوتي عند بداية الحصة ونهايتها", fontSize = 15.sp)
+                        Text("التوقيت ${draft.activeTimetable}", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         Text(
-                            "يعتمد على نغمة الإشعارات في جهازك",
+                            "الآخر محفوظ كما هو",
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    Switch(
-                        checked = config.notify,
-                        onCheckedChange = { want ->
-                            if (want && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
-                            } else {
-                                apply(config.copy(notify = want))
-                            }
+                    OutlinedButton(
+                        onClick = {
+                            edit(
+                                draft.copy(
+                                    bells = draft.altBells,
+                                    altBells = draft.bells,
+                                    activeTimetable = if (draft.activeTimetable == Defaults.SUMMER)
+                                        Defaults.WINTER else Defaults.SUMMER,
+                                )
+                            )
                         },
+                        shape = RoundedCornerShape(16.dp),
+                    ) { Text("تبديل") }
+                }
+            }
+        }
+
+        item { SectionTitle("أوقات الحصص") }
+        for (bell in draft.bells) {
+            item(key = "bell-${bell.period}") {
+                BellRow(bell) { updated ->
+                    edit(draft.copy(bells = draft.bells.map { if (it.period == updated.period) updated else it }))
+                }
+            }
+        }
+
+        item { SectionTitle("الشعب والمادة") }
+        item {
+            Card(shape = RoundedCornerShape(20.dp)) {
+                Column(Modifier.padding(16.dp)) {
+                    OutlinedTextField(
+                        value = draft.subject,
+                        onValueChange = { edit(draft.copy(subject = it)) },
+                        label = { Text("اسم المادة") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        draft.sections.take(5).forEach { section ->
+                            OutlinedButton(
+                                onClick = {
+                                    edit(draft.copy(sections = draft.sections - section))
+                                },
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier.weight(1f),
+                            ) { Text(section, fontSize = 11.sp) }
+                        }
+                    }
+                    TextButton(onClick = { addingSection = true }) { Text("إضافة شعبة") }
+                    Text(
+                        "اضغط شعبة لحذفها",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
         }
 
-        if (config.notify) {
-            item {
-                Card(shape = RoundedCornerShape(20.dp)) {
-                    Column(Modifier.padding(vertical = 4.dp)) {
-                        OptionRow(
-                            title = "صوت جرس المدرسة",
-                            subtitle = "بدل نغمة الإشعارات المعتادة",
-                            checked = config.schoolBell,
-                        ) { apply(config.copy(schoolBell = it)) }
-                        OptionRow(
-                            title = "تنبيه قبل الحصة بخمس دقائق",
-                            subtitle = "مع اسم الدرس القادم لتلك الشعبة",
-                            checked = config.preAlert,
-                        ) { apply(config.copy(preAlert = it)) }
-                        OptionRow(
-                            title = "إشعار الحصة الجارية",
-                            subtitle = "شريط تقدّم مستمر يتحدّث كل دقيقة",
-                            checked = config.liveUpdate,
-                        ) { apply(config.copy(liveUpdate = it)) }
+        item { SectionTitle("الجدول الأسبوعي") }
+        for (day in ScheduleStore.DAYS) {
+            item(key = "day-${day.name}") {
+                DayCard(day, draft) { period, duty ->
+                    val duties = draft.templateOn(day).toMutableMap()
+                    if (duty == null) duties.remove(period) else duties[period] = duty
+                    edit(draft.copy(week = draft.week + (day to duties)))
+                }
+            }
+        }
+
+        item { SectionTitle("الإجازات") }
+        draft.holidays.forEach { holiday ->
+            item(key = "hol-${holiday.from}") {
+                Card(shape = RoundedCornerShape(18.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(holiday.label, fontSize = 15.sp)
+                            Text(
+                                "${holiday.from} – ${holiday.to}",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        TextButton(onClick = {
+                            edit(draft.copy(holidays = draft.holidays - holiday))
+                        }) { Text("حذف") }
+                    }
+                }
+            }
+        }
+        item {
+            OutlinedButton(
+                onClick = { addingHoliday = true },
+                shape = RoundedCornerShape(16.dp),
+            ) { Text("إضافة إجازة") }
+        }
+
+        item { SectionTitle("التنبيهات") }
+        item {
+            Card(shape = RoundedCornerShape(20.dp)) {
+                Column(Modifier.padding(vertical = 4.dp)) {
+                    OptionRow("تنبيه صوتي عند الحصص", "بداية كل حصة ونهايتها", draft.notify) { want ->
+                        if (want && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        } else {
+                            edit(draft.copy(notify = want))
+                        }
+                    }
+                    if (draft.notify) {
+                        OptionRow("صوت جرس المدرسة", "بدل نغمة الإشعارات", draft.schoolBell) {
+                            edit(draft.copy(schoolBell = it))
+                        }
+                        OptionRow("تنبيه قبل الحصة بخمس دقائق", "مع الدرس القادم", draft.preAlert) {
+                            edit(draft.copy(preAlert = it))
+                        }
+                        OptionRow("إشعار الحصة الجارية", "شريط تقدّم مستمر", draft.liveUpdate) {
+                            edit(draft.copy(liveUpdate = it))
+                        }
                     }
                 }
             }
         }
 
-        item { SectionTitle("تقدّم المنهج") }
-
+        item { SectionTitle("نسخ احتياطي") }
         item {
-            Text(
-                "سجّل الدرس بعد كل حصة، والتطبيق يوضّح أي شعبة تأخّرت",
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-
-        for (section in Defaults.SECTIONS) {
-            item(key = "prog-$section") {
-                ProgressCard(
-                    section = section,
-                    progress = config.progress[section] ?: SectionProgress(),
-                    lead = config.progress.values.maxOfOrNull { it.taught } ?: 0,
-                ) { updated ->
-                    apply(config.copy(progress = config.progress + (section to updated)))
-                }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                    onClick = { exportFile.launch("class-schedule-backup.json") },
+                    shape = RoundedCornerShape(16.dp),
+                ) { Text("تصدير") }
+                OutlinedButton(
+                    onClick = { importFile.launch(arrayOf("application/json", "text/plain", "*/*")) },
+                    shape = RoundedCornerShape(16.dp),
+                ) { Text("استيراد") }
             }
         }
 
         item {
             Column {
-                problem?.let { message ->
+                problem?.let {
                     Text(
-                        message,
+                        it,
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(bottom = 8.dp),
@@ -373,35 +710,122 @@ private fun EditorScreen() {
                 }
                 Button(
                     onClick = {
-                        val issue = validate(config)
+                        val issue = validate(draft)
                         if (issue != null) {
                             problem = issue
-                            return@Button
+                        } else {
+                            problem = null
+                            commit(draft)
+                            saved = true
                         }
-                        problem = null
-                        ScheduleStore.save(context, config)
-                        PeriodNotifier.sync(context)
-                        ScheduleUpdater.schedule(context)
-                        scope.launch { updateEveryWidget(context) }
-                        saved = true
                     },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape = RoundedCornerShape(26.dp),
-                ) {
-                    Text(if (saved) "تم الحفظ ✓" else "حفظ وتحديث الودجت", fontSize = 16.sp)
-                }
+                ) { Text(if (saved) "تم الحفظ ✓" else "حفظ", fontSize = 16.sp) }
+
                 TextButton(
-                    onClick = {
-                        ScheduleStore.reset(context)
-                        config = Defaults.config
-                        saved = false
-                    },
+                    onClick = { ScheduleStore.reset(context); commit(Defaults.config) },
                     modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text("استعادة الجدول الأصلي")
+                ) { Text("استعادة الجدول الأصلي") }
+            }
+        }
+    }
+
+    if (addingSection) {
+        TextPrompt(
+            title = "اسم الشعبة",
+            initial = "",
+            onDismiss = { addingSection = false },
+        ) { value ->
+            if (value.isNotBlank()) edit(draft.copy(sections = draft.sections + value.trim()))
+            addingSection = false
+        }
+    }
+
+    if (addingHoliday) {
+        HolidayPrompt(
+            onDismiss = { addingHoliday = false },
+        ) { holiday ->
+            edit(draft.copy(holidays = draft.holidays + holiday))
+            addingHoliday = false
+        }
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+ *  3. SYLLABUS + LOAD
+ * ══════════════════════════════════════════════════════════════ */
+
+@Composable
+private fun SyllabusScreen(config: Config, commit: (Config) -> Unit) {
+    val load = ScheduleEngine.weeklyLoad(config)
+    val lead = config.progress.values.maxOfOrNull { it.taught } ?: 0
+
+    LazyColumn(
+        contentPadding = PaddingValues(20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item { Header("المنهج والنصاب", "سجّل الدرس بعد كل حصة") }
+
+        item { SectionTitle("نصابك الأسبوعي") }
+        item {
+            Card(shape = RoundedCornerShape(22.dp)) {
+                Row(Modifier.fillMaxWidth().padding(18.dp)) {
+                    Stat("${load.teaching}", "حصة تدريس", Modifier.weight(1f))
+                    Stat("${load.standby}", "حصة انتظار", Modifier.weight(1f))
+                    Stat("${load.teaching + load.standby}", "المجموع", Modifier.weight(1f))
                 }
             }
         }
+        item {
+            Card(shape = RoundedCornerShape(22.dp)) {
+                Column(Modifier.padding(18.dp)) {
+                    Text("توزيع الحصص على الشعب", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(8.dp))
+                    load.perSection.entries.sortedBy { it.key }.forEach { (section, count) ->
+                        Row(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+                            Text(section, fontSize = 14.sp, modifier = Modifier.width(50.dp))
+                            Text("$count حصص أسبوعيًا", fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+        }
+
+        item { SectionTitle("تقدّم المنهج") }
+        for (section in config.sections) {
+            item(key = "prog-$section") {
+                ProgressCard(
+                    section = section,
+                    progress = config.progress[section] ?: SectionProgress(),
+                    lead = lead,
+                ) { updated ->
+                    commit(config.copy(progress = config.progress + (section to updated)))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Stat(value: String, label: String, modifier: Modifier = Modifier) {
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, fontSize = 30.sp, fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary)
+        Text(label, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+ *  SHARED PIECES
+ * ══════════════════════════════════════════════════════════════ */
+
+@Composable
+private fun Header(title: String, subtitle: String) {
+    Column {
+        Text(title, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+        Text(subtitle, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -417,23 +841,31 @@ private fun SectionTitle(text: String) {
 }
 
 @Composable
-private fun BellRow(bell: Bell, onChange: (Bell) -> Unit) {
-    val context = LocalContext.current
+private fun OptionRow(title: String, subtitle: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, fontSize = 15.sp)
+            Text(subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Switch(checked = checked, onCheckedChange = onChange)
+    }
+}
 
+@Composable
+private fun BellRow(bell: Bell, onChange: (Bell) -> Unit) {
     Card(shape = RoundedCornerShape(18.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                "الحصة ${bell.period}",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.weight(1f),
-            )
-            TimeButton(bell.start) { picked -> onChange(bell.copy(start = picked)) }
+            Text("الحصة ${bell.period}", fontSize = 14.sp, fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(1f))
+            TimeButton(bell.start) { onChange(bell.copy(start = it)) }
             Text(" – ", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            TimeButton(bell.end) { picked -> onChange(bell.copy(end = picked)) }
+            TimeButton(bell.end) { onChange(bell.copy(end = it)) }
         }
     }
 }
@@ -441,29 +873,28 @@ private fun BellRow(bell: Bell, onChange: (Bell) -> Unit) {
 @Composable
 private fun TimeButton(time: LocalTime, onPicked: (LocalTime) -> Unit) {
     val context = LocalContext.current
-    val label = time.format(DateTimeFormatter.ofPattern("h:mm", Locale.getDefault()))
-
     OutlinedButton(
-        onClick = { pickTime(context, time, onPicked) },
+        onClick = {
+            TimePickerDialog(
+                context,
+                { _, hour, minute -> onPicked(LocalTime.of(hour, minute)) },
+                time.hour, time.minute, false,
+            ).show()
+        },
         shape = RoundedCornerShape(14.dp),
     ) {
-        Text(label, fontSize = 14.sp)
+        Text(time.format(DateTimeFormatter.ofPattern("h:mm", Locale.getDefault())), fontSize = 14.sp)
     }
-}
-
-private fun pickTime(context: Context, initial: LocalTime, onPicked: (LocalTime) -> Unit) {
-    TimePickerDialog(
-        context,
-        { _, hour, minute -> onPicked(LocalTime.of(hour, minute)) },
-        initial.hour,
-        initial.minute,
-        false,
-    ).show()
 }
 
 @Composable
 private fun DayCard(day: DayOfWeek, config: Config, onCell: (Int, Duty?) -> Unit) {
-    val duties = config.dutiesOn(day)
+    val duties = config.templateOn(day)
+    val cycle: List<Duty?> = buildList {
+        add(null)
+        config.sections.forEach { add(Duty.Teach(it)) }
+        add(Duty.Standby)
+    }
 
     Card(
         shape = RoundedCornerShape(22.dp),
@@ -472,104 +903,47 @@ private fun DayCard(day: DayOfWeek, config: Config, onCell: (Int, Duty?) -> Unit
         ),
     ) {
         Column(Modifier.padding(14.dp)) {
-            Text(
-                day.getDisplayName(JavaTextStyle.FULL, Locale.getDefault()),
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-            )
+            Text(day.getDisplayName(JavaTextStyle.FULL, Locale.getDefault()),
+                fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(10.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 for (period in 1..7) {
-                    Cell(
-                        period = period,
-                        duty = duties[period],
-                        modifier = Modifier.weight(1f),
-                    ) { current ->
-                        val index = CYCLE.indexOfFirst { it == current }
-                        onCell(period, CYCLE[(index + 1 + CYCLE.size) % CYCLE.size])
+                    val duty = duties[period]
+                    Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("$period", fontSize = 10.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(38.dp)
+                                .background(
+                                    if (duty != null) MaterialTheme.colorScheme.primaryContainer
+                                    else MaterialTheme.colorScheme.surfaceVariant,
+                                    RoundedCornerShape(12.dp),
+                                )
+                                .clickable {
+                                    val index = cycle.indexOfFirst { it == duty }
+                                    onCell(period, cycle[(index + 1) % cycle.size])
+                                },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                when (duty) {
+                                    is Duty.Teach -> duty.section
+                                    Duty.Standby -> "انتظار"
+                                    null -> "—"
+                                },
+                                fontSize = if (duty is Duty.Standby) 9.sp else 12.sp,
+                                fontWeight = if (duty != null) FontWeight.Bold else FontWeight.Normal,
+                            )
+                        }
                     }
                 }
             }
-            Spacer(Modifier.height(6.dp))
-            Text(
-                "اضغط على أي خانة لتبديلها",
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
-    }
-}
-
-@Composable
-private fun Cell(
-    period: Int,
-    duty: Duty?,
-    modifier: Modifier = Modifier,
-    onTap: (Duty?) -> Unit,
-) {
-    val label = when (duty) {
-        is Duty.Teach -> duty.section
-        Duty.Standby -> "انتظار"
-        null -> "—"
-    }
-    val filled = duty != null
-
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            "$period",
-            fontSize = 10.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(38.dp)
-                .background(
-                    if (filled) MaterialTheme.colorScheme.primaryContainer
-                    else MaterialTheme.colorScheme.surfaceVariant,
-                    RoundedCornerShape(12.dp),
-                )
-                .clickable { onTap(duty) },
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                label,
-                fontSize = if (duty is Duty.Standby) 9.sp else 12.sp,
-                fontWeight = if (filled) FontWeight.Bold else FontWeight.Normal,
-                color = if (filled) MaterialTheme.colorScheme.onPrimaryContainer
-                else MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-
-@Composable
-private fun OptionRow(
-    title: String,
-    subtitle: String,
-    checked: Boolean,
-    onChange: (Boolean) -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(title, fontSize = 15.sp)
-            Text(
-                subtitle,
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Switch(checked = checked, onCheckedChange = onChange)
     }
 }
 
@@ -581,48 +955,31 @@ private fun ProgressCard(
     onChange: (SectionProgress) -> Unit,
 ) {
     var editing by remember { mutableStateOf(false) }
-    var draft by remember(progress.next) { mutableStateOf(progress.next) }
-
-    val lag = lead - progress.taught
+    val behind = lead - progress.taught
 
     Card(shape = RoundedCornerShape(20.dp)) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(section, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.width(10.dp))
-                Text(
-                    "${progress.taught} درسًا",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Text("${progress.taught} درسًا", fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.weight(1f))
-                if (lag > 0) {
-                    Text(
-                        "متأخرة $lag",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.error,
-                    )
+                if (behind > 0) {
+                    Text("متأخرة $behind", fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error)
                 }
             }
-
             Spacer(Modifier.height(8.dp))
-
             Text(
-                if (progress.next.isBlank()) "لم تحدّد الدرس القادم"
-                else "القادم: ${progress.next}",
+                if (progress.next.isBlank()) "لم تحدّد الدرس القادم" else "القادم: ${progress.next}",
                 fontSize = 14.sp,
             )
             if (progress.last.isNotBlank()) {
-                Text(
-                    "الأخير: ${progress.last}",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Text("الأخير: ${progress.last}", fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-
             Spacer(Modifier.height(10.dp))
-
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
                     onClick = {
@@ -635,21 +992,13 @@ private fun ProgressCard(
                         )
                         editing = true
                     },
-                    enabled = true,
                     shape = RoundedCornerShape(16.dp),
-                ) {
-                    Text("سجّل الدرس")
-                }
-                OutlinedButton(
-                    onClick = { editing = true },
-                    shape = RoundedCornerShape(16.dp),
-                ) {
+                ) { Text("سجّل الدرس") }
+                OutlinedButton(onClick = { editing = true }, shape = RoundedCornerShape(16.dp)) {
                     Text("الدرس القادم")
                 }
                 if (progress.taught > 0) {
-                    TextButton(onClick = {
-                        onChange(progress.copy(taught = progress.taught - 1))
-                    }) {
+                    TextButton(onClick = { onChange(progress.copy(taught = progress.taught - 1)) }) {
                         Text("تراجع")
                     }
                 }
@@ -658,49 +1007,91 @@ private fun ProgressCard(
     }
 
     if (editing) {
-        AlertDialog(
-            onDismissRequest = { editing = false },
-            title = { Text("الدرس القادم لـ $section") },
-            text = {
-                OutlinedTextField(
-                    value = draft,
-                    onValueChange = { draft = it },
-                    singleLine = true,
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    onChange(progress.copy(next = draft.trim()))
-                    editing = false
-                }) { Text("حفظ") }
-            },
-            dismissButton = {
-                TextButton(onClick = { editing = false }) { Text("إلغاء") }
-            },
-        )
+        TextPrompt("الدرس القادم لـ $section", progress.next, { editing = false }) { value ->
+            onChange(progress.copy(next = value.trim()))
+            editing = false
+        }
     }
 }
 
+@Composable
+private fun TextPrompt(
+    title: String,
+    initial: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    var value by remember { mutableStateOf(initial) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            OutlinedTextField(value = value, onValueChange = { value = it }, singleLine = true)
+        },
+        confirmButton = { TextButton(onClick = { onConfirm(value) }) { Text("حفظ") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("إلغاء") } },
+    )
+}
+
+@Composable
+private fun HolidayPrompt(onDismiss: () -> Unit, onConfirm: (Holiday) -> Unit) {
+    val context = LocalContext.current
+    var label by remember { mutableStateOf("إجازة") }
+    var from by remember { mutableStateOf(LocalDate.now()) }
+    var to by remember { mutableStateOf(LocalDate.now().plusDays(6)) }
+
+    fun pick(initial: LocalDate, onPicked: (LocalDate) -> Unit) {
+        DatePickerDialog(
+            context,
+            { _, y, m, d -> onPicked(LocalDate.of(y, m + 1, d)) },
+            initial.year, initial.monthValue - 1, initial.dayOfMonth,
+        ).show()
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("إضافة إجازة") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = label,
+                    onValueChange = { label = it },
+                    label = { Text("الاسم") },
+                    singleLine = true,
+                )
+                Spacer(Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { pick(from) { from = it } }, shape = RoundedCornerShape(14.dp)) {
+                        Text("من $from", fontSize = 12.sp)
+                    }
+                    OutlinedButton(onClick = { pick(to) { to = it } }, shape = RoundedCornerShape(14.dp)) {
+                        Text("إلى $to", fontSize = 12.sp)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                if (!to.isBefore(from)) onConfirm(Holiday(from, to, label.ifBlank { "إجازة" }))
+            }) { Text("إضافة") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("إلغاء") } },
+    )
+}
 
 /** Refuses a timetable that cannot exist, with the reason in plain words. */
 private fun validate(config: Config): String? {
     val ordered = config.bells.sortedBy { it.period }
-
     ordered.forEach { bell ->
         if (!bell.end.isAfter(bell.start)) {
-            return "الحصة ${bell.period}: وقت النهاية يجب أن يكون بعد البداية"
+            return "الحصة ${bell.period}: النهاية يجب أن تكون بعد البداية"
         }
         val minutes = ChronoUnit.MINUTES.between(bell.start, bell.end)
-        if (minutes < 5) {
-            return "الحصة ${bell.period}: المدة $minutes دقيقة فقط"
-        }
+        if (minutes < 5) return "الحصة ${bell.period}: المدة $minutes دقيقة فقط"
     }
-
     ordered.zipWithNext { a, b ->
-        if (b.start.isBefore(a.end)) {
-            return "الحصة ${a.period} والحصة ${b.period} متداخلتان"
-        }
+        if (b.start.isBefore(a.end)) return "الحصة ${a.period} والحصة ${b.period} متداخلتان"
     }
-
+    if (config.sections.isEmpty()) return "أضف شعبة واحدة على الأقل"
     return null
 }

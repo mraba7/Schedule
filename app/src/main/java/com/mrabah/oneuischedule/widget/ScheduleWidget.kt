@@ -295,7 +295,7 @@ private object Vms {
             section = slot?.section ?: "انتظار",
             subject = slot?.section?.let { ui.config.progress[it]?.next }
                 ?.takeIf { it.isNotBlank() }
-                ?: if (slot == null || slot.isStandby) "لا يوجد فصل" else Defaults.SUBJECT,
+                ?: if (slot == null || slot.isStandby) "لا يوجد فصل" else ui.config.subject,
             startTime = if (slot != null) t(slot.bell.start) else "",
             endTime = if (slot != null) "حتى " + t(slot.bell.end) else "",
             minutesLeft = (ui.minutesLeftInLive ?: 0L).toString(),

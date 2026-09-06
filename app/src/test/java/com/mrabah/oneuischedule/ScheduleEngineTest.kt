@@ -3,6 +3,7 @@ package com.mrabah.oneuischedule
 import com.mrabah.oneuischedule.data.Config
 import com.mrabah.oneuischedule.data.Defaults
 import com.mrabah.oneuischedule.data.Duty
+import com.mrabah.oneuischedule.data.Holiday
 import com.mrabah.oneuischedule.data.ScheduleEngine
 import com.mrabah.oneuischedule.data.SlotState
 import org.junit.Assert.assertEquals
@@ -33,7 +34,7 @@ class ScheduleEngineTest {
 
     @Test
     fun `sunday matches the official sheet`() {
-        val day = config.dutiesOn(DayOfWeek.SUNDAY)
+        val day = config.templateOn(DayOfWeek.SUNDAY)
         assertEquals(Duty.Teach("2/3"), day[1])
         assertEquals(Duty.Teach("2/2"), day[2])
         assertEquals(Duty.Standby, day[3])
@@ -43,7 +44,7 @@ class ScheduleEngineTest {
 
     @Test
     fun `monday starts at period two, not one`() {
-        val day = config.dutiesOn(DayOfWeek.MONDAY)
+        val day = config.templateOn(DayOfWeek.MONDAY)
         assertNull("Monday has no first period", day[1])
         assertEquals(Duty.Teach("2/3"), day[2])
         assertEquals(Duty.Teach("2/4"), day[3])
@@ -53,7 +54,7 @@ class ScheduleEngineTest {
 
     @Test
     fun `tuesday runs periods two to four`() {
-        val day = config.dutiesOn(DayOfWeek.TUESDAY)
+        val day = config.templateOn(DayOfWeek.TUESDAY)
         assertNull("Tuesday has no first period", day[1])
         assertEquals(Duty.Teach("2/4"), day[2])
         assertEquals(Duty.Teach("2/2"), day[3])
@@ -63,8 +64,8 @@ class ScheduleEngineTest {
 
     @Test
     fun `wednesday and thursday keep their standby period`() {
-        assertEquals(Duty.Standby, config.dutiesOn(DayOfWeek.WEDNESDAY)[5])
-        assertEquals(Duty.Standby, config.dutiesOn(DayOfWeek.THURSDAY)[5])
+        assertEquals(Duty.Standby, config.templateOn(DayOfWeek.WEDNESDAY)[5])
+        assertEquals(Duty.Standby, config.templateOn(DayOfWeek.THURSDAY)[5])
     }
 
     @Test
@@ -158,6 +159,43 @@ class ScheduleEngineTest {
             assertNotNull(it.live); ScheduleEngine.boundaries(config, now.toLocalDate())
         }
         assertTrue(next.isNotEmpty())
+    }
+
+    @Test
+    fun `a one-day override replaces the template for that date only`() {
+        val date = LocalDate.of(2026, 9, 7) // a Monday
+        val swapped = config.copy(overrides = mapOf("$date#2" to Duty.Teach("2/1")))
+        assertEquals(Duty.Teach("2/1"), ScheduleEngine.dutiesOn(swapped, date)[2])
+        // the following Monday is untouched
+        assertEquals(Duty.Teach("2/3"), ScheduleEngine.dutiesOn(swapped, date.plusDays(7))[2])
+    }
+
+    @Test
+    fun `a cancelled period disappears for that date`() {
+        val date = LocalDate.of(2026, 9, 7)
+        val cancelled = config.copy(overrides = mapOf("$date#2" to null))
+        assertNull(ScheduleEngine.dutiesOn(cancelled, date)[2])
+        assertEquals(3, ScheduleEngine.dutiesOn(cancelled, date).size)
+    }
+
+    @Test
+    fun `a holiday empties the day and the bell stays silent`() {
+        val date = LocalDate.of(2026, 9, 7)
+        val onLeave = config.copy(
+            holidays = listOf(Holiday(date.minusDays(1), date.plusDays(3), "اختبارات"))
+        )
+        assertTrue(ScheduleEngine.dutiesOn(onLeave, date).isEmpty())
+        val ui = ScheduleEngine.build(onLeave, date.atTime(8, 20))
+        assertNull(ui.live)
+        assertNotNull(ui.holiday)
+    }
+
+    @Test
+    fun `weekly load counts teaching and standby separately`() {
+        val load = ScheduleEngine.weeklyLoad(config)
+        assertEquals(16, load.teaching)
+        assertEquals(3, load.standby)
+        assertEquals(4, load.perSection["2/1"])
     }
 
     @Test

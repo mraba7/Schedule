@@ -72,14 +72,14 @@ object PeriodNotifier {
         val today = now.toLocalDate()
         val time = now.toLocalTime()
 
-        if (announce && today.dayOfWeek in config.workdays) {
-            config.dutiesOn(today.dayOfWeek).forEach { (period, duty) ->
+        if (announce) {
+            ScheduleEngine.dutiesOn(config, today).forEach { (period, duty) ->
                 val bell = config.bells.firstOrNull { it.period == period } ?: return@forEach
                 val section = (duty as? com.mrabah.oneuischedule.data.Duty.Teach)?.section ?: "انتظار"
 
                 when {
                     near(time, bell.start) ->
-                        ring(context, config, "بدأت الحصة $period", "$section · ${Defaults.SUBJECT}")
+                        ring(context, config, "بدأت الحصة $period", "$section · ${config.subject}")
 
                     near(time, bell.end) ->
                         ring(context, config, "انتهت الحصة $period", section)
