@@ -354,8 +354,8 @@ internal class DesignRenderer(context: Context) {
         line(353f,103f,353f,172f,if(live)gold else border,1.8f)
         rect(303f,100f,42f,16f,"#203039",8f,if(live)gold else muted)
         text(if(live)"الآن" else "القادمة",306f,100f,36f,16f,10f,if(live)gold else muted,true,"center")
-        section(d.section,240f,116f,102f,42f,37f,GlassAgenda.color(d.focus?.section))
-        text(d.subject,226f,158f,116f,18f,15f,fg,true,minSize=11f)
+        section(d.section,240f,116f,102f,38f,37f,GlassAgenda.color(d.focus?.section))
+        text(d.subject,226f,155f,116f,14f,12f,fg,true,minSize=10f)
         val range=d.focus!!.let { "${DesignDay.clock(it.bell.start)} → ${DesignDay.clock(it.bell.end)}" }
         clock(range,15f,110f,208f,31f,23f,fg)
         rect(17f,146f,146f,20f,if(live)gold else "#2C4051",10f)
