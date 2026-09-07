@@ -34,7 +34,7 @@ internal fun DesignGallery(config:Config) {
             Text("تصاميم الودجت",style=MaterialTheme.typography.headlineMedium)
             Text("هذه معاينة فعلية من نفس محرك الودجت. أفضل تطابق في مساحة مربعة؛ اضغط على الودجت لفتح ملاحظة الحصة وتجهيزها.")
         }
-        items(Design.entries){design ->
+        items(listOf(Design.GLASS) + Design.entries.filter { it != Design.GLASS }){design ->
             val bitmap=remember(design,day){DesignRenderer(c).render(design,day,
                 task=PreparationStore.task(c,day.key).ifBlank{"تحديد التجهيز"},done=PreparationStore.done(c,day.key))}
             Column {

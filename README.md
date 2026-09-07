@@ -60,13 +60,13 @@ schedule engine:
 
 ## Two platform limits, handled honestly
 
-## Seven illustrated designs (native rendering)
+## Illustrated designs (native rendering)
 
 The **التصاميم** tab previews the actual Android renderer and lets you pin each
 design separately: بطاقة يومك، المدار التقني، المجلة الهادئة، الوحدات الملونة،
-المسار الليلي، وقت التركيز، المخطط الهندسي. All prior widgets remain available.
+المسار الليلي، وقت التركيز، المخطط الهندسي، الجدول الزجاجي. All prior widgets remain available.
 
-- The seven layouts use a shared 360×360 coordinate space, the bundled Arabic
+- The eight layouts use a shared 360×360 coordinate space, the bundled Arabic
   font, and Canvas-rendered live data. These are not static concept images.
 - Best reference size is a square widget (approximately 4×4). Non-square sizes
   preserve proportions with transparent padding rather than distorting text.
@@ -76,14 +76,14 @@ design separately: بطاقة يومك، المدار التقني، المجل�
 - Active lessons show remaining minutes. Future days show the starting time;
   breaks and unassigned time are distinct. Alarms share the original updater.
 - Removing the original widget no longer cancels updates for remaining widgets.
-- `gradle test` includes native Android rendering across 7 designs × 6 states
+- `gradle test` includes native Android rendering across 8 designs × 6 states
   and exports PNGs to `app/build/design-previews`. These are real rendered
   previews, not a claim of physical One UI launcher verification.
 - Branch builds are prereleases and point their tag at the build commit.
 
 ### Visual scope
 
-The implementation follows the approved color palettes, hierarchy, and seven
+The implementation follows the approved color palettes, hierarchy, and eight
 distinct compositions. Dynamic labels, empty states, responsive padding and
 accessible task hit areas necessarily differ from static sample drawings.
 Use the exported previews and a device screenshot for final acceptance;
@@ -94,3 +94,11 @@ generated concept imagery is not a pixel-perfect screenshot specification.
 - Widgets can't sample the wallpaper → no true blur. If you want it, turn on
   One UI's *transparent widget background* (Home screen settings) and set the
   `bg_widget_glass` solid to `#00000000`; the launcher blurs behind it.
+
+### Approved glass timetable
+
+The glass timetable is listed first in the gallery. Muted class colors remain stable
+across days, while champagne gold identifies the active lesson independently.
+Upcoming rows include actual bell ranges, breaks and grouped consecutive free
+periods up to the final assigned lesson. Times are isolated left-to-right.
+The footer opens the schedule tab; the current lesson opens its notes.
