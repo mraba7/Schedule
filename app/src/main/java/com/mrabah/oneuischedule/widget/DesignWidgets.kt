@@ -41,6 +41,7 @@ internal object DesignWidgets {
         Design.ROUTE to RouteWidgetReceiver::class.java,
         Design.SPORT to SportWidgetReceiver::class.java,
         Design.BLUEPRINT to BlueprintWidgetReceiver::class.java,
+        Design.GLASS to GlassWidgetReceiver::class.java,
     )
     fun updateAll(context: Context) {
         val manager=AppWidgetManager.getInstance(context)
@@ -82,8 +83,8 @@ internal object DesignWidgets {
             .putExtra("key",day.key).putExtra("title","${day.day} · ${day.period} · ${day.section}")
         val open=PendingIntent.getActivity(c,0,intent,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         views.setOnClickPendingIntent(R.id.design_image,open)
-        views.setViewVisibility(R.id.design_schedule,if(style==Design.TICKET && day.key!=null) View.VISIBLE else View.GONE)
-        if(style==Design.TICKET && day.key!=null) {
+        views.setViewVisibility(R.id.design_schedule,if((style==Design.TICKET || style==Design.GLASS) && day.key!=null) View.VISIBLE else View.GONE)
+        if((style==Design.TICKET || style==Design.GLASS) && day.key!=null) {
             val scale=minOf(width,height)/360f
             views.setViewLayoutWidth(R.id.design_schedule,146f*scale,TypedValue.COMPLEX_UNIT_DIP)
             views.setViewLayoutHeight(R.id.design_schedule,26f*scale,TypedValue.COMPLEX_UNIT_DIP)
@@ -156,3 +157,5 @@ class BentoWidgetReceiver:DesignWidgetReceiver(){override val design=Design.BENT
 class RouteWidgetReceiver:DesignWidgetReceiver(){override val design=Design.ROUTE}
 class SportWidgetReceiver:DesignWidgetReceiver(){override val design=Design.SPORT}
 class BlueprintWidgetReceiver:DesignWidgetReceiver(){override val design=Design.BLUEPRINT}
+
+class GlassWidgetReceiver:DesignWidgetReceiver(){override val design=Design.GLASS}

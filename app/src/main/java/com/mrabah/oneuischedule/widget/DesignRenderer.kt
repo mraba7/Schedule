@@ -45,6 +45,7 @@ internal class DesignRenderer(context: Context) {
             Design.ROUTE -> route()
             Design.SPORT -> sport()
             Design.BLUEPRINT -> blueprint()
+            Design.GLASS -> glass()
         }
         return bitmap
     }
@@ -129,6 +130,7 @@ internal class DesignRenderer(context: Context) {
             Design.ROUTE->"#14171D" to "#FFC15A"
             Design.SPORT->"#080808" to "#D6FF42"
             Design.BLUEPRINT->"#E9F2FC" to "#174BA0"
+            Design.GLASS->"#152230" to "#CFB47D"
         }
         rect(0f,0f,360f,360f,bg,24f)
         text(design.title,24f,24f,312f,34f,24f,fg,true)
@@ -318,5 +320,71 @@ internal class DesignRenderer(context: Context) {
         task(286f,"#DBEAFB",fg)
         text("الفسحة ${d.breakTime}",192f,330f,137f,22f,13f,fg,true)
         text("النهاية ${d.finish}",29f,330f,137f,22f,13f,fg,true)
+    }
+    /** Approved navy/champagne composition. Class tint and active state are independent. */
+    private fun glass() {
+        val fg="#F1F0EA"; val muted="#A7B5C1"; val gold="#CFB47D"; val border="#405568"
+        fun fade(x:Float,y:Float,w:Float,h:Float,color:String,alpha:Int,r:Float=7f) {
+            val tint=col(color)
+            p.shader=LinearGradient(x,y,x+w,y,intArrayOf(Color.TRANSPARENT,
+                Color.argb(alpha,Color.red(tint),Color.green(tint),Color.blue(tint))),null,Shader.TileMode.CLAMP)
+            p.style=Paint.Style.FILL
+            c.drawRoundRect(RectF(x,y,x+w,y+h),r,r,p)
+            p.shader=null
+        }
+        rect(1f,1f,358f,358f,"#152230",16f,border)
+        fade(2f,2f,356f,356f,"#365674",35,16f)
+        text(d.day,174f,12f,169f,30f,25f,fg,true,minSize=17f)
+        text(d.date,197f,43f,145f,18f,13f,muted)
+        rect(13f,15f,113f,25f,"#1B2B3A",12f,border)
+        val remaining=d.upcoming.size
+        text("$remaining حصص متبقية",18f,17f,103f,21f,12f,fg,true,"center")
+        val bells=d.ui.config.bells.sortedBy{it.period}
+        val gap=3f; val bw=(334f-gap*(bells.size-1).coerceAtLeast(0))/bells.size.coerceAtLeast(1)
+        bells.forEachIndexed { i,b ->
+            val active=d.ui.live?.period==b.period
+            val done=d.ui.isToday && d.now.toLocalTime()>=b.end
+            rect(13f+(bells.lastIndex-i)*(bw+gap),65f,bw,5f,
+                if(active)gold else if(done)"#50606C" else "#293D4E",2.5f)
+        }
+        text(d.period,13f,73f,330f,15f,11f,muted)
+        val live=d.ui.live!=null
+        rect(5f,94f,350f,88f,"#142230",8f,if(live)gold else border)
+        fade(6f,95f,348f,86f,if(live)gold else muted,22,8f)
+        line(353f,103f,353f,172f,if(live)gold else border,1.8f)
+        rect(303f,100f,42f,16f,"#203039",8f,if(live)gold else muted)
+        text(if(live)"الآن" else "القادمة",306f,100f,36f,16f,10f,if(live)gold else muted,true,"center")
+        section(d.section,240f,116f,102f,42f,37f,GlassAgenda.color(d.focus?.section))
+        text(d.subject,226f,158f,116f,18f,15f,fg,true,minSize=11f)
+        val range=d.focus!!.let { "${DesignDay.clock(it.bell.start)} → ${DesignDay.clock(it.bell.end)}" }
+        clock(range,15f,110f,208f,31f,23f,fg)
+        rect(17f,146f,146f,20f,if(live)gold else "#2C4051",10f)
+        val count=if(live)"باقي ${d.minutes} دقيقة" else if(d.minutes!=null)"تبدأ بعد ${d.minutes} دقيقة" else "${d.countLabel} ${d.countText}"
+        text(count,21f,146f,138f,20f,11f,if(live)"#152230" else fg,true,"center",9f)
+        rect(17f,172f,326f,4f,"#304352",2f)
+        if(live) rect(17f+326f*(1-d.ui.progress),172f,326f*d.ui.progress,4f,gold,2f)
+        text(if(d.ui.isToday)"بقية يومك" else "بقية الجدول",204f,190f,139f,22f,17f,fg,true)
+        line(8f,214f,352f,214f,border,.4f)
+        text("الحصة",292f,217f,50f,17f,12f,muted,true)
+        text("الفصل",176f,217f,55f,17f,12f,muted,true,"center")
+        text("الوقت",17f,217f,110f,17f,12f,muted,true,"left")
+        val rows=GlassAgenda.rows(d)
+        val step=minOf(23f,91f/rows.size.coerceAtLeast(1))
+        rows.forEachIndexed { i,row ->
+            val y=238f+i*step;val rh=step-2f;val tint=GlassAgenda.color(row.section)
+            rect(6f,y,348f,rh,"#172736",4f,"#304353")
+            fade(7f,y+1,346f,rh-2,tint,if(row.section!=null)32 else 9,4f)
+            line(352f,y+3f,352f,y+rh-3f,tint,1.7f)
+            clock(row.periods,302f,y,40f,rh,11f,fg,false)
+            if(row.section!=null) {
+                rect(183f,y+2f,38f,rh-4f,"#142230",7f,tint)
+                section(row.label,184f,y+1f,36f,rh-2f,12f,tint)
+            } else text(row.label,155f,y,96f,rh,10f,muted,align="center")
+            clock("${DesignDay.clock(row.start)} → ${DesignDay.clock(row.end)}",12f,y,129f,rh,12f,fg)
+        }
+        if(rows.isEmpty()) text("هذه آخر حصة · يوم موفق",22f,254f,316f,40f,15f,muted,align="center")
+        line(8f,334f,352f,334f,border,.5f)
+        text("الانصراف ${d.finish}",210f,336f,131f,20f,12f,fg,true)
+        text("عرض الجدول  ‹",17f,336f,134f,20f,12f,muted,true,"left")
     }
 }

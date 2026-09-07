@@ -26,4 +26,6 @@
     <string name="design_sport_description">جدول حي بتصميم وقت التركيز، اضغط لفتح ملاحظات الحصة وتجهيزها.</string>
     <string name="design_blueprint_label">المخطط الهندسي</string>
     <string name="design_blueprint_description">جدول حي بتصميم المخطط الهندسي، اضغط لفتح ملاحظات الحصة وتجهيزها.</string>
+    <string name="design_glass_label">الجدول الزجاجي</string>
+    <string name="design_glass_description">جدول زجاجي بألوان ثابتة للفصول، وتمييز ذهبي للحصة الحالية والفسحة وأوقات الفراغ.</string>
 </resources>

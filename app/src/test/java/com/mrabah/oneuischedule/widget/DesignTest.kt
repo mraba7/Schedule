@@ -23,6 +23,15 @@ class DesignTest {
     private val context:Context get()=RuntimeEnvironment.getApplication()
     private fun at(h:Int,m:Int)=DesignDay.build(Defaults.config,LocalDateTime.of(2026,9,7,h,m))
 
+    @Test fun glassAgendaIncludesBreakAndGroupedFreePeriods() {
+        val rows=GlassAgenda.rows(at(8,30))
+        assertEquals(listOf("2/4","فسحة","وقت متاح","2/1","2/2"),rows.map { it.label })
+        assertEquals("4–5",rows[2].periods)
+        assertEquals("10:10",DesignDay.clock(rows[2].start))
+        assertEquals("11:40",DesignDay.clock(rows[2].end))
+        assertTrue(GlassAgenda.rows(at(12,40)).isEmpty())
+        assertEquals("#88B8AE",GlassAgenda.color("2/3"))
+    }
     @Test fun liveDataIsSharedByEveryDesign() {
         val d=at(8,30)
         assertEquals("2/3",d.section)
