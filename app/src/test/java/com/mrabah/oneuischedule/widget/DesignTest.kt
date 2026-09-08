@@ -86,8 +86,26 @@ class DesignTest {
             }
             val wide=DesignRenderer(context).render(style,at(8,30),720,480)
             assertEquals(0,wide.getPixel(0,0))
+            if(style==Design.PATH) assertNotEquals(0,wide.getPixel(10,240))
             wide.recycle()
         }
+    }
+    @Test fun timelineAdaptsToActualSizeAndKeepsTheCompletedDay() {
+        val layouts=listOf(Triple(180,180,TimelineLayout.COMPACT),Triple(360,180,TimelineLayout.WIDE),
+            Triple(360,360,TimelineLayout.BALANCED),Triple(360,450,TimelineLayout.TALL))
+        val folder=File("build/design-previews").apply{mkdirs()}
+        for((w,h,mode) in layouts) {
+            assertEquals(mode,TimelineLayout.choose(w.toFloat(),h.toFloat()))
+            for((label,day) in mapOf("live" to at(9,15),"break" to at(10,0),"free" to at(10,30),"done" to at(15,0))) {
+                val bitmap=DesignRenderer(context).render(Design.PATH,day,w*2,h*2,layoutWidth=w.toFloat(),layoutHeight=h.toFloat())
+                assertNotEquals(0,bitmap.getPixel(8,h))
+                File(folder,"path-${mode.name.lowercase()}-$label.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG,100,it) }
+                bitmap.recycle()
+            }
+        }
+        val today=com.mrabah.oneuischedule.data.ScheduleEngine.today(Defaults.config,LocalDateTime.of(2026,9,7,15,0))
+        assertEquals(4,today.slots.size)
+        assertTrue(today.slots.all { it.state==com.mrabah.oneuischedule.data.SlotState.DONE })
     }
     @Test fun providersAndRemoteViewsAreRegistered() {
         val manager=AppWidgetManager.getInstance(context)
@@ -99,6 +117,7 @@ class DesignTest {
             manager.updateAppWidgetOptions(id,Bundle().apply{
                 putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH,320)
                 putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT,320)
+                if(style==Design.PATH) putParcelableArrayList(AppWidgetManager.OPTION_APPWIDGET_SIZES,arrayListOf(android.util.SizeF(180f,180f),android.util.SizeF(360f,180f),android.util.SizeF(360f,360f),android.util.SizeF(360f,450f)))
             })
             DesignWidgets.update(context,manager,id,style,at(8,30))
         }

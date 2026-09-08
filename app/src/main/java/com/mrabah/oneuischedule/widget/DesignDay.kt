@@ -71,5 +71,5 @@ internal data class DesignDay(val ui: com.mrabah.oneuischedule.data.ScheduleUi, 
 
 internal enum class Design(val title: String, val number: String) {
     TICKET("بطاقة يومك", "00"), ORBIT("المدار التقني", "01"), EDITORIAL("المجلة الهادئة", "02"),
-    BENTO("الوحدات الملونة", "03"), ROUTE("المسار الليلي", "04"), SPORT("وقت التركيز", "05"), BLUEPRINT("المخطط الهندسي", "06"), GLASS("الجدول الزجاجي", "07"), FOCUS("الحصة بوضوح", "08")
+    BENTO("الوحدات الملونة", "03"), ROUTE("المسار الليلي", "04"), SPORT("وقت التركيز", "05"), BLUEPRINT("المخطط الهندسي", "06"), GLASS("الجدول الزجاجي", "07"), FOCUS("الحصة بوضوح", "08"), PATH("مسار الحصص", "09")
 }

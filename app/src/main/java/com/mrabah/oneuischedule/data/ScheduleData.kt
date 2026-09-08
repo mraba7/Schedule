@@ -383,6 +383,8 @@ object ScheduleEngine {
     fun build(context: Context, now: LocalDateTime): ScheduleUi =
         build(ScheduleStore.load(context), now)
 
+    fun today(config: Config, now: LocalDateTime): ScheduleUi = forDay(config, now.toLocalDate(), now)
+
     fun build(config: Config, now: LocalDateTime): ScheduleUi {
         val today = now.toLocalDate()
         val lastEnd = dutiesOn(config, today).keys

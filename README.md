@@ -119,3 +119,13 @@ The focus widget now includes the displayed day’s total and all assigned perio
 tiles, with gold for the live lesson and muted completed lessons. Up to four tiles
 fit per row; full teaching days use two rows. Counts distinguish the teacher’s
 assigned lessons from school period numbers. Native previews include a full day.
+
+### Responsive مسار الحصص
+
+An independent widget reflows for compact, wide, balanced and tall allocations
+using launcher-provided dp dimensions, not bitmap resolution. It fills its bounds
+without square letterboxing. Completed nodes carry checkmarks, live nodes gold,
+future nodes hollow. Larger layouts include class notes and the upcoming agenda.
+It retains the current day after dismissal and explicitly labels breaks/free time.
+Native render tests cover four allocations in live, break, free and completed states;
+launcher sizing still needs physical device verification. Previous widgets remain.

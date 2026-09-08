@@ -21,6 +21,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.OneUISchedule">
 
+        <receiver android:name=".widget.PathWidgetReceiver" android:exported="false" android:label="@string/design_path_label">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/design_path_info" />
+        </receiver>
         <activity android:name=".widget.ClassNoteActivity" android:exported="false" />
         <receiver android:name=".widget.ClassNoteReceiver" android:exported="false">
             <intent-filter>

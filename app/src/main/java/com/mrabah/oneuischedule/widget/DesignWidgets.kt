@@ -43,6 +43,7 @@ internal object DesignWidgets {
         Design.BLUEPRINT to BlueprintWidgetReceiver::class.java,
         Design.GLASS to GlassWidgetReceiver::class.java,
         Design.FOCUS to FocusWidgetReceiver::class.java,
+        Design.PATH to PathWidgetReceiver::class.java,
     )
     fun updateAll(context: Context) {
         val manager=AppWidgetManager.getInstance(context)
@@ -65,8 +66,12 @@ internal object DesignWidgets {
         val fallback=android.util.SizeF(
             opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH,320).coerceAtLeast(180).toFloat(),
             opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT,320).coerceAtLeast(180).toFloat())
-        val layouts=(sizes?.takeIf { it.isNotEmpty() } ?: listOf(fallback)).associateWith { size ->
-            makeViews(context,style,day,renderer,size.width,size.height)
+        val fallbackSizes=if(style==Design.PATH) listOf(
+            android.util.SizeF(opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH,320).coerceAtLeast(120).toFloat(),opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT,320).coerceAtLeast(120).toFloat()),
+            android.util.SizeF(opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH,320).coerceAtLeast(120).toFloat(),opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT,320).coerceAtLeast(120).toFloat())
+        ).distinct() else listOf(fallback)
+        val layouts=(sizes?.takeIf { it.isNotEmpty() } ?: fallbackSizes).associateWith { size ->
+            makeViews(context,style,if(style==Design.PATH) DesignDay(com.mrabah.oneuischedule.data.ScheduleEngine.today(day.ui.config,day.now),day.now) else day,renderer,size.width,size.height)
         }
         manager.updateAppWidget(id,if(layouts.size==1) layouts.values.first() else RemoteViews(layouts))
     }
@@ -75,14 +80,14 @@ internal object DesignWidgets {
         // Conservative bitmap budget: max 640px long edge per orientation.
         val density=minOf(2f,640f/maxOf(width,height))
         val bitmap=renderer.render(style,day,(width*density).toInt(),(height*density).toInt(),
-            PreparationStore.task(c,day.key).ifBlank { "تحديد التجهيز" },PreparationStore.done(c,day.key))
+            PreparationStore.task(c,day.key).ifBlank { "تحديد التجهيز" },PreparationStore.done(c,day.key),width,height)
         val views=RemoteViews(c.packageName,R.layout.design_widget)
         views.setImageViewBitmap(R.id.design_image,bitmap)
-        views.setContentDescription(R.id.design_image,if(style==Design.FOCUS) "${day.ui.slots.size} حصص: ${day.ui.slots.joinToString { periodName(it.period) + " الفصل " + DesignDay.section(it) }}، ${day.day}، ${day.focus?.let { periodName(it.period) } ?: "لا توجد حصص"}، الفصل ${day.section}، ${day.range}، ${day.countText} ${day.countLabel}، ${ClassNotes.get(c,day.focus?.section)?.text ?: "إضافة ملاحظة الفصل"}" else day.summary)
+        views.setContentDescription(R.id.design_image,if(style==Design.FOCUS || style==Design.PATH) "${day.ui.slots.size} حصص: ${day.ui.slots.joinToString { periodName(it.period) + " الفصل " + DesignDay.section(it) }}، ${day.day}، ${day.focus?.let { periodName(it.period) } ?: "لا توجد حصص"}، الفصل ${day.section}، ${day.range}، ${day.countText} ${day.countLabel}، ${ClassNotes.get(c,day.focus?.section)?.text ?: "إضافة ملاحظة الفصل"}" else day.summary)
         val intent=Intent(c,DesignLessonActivity::class.java)
             .setData(Uri.parse("schedule-design://lesson/${day.key ?: "empty"}"))
             .putExtra("key",day.key).putExtra("title","${day.day} · ${day.period} · ${day.section}")
-        val target=if(style==Design.FOCUS && day.focus?.section!=null) ClassNotes.intent(c,day.focus!!.section!!) else intent
+        val target=if((style==Design.FOCUS || style==Design.PATH) && day.focus?.section!=null) ClassNotes.intent(c,day.focus!!.section!!) else if(style==Design.PATH) Intent(c,com.mrabah.oneuischedule.MainActivity::class.java).putExtra("open_tab",1) else intent
         val open=PendingIntent.getActivity(c,0,target,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         views.setOnClickPendingIntent(R.id.design_image,open)
         views.setViewVisibility(R.id.design_schedule,if((style==Design.TICKET || style==Design.GLASS) && day.key!=null) View.VISIBLE else View.GONE)
@@ -163,3 +168,5 @@ class BlueprintWidgetReceiver:DesignWidgetReceiver(){override val design=Design.
 class GlassWidgetReceiver:DesignWidgetReceiver(){override val design=Design.GLASS}
 
 class FocusWidgetReceiver:DesignWidgetReceiver(){override val design=Design.FOCUS}
+
+class PathWidgetReceiver:DesignWidgetReceiver(){override val design=Design.PATH}

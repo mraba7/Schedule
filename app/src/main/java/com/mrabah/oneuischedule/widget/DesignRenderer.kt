@@ -27,10 +27,21 @@ internal class DesignRenderer(context: Context) {
     private val ink = "#141A1A"
 
     fun render(design: Design, day: DesignDay, width: Int = 720, height: Int = 720,
-               task: String = "تحديد التجهيز", done: Boolean = false): Bitmap {
+               task: String = "تحديد التجهيز", done: Boolean = false,
+               layoutWidth:Float=width/2f, layoutHeight:Float=height/2f): Bitmap {
         d = day; preparation = task; prepared = done
         val bitmap = Bitmap.createBitmap(width.coerceAtLeast(1), height.coerceAtLeast(1), Bitmap.Config.ARGB_8888)
         c = Canvas(bitmap)
+        if(design==Design.PATH) {
+            d=DesignDay(com.mrabah.oneuischedule.data.ScheduleEngine.today(day.ui.config,day.now),day.now)
+            val mode=TimelineLayout.choose(layoutWidth,layoutHeight)
+            val base=if(mode==TimelineLayout.COMPACT)180f else 360f
+            val minHeight=if(mode==TimelineLayout.COMPACT || mode==TimelineLayout.WIDE)180f else if(mode==TimelineLayout.TALL)432f else 330f
+            val factor=minOf(width/base,height/minHeight)
+            c.scale(factor,factor)
+            path(width/factor,height/factor,mode)
+            return bitmap
+        }
         val scale = minOf(width, height) / 360f
         c.translate((width - 360 * scale) / 2, (height - 360 * scale) / 2)
         c.scale(scale, scale)
@@ -48,6 +59,7 @@ internal class DesignRenderer(context: Context) {
             Design.BLUEPRINT -> blueprint()
             Design.GLASS -> glass()
             Design.FOCUS -> focus()
+            Design.PATH -> error("Responsive path handled above")
         }
         return bitmap
     }
@@ -132,7 +144,7 @@ internal class DesignRenderer(context: Context) {
             Design.ROUTE->"#14171D" to "#FFC15A"
             Design.SPORT->"#080808" to "#D6FF42"
             Design.BLUEPRINT->"#E9F2FC" to "#174BA0"
-            Design.GLASS,Design.FOCUS->"#152230" to "#CFB47D"
+            Design.GLASS,Design.FOCUS,Design.PATH->"#152230" to "#CFB47D"
         }
         rect(0f,0f,360f,360f,bg,24f)
         text(design.title,24f,24f,312f,34f,24f,fg,true)
@@ -447,5 +459,110 @@ internal class DesignRenderer(context: Context) {
             text("التالي: ${periodName(next.period)} · ${DesignDay.section(next)}",94f,338f,249f,18f,12f,muted,true,minSize=9f)
             clock(DesignDay.clock(next.bell.start),17f,338f,67f,18f,13f,muted)
         } else text("آخر حصة اليوم · الانصراف ${d.finish}",17f,338f,326f,18f,12f,muted,true,"center")
+    }
+    private fun path(w:Float,h:Float,mode:TimelineLayout) {
+        val fg="#F1F0EA";val muted="#A7B5C1";val gold="#CFB47D";val doneColor="#86AAA4"
+        val compact=mode==TimelineLayout.COMPACT
+        val wide=mode==TimelineLayout.WIDE
+        val lessons=d.ui.slots;val slot=d.focus;val live=d.ui.live!=null
+        val finished=lessons.isNotEmpty() && slot==null
+        val inBreak=d.breakRange?.let { d.now.toLocalTime()>=it.first && d.now.toLocalTime()<it.second }==true
+        val waiting=slot!=null && !live
+        val title=when {
+            finished->"انتهت حصصك اليوم"
+            slot==null->d.ui.holiday?.label ?: "لا توجد حصص اليوم"
+            live->periodName(slot.period)
+            inBreak->"فسحة الآن"
+            lessons.any{it.state==com.mrabah.oneuischedule.data.SlotState.DONE}->"وقت متاح"
+            else->periodName(slot.period)
+        }
+        rect(1f,1f,w-2f,h-2f,"#152230",16f,"#405568")
+        fun nodes(y:Float,cards:Boolean) {
+            if(lessons.isEmpty())return
+            val cell=(w-24f)/lessons.size
+            val radius=if(compact)4f else 5f
+            val centers=lessons.indices.map { w-12f-cell*(it+.5f) }
+            if(centers.size>1)line(centers.last(),y,centers.first(),y,"#536878",1f)
+            lessons.forEachIndexed { i,s ->
+                val x=centers[i];val past=s.state==com.mrabah.oneuischedule.data.SlotState.DONE
+                val active=s.state==com.mrabah.oneuischedule.data.SlotState.LIVE
+                if(cards) {
+                    val fill=if(active)"#34352D" else "#1B2D3B"
+                    rect(x-cell/2+2f,y-62f,cell-4f,48f,fill,6f,if(active)gold else "#354D60")
+                    text(periodName(s.period).removePrefix("الحصة "),x-cell/2+4f,y-58f,cell-8f,18f,if(cell<60)9f else 12f,
+                        if(past)"#738795" else fg,true,"center",8f)
+                    section(DesignDay.section(s),x-cell/2+4f,y-38f,cell-8f,19f,if(cell<60)12f else 15f,
+                        if(past)"#738795" else GlassAgenda.color(s.section))
+                }
+                circle(x,y,radius+1,"#152230")
+                circle(x,y,radius,if(past)doneColor else if(active)gold else muted,!past && !active,1f)
+                if(past) {line(x-radius*.5f,y,x-radius*.1f,y+radius*.4f,"#152230",1f);line(x-radius*.1f,y+radius*.4f,x+radius*.6f,y-radius*.4f,"#152230",1f)}
+                if(active)circle(x,y,radius+2,gold,true,.6f)
+                clock(s.period.toString(),x-cell/2,y+7f,cell,15f,if(compact)9f else 11f,muted,false)
+            }
+        }
+        fun footer(y:Float) {
+            val next=if(waiting)slot else d.upcoming.firstOrNull()
+            rect(12f,y,w-24f,25f,"#1D3040",8f)
+            if(next!=null) {
+                text("التالي: ${periodName(next.period)} · ${DesignDay.section(next)}",86f,y+2,w-111f,21f,12f,fg,true,minSize=9f)
+                clock(DesignDay.clock(next.bell.start),18f,y+2,64f,21f,12f,fg)
+            } else text(if(finished)"يوم موفق · ✓" else "نهاية الدوام ${d.finish}",18f,y+2,w-36f,21f,12f,muted,align="center")
+        }
+        if(compact) {
+            text(title,10f,10f,w-20f,29f,19f,fg,true,"center",13f)
+            text(if(slot!=null) "${if(waiting) "التالي" else "الفصل"} ${d.section}" else d.date,10f,39f,w-20f,20f,12f,muted,align="center")
+            clock(if(finished)"✓" else d.countText,15f,65f,w-30f,43f,36f,gold)
+            text(if(finished)"أكملت ${lessons.size} حصص" else if(slot==null)"افتح الجدول" else if(waiting)"دقيقة حتى البداية" else "دقيقة حتى النهاية",10f,109f,w-20f,19f,11f,fg,align="center",minSize=9f)
+            nodes(h-36f,false)
+            return
+        }
+        if(wide) {
+            text(title,w*.43f,10f,w*.53f,30f,23f,fg,true,minSize=15f)
+            text(if(slot!=null) "الفصل ${d.section}" else d.date,w*.48f,41f,w*.47f,19f,13f,muted)
+            clock(if(finished)"✓" else d.countText,16f,9f,w*.35f,37f,32f,gold)
+            text(if(finished)"انتهت" else if(waiting)"دقيقة حتى البداية" else "دقيقة متبقية",15f,46f,w*.36f,17f,11f,fg,align="center")
+            nodes(h-65f,false)
+            footer(h-32f)
+            return
+        }
+        text(d.day,w-151f,12f,133f,29f,24f,fg,true,minSize=16f)
+        text("${lessons.size} حصص اليوم",17f,18f,148f,22f,14f,muted,align="left")
+        nodes(112f,true)
+        rect(12f,144f,w-24f,79f,"#1B2D3B",9f)
+        text(title,130f,151f,w-151f,29f,22f,fg,true,minSize=14f)
+        clock(if(finished)"✓" else d.countText,20f,153f,104f,41f,35f,gold)
+        text(if(finished)"أكملت يومك" else if(waiting)"دقيقة حتى البداية" else "دقيقة متبقية",17f,199f,112f,17f,11f,fg,align="center",minSize=9f)
+        if(slot!=null) {
+            line(132f,184f,132f,214f,"#405568")
+            val tw=(w-160f)/2
+            text("البداية",w-23f-tw,184f,tw,14f,10f,muted,align="center")
+            clock(DesignDay.clock(slot.bell.start),w-23f-tw,200f,tw,20f,16f,fg)
+            text("النهاية",140f,184f,tw,14f,10f,muted,align="center")
+            clock(DesignDay.clock(slot.bell.end),140f,200f,tw,20f,16f,fg)
+        }
+        val note=ClassNotes.get(appContext,slot?.section)?.text ?: if(finished)"أحسنت · انتهت حصصك اليوم" else "اضغط لإضافة آخر نقطة للفصل"
+        val tall=mode==TimelineLayout.TALL
+        rect(12f,231f,w-24f,if(tall)48f else 36f,"#1D3040",9f)
+        icon("note",w-34f,240f,muted,15f)
+        if(tall) {
+            val tp=TextPaint(Paint.ANTI_ALIAS_FLAG).apply{color=col(fg);textSize=13f;typeface=regular}
+            val layout=StaticLayout.Builder.obtain(note,0,note.length,tp,(w-68f).toInt())
+                .setTextDirection(TextDirectionHeuristics.RTL).setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                .setIncludePad(false).setMaxLines(2).setEllipsize(TextUtils.TruncateAt.END).build()
+            c.save();c.clipRect(20f,237f,w-45f,274f);c.translate(20f,238f);layout.draw(c);c.restore()
+        } else text(note,20f,237f,w-66f,24f,12f,fg,minSize=11f)
+        if(tall) {
+            val agenda=if(slot!=null) GlassAgenda.rows(d) else emptyList()
+            val space=h-329f
+            val step=minOf(26f,space/agenda.size.coerceAtLeast(1))
+            agenda.forEachIndexed { i,row ->
+                val y=287f+i*step
+                rect(12f,y,w-24f,step-2f,"#192B3B",4f)
+                text(if(row.section!=null) "${periodName(row.periods.toIntOrNull() ?: 0)} · ${row.label}" else row.label,156f,y,w-179f,step-2f,11f,fg,minSize=9f)
+                clock(if(row.section!=null)DesignDay.clock(row.start) else "${DesignDay.clock(row.start)} – ${DesignDay.clock(row.end)}",17f,y,136f,step-2f,11f,muted)
+            }
+            text("نهاية الدوام ${d.finish}",20f,h-30f,w-40f,20f,12f,muted)
+        } else footer(h-38f)
     }
 }

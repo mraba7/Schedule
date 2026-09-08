@@ -30,4 +30,6 @@
     <string name="design_glass_description">جدول زجاجي بألوان ثابتة للفصول، وتمييز ذهبي للحصة الحالية والفسحة وأوقات الفراغ.</string>
     <string name="design_focus_label">الحصة بوضوح</string>
     <string name="design_focus_description">اسم الحصة ووقتها والعد التنازلي، مع آخر نقطة للفصل. اضغط لتحرير ملاحظة الفصل.</string>
+    <string name="design_path_label">مسار الحصص</string>
+    <string name="design_path_description">خط زمني يتكيف مع حجم الودجت؛ علامة صح للمنتهية وذهبي للحالية.</string>
 </resources>
