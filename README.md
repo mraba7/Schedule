@@ -114,3 +114,8 @@ Notifications need notification permission; exact timing needs exact-alarm acces
 Without it Android can delay the alarm. The note remains visible in the widget.
 Class reminders work independently of optional school bell sounds and survive
 reboots; schedule edits re-evaluate their next occurrence.
+
+The focus widget now includes the displayed day’s total and all assigned period/class
+tiles, with gold for the live lesson and muted completed lessons. Up to four tiles
+fit per row; full teaching days use two rows. Counts distinguish the teacher’s
+assigned lessons from school period numbers. Native previews include a full day.

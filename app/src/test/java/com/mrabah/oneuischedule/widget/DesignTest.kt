@@ -69,7 +69,8 @@ class DesignTest {
     }
     @Test fun renderEveryDesignAndState() {
         val states=mapOf("live" to at(8,30),"before" to at(7,55),"break" to at(10,0),
-            "last" to at(12,40),"tomorrow" to at(15,0),
+            "last" to at(12,40),
+            "full-day" to DesignDay.build(Defaults.config.copy(week=mapOf(java.time.DayOfWeek.MONDAY to (1..7).associateWith { com.mrabah.oneuischedule.data.Duty.Teach("2/${(it-1)%4+1}") })),LocalDateTime.of(2026,9,7,8,30)),"tomorrow" to at(15,0),
             "empty" to DesignDay.build(Defaults.config.copy(week=emptyMap()),LocalDateTime.of(2026,9,7,8,30)))
         val folder=File("build/design-previews").apply{mkdirs()}
         ClassNotes.save(context,"2/3","توقفنا عند صفحة ٣٥، السؤال ٤",true,LocalDateTime.of(2026,9,6,9,0))

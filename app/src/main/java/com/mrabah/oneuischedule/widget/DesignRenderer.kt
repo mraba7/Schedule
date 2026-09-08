@@ -392,30 +392,56 @@ internal class DesignRenderer(context: Context) {
     private fun focus() {
         val fg="#F1F0EA";val muted="#A7B5C1";val gold="#CFB47D"
         val slot=d.focus!!;val live=d.ui.live!=null
+        val lessons=d.ui.slots
         rect(1f,1f,358f,358f,"#152230",18f,"#405568")
-        text(d.day,211f,12f,130f,26f,23f,fg,true,minSize=15f)
-        text(d.date,112f,14f,94f,24f,12f,muted,minSize=9f)
-        rect(16f,14f,67f,26f,"#203039",13f,if(live)gold else muted)
-        text(if(live)"الآن" else "القادمة",19f,14f,61f,26f,16f,if(live)gold else muted,true,"center")
-        line(2f,51f,358f,51f,"#304353")
-        text(periodName(slot.period),16f,62f,326f,45f,36f,fg,true,minSize=27f)
-        rect(246f,112f,96f,23f,"#203D41",11f,GlassAgenda.color(slot.section))
-        text("الفصل ${d.section}",251f,112f,86f,23f,14f,GlassAgenda.color(slot.section),true,"center",11f)
+        text(d.day,191f,9f,151f,27f,24f,fg,true,minSize=15f)
+        text(d.date,207f,35f,135f,17f,12f,muted)
+        rect(12f,13f,130f,29f,"#263137",14f,gold)
+        text("${lessons.size} حصص ${if(d.ui.isToday) "اليوم" else "بالجدول"}",17f,14f,120f,27f,15f,fg,true,"center",12f)
+        // Four readable tiles per row; a full teaching day uses two rows.
+        val columns=minOf(4,lessons.size.coerceAtLeast(1))
+        val rows=(lessons.size+columns-1)/columns
+        val tileH=if(rows>1)25f else 43f
+        val tileW=(336f-5f*(columns-1))/columns
+        lessons.forEachIndexed { i,lesson ->
+            val x=12f+(columns-1-i%columns)*(tileW+5f)
+            val y=57f+(i/columns)*(tileH+4f)
+            val active=lesson.state==com.mrabah.oneuischedule.data.SlotState.LIVE
+            val past=lesson.state==com.mrabah.oneuischedule.data.SlotState.DONE
+            val tint=if(past) "#71818E" else GlassAgenda.color(lesson.section)
+            rect(x,y,tileW,tileH,if(active)"#293134" else "#192A38",7f,if(active)gold else "#344A5C")
+            if(active)circle(x+tileW-6f,y+6f,1.6f,gold)
+            text(periodName(lesson.period).removePrefix("الحصة "),x+4f,y+1f,tileW-8f,if(rows>1)12f else 20f,
+                if(rows>1)9f else 13f,if(past)"#71818E" else fg,true,"center",8f)
+            section(DesignDay.section(lesson),x+3f,y+if(rows>1)12f else 21f,tileW-6f,if(rows>1)12f else 20f,
+                if(rows>1)11f else 17f,tint)
+        }
+        val done=lessons.count{it.state==com.mrabah.oneuischedule.data.SlotState.DONE}
+        val ahead=lessons.count{it.state==com.mrabah.oneuischedule.data.SlotState.AHEAD}
+        val summary=if(live) "$done انتهت · $ahead بعد الحالية" else if(d.ui.isToday) "$done انتهت · $ahead قادمة" else "${lessons.size} حصص في هذا اليوم"
+        text(summary,16f,if(rows>1)112f else 104f,328f,15f,11f,muted,align="center")
+        rect(6f,133f,348f,194f,"#132331",9f,"#2D4253")
+        rect(15f,142f,48f,23f,"#CFB47D",10f)
+        text(if(live)"الآن" else "القادمة",18f,142f,42f,23f,12f,"#152230",true,"center")
+        text(periodName(slot.period),70f,141f,272f,36f,29f,fg,true,minSize=22f)
+        rect(246f,180f,96f,22f,"#203D41",11f,GlassAgenda.color(slot.section))
+        text("الفصل ${d.section}",251f,180f,86f,22f,13f,GlassAgenda.color(slot.section),true,"center",10f)
         val note=ClassNotes.get(appContext,slot.section)?.text
-        rect(16f,141f,328f,35f,"#1D3040",8f)
-        icon("note",320f,150f,muted,16f)
-        text(note ?: "أضف آخر نقطة لهذا الفصل",24f,146f,286f,24f,12f,if(note==null)muted else fg,minSize=11f)
-        rect(16f,184f,328f,49f,"#192B3B",10f)
-        line(180f,193f,180f,225f,"#405568")
-        text("البداية",190f,186f,143f,16f,12f,muted,align="center")
-        text("النهاية",26f,186f,143f,16f,12f,muted,align="center")
-        clock(DesignDay.clock(slot.bell.start),190f,202f,143f,29f,25f,fg)
-        clock(DesignDay.clock(slot.bell.end),26f,202f,143f,29f,25f,fg)
-        clock(d.countText,63f,236f,234f,49f,if(d.minutes!=null)47f else 31f,gold)
-        text(if(d.minutes!=null)"دقيقة متبقية" else "تبدأ الساعة",34f,285f,292f,22f,19f,fg,true,"center")
-        text(if(live)"حتى نهاية الحصة" else if(d.minutes!=null)"حتى بداية الحصة" else "${d.day} · ${periodName(slot.period)}",30f,307f,300f,15f,11f,muted,align="center")
-        rect(17f,326f,326f,4f,"#304352",2f)
-        if(live)rect(17f+326f*(1-d.ui.progress),326f,326f*d.ui.progress,4f,gold,2f)
+        rect(15f,210f,330f,25f,"#1D3040",8f)
+        icon("note",323f,215f,muted,15f)
+        text(note ?: "أضف آخر نقطة لهذا الفصل",22f,211f,292f,23f,12f,if(note==null)muted else fg,minSize=10f)
+        line(84f,250f,84f,291f,"#405568")
+        line(276f,250f,276f,291f,"#405568")
+        text("البداية",281f,253f,62f,16f,12f,muted,align="center")
+        text("النهاية",17f,253f,62f,16f,12f,muted,align="center")
+        clock(DesignDay.clock(slot.bell.start),279f,271f,66f,23f,19f,fg)
+        clock(DesignDay.clock(slot.bell.end),15f,271f,66f,23f,19f,fg)
+        clock(d.countText,189f,244f,81f,50f,if(d.minutes!=null)42f else 22f,gold)
+        text(if(d.minutes!=null)"دقيقة متبقية" else "تبدأ الساعة",90f,257f,99f,19f,14f,gold,true,"center",11f)
+        text(if(live)"حتى نهاية الحصة" else if(d.minutes!=null)"حتى بداية الحصة" else "${d.day}",89f,279f,103f,15f,10f,muted,align="center",minSize=8f)
+        rect(17f,302f,326f,4f,"#304352",2f)
+        if(live)rect(17f+326f*(1-d.ui.progress),302f,326f*d.ui.progress,4f,gold,2f)
+        if(live)clock("${(d.ui.progress*100).toInt()}%",137f,310f,86f,14f,10f,muted,false)
         val next=d.upcoming.firstOrNull()
         if(next!=null) {
             text("التالي: ${periodName(next.period)} · ${DesignDay.section(next)}",94f,338f,249f,18f,12f,muted,true,minSize=9f)

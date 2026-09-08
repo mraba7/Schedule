@@ -78,7 +78,7 @@ internal object DesignWidgets {
             PreparationStore.task(c,day.key).ifBlank { "تحديد التجهيز" },PreparationStore.done(c,day.key))
         val views=RemoteViews(c.packageName,R.layout.design_widget)
         views.setImageViewBitmap(R.id.design_image,bitmap)
-        views.setContentDescription(R.id.design_image,if(style==Design.FOCUS) "${day.day}، ${day.focus?.let { periodName(it.period) } ?: "لا توجد حصص"}، الفصل ${day.section}، ${day.range}، ${day.countText} ${day.countLabel}، ${ClassNotes.get(c,day.focus?.section)?.text ?: "إضافة ملاحظة الفصل"}" else day.summary)
+        views.setContentDescription(R.id.design_image,if(style==Design.FOCUS) "${day.ui.slots.size} حصص: ${day.ui.slots.joinToString { periodName(it.period) + " الفصل " + DesignDay.section(it) }}، ${day.day}، ${day.focus?.let { periodName(it.period) } ?: "لا توجد حصص"}، الفصل ${day.section}، ${day.range}، ${day.countText} ${day.countLabel}، ${ClassNotes.get(c,day.focus?.section)?.text ?: "إضافة ملاحظة الفصل"}" else day.summary)
         val intent=Intent(c,DesignLessonActivity::class.java)
             .setData(Uri.parse("schedule-design://lesson/${day.key ?: "empty"}"))
             .putExtra("key",day.key).putExtra("title","${day.day} · ${day.period} · ${day.section}")
