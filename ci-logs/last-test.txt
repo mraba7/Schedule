@@ -4,15 +4,15 @@ Daemon will be stopped at the end of the build
 > Task :app:preBuild UP-TO-DATE
 > Task :app:preDebugBuild UP-TO-DATE
 > Task :app:generateDebugBuildConfig
-> Task :app:generateDebugResValues FROM-CACHE
 > Task :app:checkDebugAarMetadata
+> Task :app:generateDebugResValues FROM-CACHE
 > Task :app:mapDebugSourceSetPaths
-> Task :app:generateDebugResources FROM-CACHE
-> Task :app:mergeDebugResources FROM-CACHE
-> Task :app:packageDebugResources FROM-CACHE
-> Task :app:parseDebugLocalResources FROM-CACHE
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
 > Task :app:createDebugCompatibleScreenManifests
 > Task :app:extractDeepLinksDebug FROM-CACHE
+> Task :app:parseDebugLocalResources
+> Task :app:mergeDebugResources
 > Task :app:processDebugMainManifest
 > Task :app:processDebugManifest
 > Task :app:javaPreCompileDebug FROM-CACHE
@@ -23,18 +23,21 @@ Daemon will be stopped at the end of the build
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
 > Task :app:buildKotlinToolingMetadata
+> Task :app:processDebugManifestForPackage
 > Task :app:preReleaseBuild UP-TO-DATE
 > Task :app:generateReleaseBuildConfig
-> Task :app:processDebugManifestForPackage
-> Task :app:checkReleaseAarMetadata
 > Task :app:generateReleaseResValues FROM-CACHE
+> Task :app:checkReleaseAarMetadata
 > Task :app:mapReleaseSourceSetPaths
-> Task :app:generateReleaseResources FROM-CACHE
-> Task :app:mergeReleaseResources FROM-CACHE
-> Task :app:packageReleaseResources FROM-CACHE
+> Task :app:generateReleaseResources
+> Task :app:processDebugResources
+> Task :app:packageDebugUnitTestForUnitTest
+> Task :app:generateDebugUnitTestConfig
+> Task :app:packageReleaseResources
 > Task :app:parseReleaseLocalResources FROM-CACHE
 > Task :app:createReleaseCompatibleScreenManifests
 > Task :app:extractDeepLinksRelease FROM-CACHE
+> Task :app:mergeReleaseResources
 > Task :app:processReleaseMainManifest
 > Task :app:processReleaseManifest
 > Task :app:javaPreCompileRelease FROM-CACHE
@@ -43,12 +46,9 @@ Daemon will be stopped at the end of the build
 > Task :app:mergeReleaseShaders
 > Task :app:compileReleaseShaders NO-SOURCE
 > Task :app:generateReleaseAssets UP-TO-DATE
-> Task :app:processReleaseManifestForPackage
 > Task :app:mergeReleaseAssets
-> Task :app:processDebugResources
+> Task :app:processReleaseManifestForPackage
 > Task :app:processReleaseResources
-> Task :app:packageDebugUnitTestForUnitTest
-> Task :app:generateDebugUnitTestConfig
 > Task :app:packageReleaseUnitTestForUnitTest
 > Task :app:generateReleaseUnitTestConfig
 
@@ -60,24 +60,24 @@ w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneui
 w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/MainActivity.kt:590:38 'fun <T : Parcelable!> getParcelableExtra(p0: String!): T?' is deprecated. Deprecated in Java.
 w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/widget/ScheduleWidget.kt:669:20 'static field ACTION_WALLPAPER_CHANGED: String' is deprecated. Deprecated in Java.
 
+> Task :app:compileReleaseJavaWithJavac
 > Task :app:compileDebugJavaWithJavac
-> Task :app:processDebugJavaRes
 > Task :app:bundleDebugClassesToRuntimeJar
 > Task :app:bundleDebugClassesToCompileJar
-> Task :app:compileReleaseJavaWithJavac
+> Task :app:processDebugJavaRes
 > Task :app:processReleaseJavaRes
-> Task :app:bundleReleaseClassesToRuntimeJar
 > Task :app:bundleReleaseClassesToCompileJar
-> Task :app:compileReleaseUnitTestKotlin
-> Task :app:compileReleaseUnitTestJavaWithJavac NO-SOURCE
+> Task :app:bundleReleaseClassesToRuntimeJar
 > Task :app:compileDebugUnitTestKotlin
-> Task :app:processReleaseUnitTestJavaRes
+> Task :app:compileReleaseUnitTestKotlin
 > Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
 > Task :app:processDebugUnitTestJavaRes
 > Task :app:testDebugUnitTest
+> Task :app:compileReleaseUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processReleaseUnitTestJavaRes
 > Task :app:testReleaseUnitTest
 > Task :app:test
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/tests-1788843061493.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/tests-1788861864321.json
 
-BUILD SUCCESSFUL in 1m 15s
-57 actionable tasks: 41 executed, 16 from cache
+BUILD SUCCESSFUL in 1m 8s
+57 actionable tasks: 48 executed, 9 from cache
