@@ -15,6 +15,7 @@ import com.mrabah.oneuischedule.R
  * letterboxing on non-square hosts. Text uses bundled fonts on every launcher.
  */
 internal class DesignRenderer(context: Context) {
+    private val appContext=context.applicationContext
     private val regular = ResourcesCompat.getFont(context, R.font.plex_arabic_regular) ?: Typeface.DEFAULT
     private val bold = ResourcesCompat.getFont(context, R.font.plex_arabic_bold) ?: Typeface.DEFAULT_BOLD
     private lateinit var c: Canvas
@@ -46,6 +47,7 @@ internal class DesignRenderer(context: Context) {
             Design.SPORT -> sport()
             Design.BLUEPRINT -> blueprint()
             Design.GLASS -> glass()
+            Design.FOCUS -> focus()
         }
         return bitmap
     }
@@ -130,7 +132,7 @@ internal class DesignRenderer(context: Context) {
             Design.ROUTE->"#14171D" to "#FFC15A"
             Design.SPORT->"#080808" to "#D6FF42"
             Design.BLUEPRINT->"#E9F2FC" to "#174BA0"
-            Design.GLASS->"#152230" to "#CFB47D"
+            Design.GLASS,Design.FOCUS->"#152230" to "#CFB47D"
         }
         rect(0f,0f,360f,360f,bg,24f)
         text(design.title,24f,24f,312f,34f,24f,fg,true)
@@ -386,5 +388,38 @@ internal class DesignRenderer(context: Context) {
         line(8f,334f,352f,334f,border,.5f)
         text("الانصراف ${d.finish}",210f,336f,131f,20f,12f,fg,true)
         text("عرض الجدول  ‹",17f,336f,134f,20f,12f,muted,true,"left")
+    }
+    private fun focus() {
+        val fg="#F1F0EA";val muted="#A7B5C1";val gold="#CFB47D"
+        val slot=d.focus!!;val live=d.ui.live!=null
+        rect(1f,1f,358f,358f,"#152230",18f,"#405568")
+        text(d.day,211f,12f,130f,26f,23f,fg,true,minSize=15f)
+        text(d.date,112f,14f,94f,24f,12f,muted,minSize=9f)
+        rect(16f,14f,67f,26f,"#203039",13f,if(live)gold else muted)
+        text(if(live)"الآن" else "القادمة",19f,14f,61f,26f,16f,if(live)gold else muted,true,"center")
+        line(2f,51f,358f,51f,"#304353")
+        text(periodName(slot.period),16f,62f,326f,45f,36f,fg,true,minSize=27f)
+        rect(246f,112f,96f,23f,"#203D41",11f,GlassAgenda.color(slot.section))
+        text("الفصل ${d.section}",251f,112f,86f,23f,14f,GlassAgenda.color(slot.section),true,"center",11f)
+        val note=ClassNotes.get(appContext,slot.section)?.text
+        rect(16f,141f,328f,35f,"#1D3040",8f)
+        icon("note",320f,150f,muted,16f)
+        text(note ?: "أضف آخر نقطة لهذا الفصل",24f,146f,286f,24f,12f,if(note==null)muted else fg,minSize=11f)
+        rect(16f,184f,328f,49f,"#192B3B",10f)
+        line(180f,193f,180f,225f,"#405568")
+        text("البداية",190f,186f,143f,16f,12f,muted,align="center")
+        text("النهاية",26f,186f,143f,16f,12f,muted,align="center")
+        clock(DesignDay.clock(slot.bell.start),190f,202f,143f,29f,25f,fg)
+        clock(DesignDay.clock(slot.bell.end),26f,202f,143f,29f,25f,fg)
+        clock(d.countText,63f,236f,234f,49f,if(d.minutes!=null)47f else 31f,gold)
+        text(if(d.minutes!=null)"دقيقة متبقية" else "تبدأ الساعة",34f,285f,292f,22f,19f,fg,true,"center")
+        text(if(live)"حتى نهاية الحصة" else if(d.minutes!=null)"حتى بداية الحصة" else "${d.day} · ${periodName(slot.period)}",30f,307f,300f,15f,11f,muted,align="center")
+        rect(17f,326f,326f,4f,"#304352",2f)
+        if(live)rect(17f+326f*(1-d.ui.progress),326f,326f*d.ui.progress,4f,gold,2f)
+        val next=d.upcoming.firstOrNull()
+        if(next!=null) {
+            text("التالي: ${periodName(next.period)} · ${DesignDay.section(next)}",94f,338f,249f,18f,12f,muted,true,minSize=9f)
+            clock(DesignDay.clock(next.bell.start),17f,338f,67f,18f,13f,muted)
+        } else text("آخر حصة اليوم · الانصراف ${d.finish}",17f,338f,326f,18f,12f,muted,true,"center")
     }
 }

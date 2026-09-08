@@ -28,4 +28,6 @@
     <string name="design_blueprint_description">جدول حي بتصميم المخطط الهندسي، اضغط لفتح ملاحظات الحصة وتجهيزها.</string>
     <string name="design_glass_label">الجدول الزجاجي</string>
     <string name="design_glass_description">جدول زجاجي بألوان ثابتة للفصول، وتمييز ذهبي للحصة الحالية والفسحة وأوقات الفراغ.</string>
+    <string name="design_focus_label">الحصة بوضوح</string>
+    <string name="design_focus_description">اسم الحصة ووقتها والعد التنازلي، مع آخر نقطة للفصل. اضغط لتحرير ملاحظة الفصل.</string>
 </resources>

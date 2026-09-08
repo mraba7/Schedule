@@ -42,6 +42,7 @@ internal object DesignWidgets {
         Design.SPORT to SportWidgetReceiver::class.java,
         Design.BLUEPRINT to BlueprintWidgetReceiver::class.java,
         Design.GLASS to GlassWidgetReceiver::class.java,
+        Design.FOCUS to FocusWidgetReceiver::class.java,
     )
     fun updateAll(context: Context) {
         val manager=AppWidgetManager.getInstance(context)
@@ -77,11 +78,12 @@ internal object DesignWidgets {
             PreparationStore.task(c,day.key).ifBlank { "تحديد التجهيز" },PreparationStore.done(c,day.key))
         val views=RemoteViews(c.packageName,R.layout.design_widget)
         views.setImageViewBitmap(R.id.design_image,bitmap)
-        views.setContentDescription(R.id.design_image,day.summary)
+        views.setContentDescription(R.id.design_image,if(style==Design.FOCUS) "${day.day}، ${day.focus?.let { periodName(it.period) } ?: "لا توجد حصص"}، الفصل ${day.section}، ${day.range}، ${day.countText} ${day.countLabel}، ${ClassNotes.get(c,day.focus?.section)?.text ?: "إضافة ملاحظة الفصل"}" else day.summary)
         val intent=Intent(c,DesignLessonActivity::class.java)
             .setData(Uri.parse("schedule-design://lesson/${day.key ?: "empty"}"))
             .putExtra("key",day.key).putExtra("title","${day.day} · ${day.period} · ${day.section}")
-        val open=PendingIntent.getActivity(c,0,intent,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val target=if(style==Design.FOCUS && day.focus?.section!=null) ClassNotes.intent(c,day.focus!!.section!!) else intent
+        val open=PendingIntent.getActivity(c,0,target,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         views.setOnClickPendingIntent(R.id.design_image,open)
         views.setViewVisibility(R.id.design_schedule,if((style==Design.TICKET || style==Design.GLASS) && day.key!=null) View.VISIBLE else View.GONE)
         if((style==Design.TICKET || style==Design.GLASS) && day.key!=null) {
@@ -159,3 +161,5 @@ class SportWidgetReceiver:DesignWidgetReceiver(){override val design=Design.SPOR
 class BlueprintWidgetReceiver:DesignWidgetReceiver(){override val design=Design.BLUEPRINT}
 
 class GlassWidgetReceiver:DesignWidgetReceiver(){override val design=Design.GLASS}
+
+class FocusWidgetReceiver:DesignWidgetReceiver(){override val design=Design.FOCUS}

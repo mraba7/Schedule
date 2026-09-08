@@ -102,3 +102,15 @@ across days, while champagne gold identifies the active lesson independently.
 Upcoming rows include actual bell ranges, breaks and grouped consecutive free
 periods up to the final assigned lesson. Times are isolated left-to-right.
 The footer opens the schedule tab; the current lesson opens its notes.
+
+### الحصة بوضوح and classroom progress notes
+
+The new first gallery design prioritizes the written period name, start/end clocks
+and minutes remaining, without a subject label. The next row includes its class.
+Tap the widget to edit the focused class progress note (up to 1000 characters).
+Notes persist by class until updated or completed. Saving arms one reminder for
+the next actual meeting of that class after saving; holidays and overrides apply.
+Notifications need notification permission; exact timing needs exact-alarm access.
+Without it Android can delay the alarm. The note remains visible in the widget.
+Class reminders work independently of optional school bell sounds and survive
+reboots; schedule edits re-evaluate their next occurrence.

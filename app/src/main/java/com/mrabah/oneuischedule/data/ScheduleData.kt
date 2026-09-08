@@ -158,10 +158,12 @@ object ScheduleStore {
 
     fun save(context: Context, config: Config) {
         prefs(context).edit().putString(KEY, encode(config).toString()).apply()
+        com.mrabah.oneuischedule.widget.ClassNoteReminders.sync(context)
     }
 
     fun reset(context: Context) {
         prefs(context).edit().remove(KEY).apply()
+        com.mrabah.oneuischedule.widget.ClassNoteReminders.sync(context)
     }
 
     fun exportJson(config: Config): String = encode(config).toString(2)

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
     <include domain="sharedpref" path="schedule_config.xml" />
+        <include domain="sharedpref" path="class_progress_notes.xml" />
 </full-backup-content>

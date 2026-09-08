@@ -21,6 +21,20 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.OneUISchedule">
 
+        <activity android:name=".widget.ClassNoteActivity" android:exported="false" />
+        <receiver android:name=".widget.ClassNoteReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+            </intent-filter>
+        </receiver>
+        <receiver android:name=".widget.FocusWidgetReceiver" android:exported="false" android:label="@string/design_focus_label">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/design_focus_info" />
+        </receiver>
         <activity android:name=".widget.DesignLessonActivity" android:exported="false" />
         <receiver android:name=".widget.TicketWidgetReceiver" android:exported="false"
             android:label="@string/design_ticket_label">

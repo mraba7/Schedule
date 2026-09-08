@@ -72,6 +72,7 @@ class DesignTest {
             "last" to at(12,40),"tomorrow" to at(15,0),
             "empty" to DesignDay.build(Defaults.config.copy(week=emptyMap()),LocalDateTime.of(2026,9,7,8,30)))
         val folder=File("build/design-previews").apply{mkdirs()}
+        ClassNotes.save(context,"2/3","توقفنا عند صفحة ٣٥، السؤال ٤",true,LocalDateTime.of(2026,9,6,9,0))
         Design.entries.forEach{style ->
             states.forEach{(state,day) ->
                 val bitmap=DesignRenderer(context).render(style,day,720,720,"أوراق العمل")
