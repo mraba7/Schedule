@@ -158,10 +158,12 @@ object ScheduleStore {
 
     fun save(context: Context, config: Config) {
         prefs(context).edit().putString(KEY, encode(config).toString()).apply()
+        com.mrabah.oneuischedule.widget.ClassNoteReminders.sync(context)
     }
 
     fun reset(context: Context) {
         prefs(context).edit().remove(KEY).apply()
+        com.mrabah.oneuischedule.widget.ClassNoteReminders.sync(context)
     }
 
     fun exportJson(config: Config): String = encode(config).toString(2)
@@ -397,7 +399,9 @@ object ScheduleEngine {
 
     fun nextRefresh(context: Context, now: LocalDateTime): LocalDateTime {
         val config = ScheduleStore.load(context)
-        if (build(config, now).live != null) {
+        val ui = build(config, now)
+        // Keep the approaching-lesson countdown accurate as well as the live one.
+        if (ui.live != null || (ui.isToday && ui.minutesUntilNext?.let { it <= 60 } == true)) {
             return now.truncatedTo(ChronoUnit.MINUTES).plusMinutes(1)
         }
 

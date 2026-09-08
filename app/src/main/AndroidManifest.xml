@@ -21,6 +21,62 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.OneUISchedule">
 
+        <activity android:name=".widget.ClassNoteActivity" android:exported="false" />
+        <receiver android:name=".widget.ClassNoteReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+            </intent-filter>
+        </receiver>
+        <receiver android:name=".widget.FocusWidgetReceiver" android:exported="false" android:label="@string/design_focus_label">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/design_focus_info" />
+        </receiver>
+        <activity android:name=".widget.DesignLessonActivity" android:exported="false" />
+        <receiver android:name=".widget.TicketWidgetReceiver" android:exported="false"
+            android:label="@string/design_ticket_label">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/design_ticket_info" />
+        </receiver>
+        <receiver android:name=".widget.OrbitWidgetReceiver" android:exported="false"
+            android:label="@string/design_orbit_label">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/design_orbit_info" />
+        </receiver>
+        <receiver android:name=".widget.EditorialWidgetReceiver" android:exported="false"
+            android:label="@string/design_editorial_label">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/design_editorial_info" />
+        </receiver>
+        <receiver android:name=".widget.BentoWidgetReceiver" android:exported="false"
+            android:label="@string/design_bento_label">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/design_bento_info" />
+        </receiver>
+        <receiver android:name=".widget.RouteWidgetReceiver" android:exported="false"
+            android:label="@string/design_route_label">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/design_route_info" />
+        </receiver>
+        <receiver android:name=".widget.SportWidgetReceiver" android:exported="false"
+            android:label="@string/design_sport_label">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/design_sport_info" />
+        </receiver>
+        <receiver android:name=".widget.BlueprintWidgetReceiver" android:exported="false"
+            android:label="@string/design_blueprint_label">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/design_blueprint_info" />
+        </receiver>
+
+        <receiver android:name=".widget.GlassWidgetReceiver" android:exported="false" android:label="@string/design_glass_label">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/design_glass_info" />
+        </receiver>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -46,6 +102,42 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/schedule_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.LuxuryScheduleWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_luxury_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/luxury_schedule_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.CardsScheduleWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_cards_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/cards_schedule_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.CompactScheduleWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_compact_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/compact_schedule_widget_info" />
         </receiver>
         <receiver
             android:name=".notify.PeriodAlarmReceiver"

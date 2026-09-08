@@ -6,4 +6,10 @@
     <string name="standby">انتظار</string>
     <string name="done_today">انتهى دوام اليوم</string>
     <string name="assembly">الطابور</string>
+    <string name="widget_luxury_label">جدول اليوم · زجاجي فاخر</string>
+    <string name="widget_cards_label">جدول اليوم · بطاقات</string>
+    <string name="widget_compact_label">جدول اليوم · مختصر</string>
+    <string name="widget_luxury_description">عرض زجاجي فاخر للحصة الحالية والحصص القادمة.</string>
+    <string name="widget_cards_description">قائمة واضحة ببطاقات حصص اليوم.</string>
+    <string name="widget_compact_description">الحصة الحالية وما يليها بنظرة سريعة.</string>
 </resources>

@@ -53,7 +53,11 @@ import java.util.Locale
  * ══════════════════════════════════════════════════════════════ */
 
 internal suspend fun updateEveryWidget(context: Context) {
+    DesignWidgets.updateAll(context)
     ScheduleWidget().updateAll(context)
+    LuxuryScheduleWidget().updateAll(context)
+    CardsScheduleWidget().updateAll(context)
+    CompactScheduleWidget().updateAll(context)
     NowWidget().updateAll(context)
     CountdownWidget().updateAll(context)
     WeekGridWidget().updateAll(context)

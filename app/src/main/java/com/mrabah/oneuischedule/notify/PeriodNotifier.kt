@@ -45,6 +45,7 @@ object PeriodNotifier {
     private const val END_ALERT_MINUTES = 5L
 
     fun sync(context: Context) {
+        com.mrabah.oneuischedule.widget.ClassNoteReminders.sync(context)
         val config = ScheduleStore.load(context)
         if (!config.notify) {
             cancel(context)

@@ -49,10 +49,68 @@ reference rather than overwriting — you'll want to switch back in May.
 - Refresh fires on **bell boundaries**, not a fixed cycle, so the card flips
   exactly when the bell rings. One-minute ticks only while a period is running.
 
+## Daily widget styles
+
+The widget picker also offers three visual treatments backed by the same live
+schedule engine:
+
+- **Luxury glass** — deep violet glass, gold focus, cyan upcoming rails.
+- **Cards** — a bright, high-contrast agenda with one card per period.
+- **Compact** — a 4×2 glance with the current period and the next one.
+
 ## Two platform limits, handled honestly
+
+## Illustrated designs (native rendering)
+
+The **التصاميم** tab previews the actual Android renderer and lets you pin each
+design separately: بطاقة يومك، المدار التقني، المجلة الهادئة، الوحدات الملونة،
+المسار الليلي، وقت التركيز، المخطط الهندسي، الجدول الزجاجي. All prior widgets remain available.
+
+- The eight layouts use a shared 360×360 coordinate space, the bundled Arabic
+  font, and Canvas-rendered live data. These are not static concept images.
+- Best reference size is a square widget (approximately 4×4). Non-square sizes
+  preserve proportions with transparent padding rather than distorting text.
+- Tap a widget to edit a date-and-period-specific note and preparation task.
+  The visible task circle toggles completion; setting a different task clears
+  completion. No sample preparation task is silently saved to user data.
+- Active lessons show remaining minutes. Future days show the starting time;
+  breaks and unassigned time are distinct. Alarms share the original updater.
+- Removing the original widget no longer cancels updates for remaining widgets.
+- `gradle test` includes native Android rendering across 8 designs × 6 states
+  and exports PNGs to `app/build/design-previews`. These are real rendered
+  previews, not a claim of physical One UI launcher verification.
+- Branch builds are prereleases and point their tag at the build commit.
+
+### Visual scope
+
+The implementation follows the approved color palettes, hierarchy, and eight
+distinct compositions. Dynamic labels, empty states, responsive padding and
+accessible task hit areas necessarily differ from static sample drawings.
+Use the exported previews and a device screenshot for final acceptance;
+generated concept imagery is not a pixel-perfect screenshot specification.
 
 - Widgets can't cast real shadows → depth is faked with a 1dp top hairline and
   layered opacity.
 - Widgets can't sample the wallpaper → no true blur. If you want it, turn on
   One UI's *transparent widget background* (Home screen settings) and set the
   `bg_widget_glass` solid to `#00000000`; the launcher blurs behind it.
+
+### Approved glass timetable
+
+The glass timetable is listed first in the gallery. Muted class colors remain stable
+across days, while champagne gold identifies the active lesson independently.
+Upcoming rows include actual bell ranges, breaks and grouped consecutive free
+periods up to the final assigned lesson. Times are isolated left-to-right.
+The footer opens the schedule tab; the current lesson opens its notes.
+
+### الحصة بوضوح and classroom progress notes
+
+The new first gallery design prioritizes the written period name, start/end clocks
+and minutes remaining, without a subject label. The next row includes its class.
+Tap the widget to edit the focused class progress note (up to 1000 characters).
+Notes persist by class until updated or completed. Saving arms one reminder for
+the next actual meeting of that class after saving; holidays and overrides apply.
+Notifications need notification permission; exact timing needs exact-alarm access.
+Without it Android can delay the alarm. The note remains visible in the widget.
+Class reminders work independently of optional school bell sounds and survive
+reboots; schedule edits re-evaluate their next occurrence.

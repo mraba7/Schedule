@@ -126,7 +126,7 @@ class MainActivity : ComponentActivity() {
             val scheme = if (isSystemInDarkTheme()) dynamicDarkColorScheme(context)
             else dynamicLightColorScheme(context)
             MaterialTheme(colorScheme = scheme, typography = typographyOf(MaterialTheme.typography)) {
-                AppShell()
+                AppShell(intent.getIntExtra("open_tab", 0))
             }
         }
     }
@@ -137,10 +137,10 @@ class MainActivity : ComponentActivity() {
  * ══════════════════════════════════════════════════════════════ */
 
 @Composable
-private fun AppShell() {
+private fun AppShell(initialTab: Int = 0) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var tab by remember { mutableStateOf(0) }
+    var tab by remember { mutableStateOf(initialTab.coerceIn(0, 3)) }
     var config by remember { mutableStateOf(ScheduleStore.load(context)) }
 
     fun commit(next: Config) {
@@ -154,7 +154,7 @@ private fun AppShell() {
     Scaffold(
         bottomBar = {
             NavigationBar {
-                listOf("اليوم", "الجدول", "المنهج").forEachIndexed { index, label ->
+                listOf("اليوم", "الجدول", "المنهج", "التصاميم").forEachIndexed { index, label ->
                     NavigationBarItem(
                         selected = tab == index,
                         onClick = { tab = index },
@@ -169,7 +169,8 @@ private fun AppShell() {
             when (tab) {
                 0 -> TodayScreen(config, ::commit)
                 1 -> ScheduleScreen(config, ::commit)
-                else -> SyllabusScreen(config, ::commit)
+                2 -> SyllabusScreen(config, ::commit)
+                else -> com.mrabah.oneuischedule.widget.DesignGallery(config)
             }
         }
     }
