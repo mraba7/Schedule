@@ -1,6 +1,11 @@
 package com.mrabah.oneuischedule.widget
 
 import android.appwidget.AppWidgetManager
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.os.Handler
+import android.os.Looper
+import android.net.Uri
 import android.content.*
 import android.os.SystemClock
 import kotlinx.coroutines.*
@@ -35,33 +40,63 @@ internal object LessonPeek {
     fun clear(c:Context,id:Int) {prefs(c).edit().remove("until:$id").remove("date:$id").remove("period:$id").apply()}
 }
 
+/** The UI timer must not keep a broadcast pending: Android may queue later taps. */
+internal object PeekCollapseScheduler {
+    const val ACTION="com.mrabah.oneuischedule.PEEK_COLLAPSE"
+    private val handler=Handler(Looper.getMainLooper())
+    private val tasks=mutableMapOf<Int,Runnable>()
+    private fun intent(c:Context,id:Int,until:Long)=Intent(c,InteractiveWidgetReceiver::class.java)
+        .setAction(ACTION).setData(Uri.parse("schedule-peek://collapse/$id"))
+        .putExtra("widget",id).putExtra("until",until)
+    private fun alarm(c:Context,id:Int,until:Long)=PendingIntent.getBroadcast(c,0,intent(c,id,until),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+    @Synchronized fun schedule(context:Context,id:Int,until:Long) {
+        val c=context.applicationContext
+        tasks.remove(id)?.let{handler.removeCallbacks(it)}
+        val manager=c.getSystemService(AlarmManager::class.java)
+        manager?.cancel(alarm(c,id,until))
+        if(until<=0)return
+        val task=Runnable {
+            synchronized(this) {tasks.remove(id)}
+            c.sendBroadcast(intent(c,id,until))
+        }
+        tasks[id]=task
+        handler.postDelayed(task,(until-SystemClock.elapsedRealtime()).coerceAtLeast(0))
+        // Backup if the process goes away. The handler gives prompt foreground
+        // collapse without requiring exact-alarm access or holding a broadcast.
+        if(manager?.canScheduleExactAlarms()==true) {
+            try {manager.setExact(AlarmManager.ELAPSED_REALTIME,until,alarm(c,id,until))}
+            catch (_:SecurityException) { /* foreground handler remains armed */ }
+        }
+    }
+}
+
 class InteractiveWidgetReceiver:DesignWidgetReceiver() {
     override val design=Design.INTERACTIVE
     override fun onReceive(context:Context,intent:Intent) {
         super.onReceive(context,intent)
-        if(intent.action!=LessonPeek.ACTION)return
+        if(intent.action!=LessonPeek.ACTION && intent.action!=PeekCollapseScheduler.ACTION)return
         val id=intent.getIntExtra("widget",-1)
         val manager=AppWidgetManager.getInstance(context)
         if(manager.getAppWidgetInfo(id)?.provider!=ComponentName(context,InteractiveWidgetReceiver::class.java))return
-        val day=DesignDay.build(com.mrabah.oneuischedule.data.ScheduleStore.load(context))
-        val date=intent.getStringExtra("date") ?: return
-        val period=intent.getIntExtra("period",-1)
-        if(day.ui.date.toString()!=date || day.ui.slots.none{it.period==period})return
-        val until=LessonPeek.toggle(context,id,date,period)
+        if(intent.action==PeekCollapseScheduler.ACTION) {
+            if(!LessonPeek.expire(context,id,intent.getLongExtra("until",0)))return
+        } else {
+            val day=DesignDay.build(com.mrabah.oneuischedule.data.ScheduleStore.load(context))
+            val date=intent.getStringExtra("date") ?: return
+            val period=intent.getIntExtra("period",-1)
+            if(day.ui.date.toString()!=date || day.ui.slots.none{it.period==period})return
+            val until=LessonPeek.toggle(context,id,date,period)
+            PeekCollapseScheduler.schedule(context,id,until)
+        }
         val pending=goAsync()
         CoroutineScope(Dispatchers.Default).launch {
-            try {
-                DesignWidgets.update(context,manager,id,design)
-                if(until>0) {
-                    delay((until-SystemClock.elapsedRealtime()).coerceAtLeast(0))
-                    if(LessonPeek.expire(context,id,until) && manager.getAppWidgetInfo(id)!=null)
-                        DesignWidgets.update(context,manager,id,design)
-                }
-            } finally {pending.finish()}
+            try {DesignWidgets.update(context,manager,id,design)}
+            finally {pending.finish()}
         }
     }
     override fun onDeleted(context:Context,appWidgetIds:IntArray) {
-        appWidgetIds.forEach{LessonPeek.clear(context,it)}
+        appWidgetIds.forEach{PeekCollapseScheduler.schedule(context,it,0);LessonPeek.clear(context,it)}
         super.onDeleted(context,appWidgetIds)
     }
 }

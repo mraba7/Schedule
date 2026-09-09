@@ -41,6 +41,26 @@ class LessonPeekTest {
         assertNull(LessonPeek.selected(c,1,date,6000))
         assertNull(LessonPeek.selected(c,1,date,0))
     }
+    @Test fun collapseTimerResetsWithoutBlockingSubsequentSelections() {
+        val app=RuntimeEnvironment.getApplication()
+        val shadow=org.robolectric.Shadows.shadowOf(app)
+        val looper=org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper())
+        fun collapses()=shadow.broadcastIntents.filter { it.action==PeekCollapseScheduler.ACTION }
+        val first=android.os.SystemClock.elapsedRealtime()+5000
+        PeekCollapseScheduler.schedule(c,91,first)
+        assertTrue(collapses().isEmpty())
+        looper.idleFor(java.time.Duration.ofSeconds(1))
+        val second=android.os.SystemClock.elapsedRealtime()+5000
+        PeekCollapseScheduler.schedule(c,91,second)
+        looper.idleFor(java.time.Duration.ofSeconds(4))
+        assertTrue(collapses().isEmpty())
+        looper.idleFor(java.time.Duration.ofSeconds(1))
+        assertEquals(second,collapses().single().getLongExtra("until",0))
+        PeekCollapseScheduler.schedule(c,91,android.os.SystemClock.elapsedRealtime()+5000)
+        PeekCollapseScheduler.schedule(c,91,0)
+        looper.idleFor(java.time.Duration.ofSeconds(6))
+        assertEquals(1,collapses().size)
+    }
     @Test fun realRemoteViewsHaveOneAccessibleTargetPerLesson() {
         val day=DesignDay.build(Defaults.config,LocalDateTime.of(2026,9,7,8,30))
         val views=DesignWidgets.makeViews(c,Design.INTERACTIVE,day,DesignRenderer(c),320f,320f,45)

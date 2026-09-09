@@ -134,8 +134,8 @@ launcher sizing still needs physical device verification. Previous widgets remai
 
 A separate widget reveals start/end times by tapping a lesson tile. Only one tile
 is expanded per widget; tapping it again closes it, switching tiles resets the
-five-second deadline. A bounded asynchronous broadcast keeps the collapse task
-alive; expiration is also checked on every redraw. State is scoped by widget ID
+five-second deadline. A separate main-loop timer closes the card without holding the tap broadcast
+open; an exact alarm backs it up when available. Expiration is also checked on every redraw. State is scoped by widget ID
 and displayed date. Accessible native RemoteViews hit targets track the painted
 tiles, including a second row. The lower note area retains classroom note editing.
 Tests cover switching/expiry races, isolation, actual RemoteViews inflation and
