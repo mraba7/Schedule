@@ -28,7 +28,7 @@ internal class DesignRenderer(context: Context) {
 
     fun render(design: Design, day: DesignDay, width: Int = 720, height: Int = 720,
                task: String = "تحديد التجهيز", done: Boolean = false,
-               layoutWidth:Float=width/2f, layoutHeight:Float=height/2f): Bitmap {
+               layoutWidth:Float=width/2f, layoutHeight:Float=height/2f, peekPeriod:Int?=null): Bitmap {
         d = day; preparation = task; prepared = done
         val bitmap = Bitmap.createBitmap(width.coerceAtLeast(1), height.coerceAtLeast(1), Bitmap.Config.ARGB_8888)
         c = Canvas(bitmap)
@@ -59,6 +59,7 @@ internal class DesignRenderer(context: Context) {
             Design.BLUEPRINT -> blueprint()
             Design.GLASS -> glass()
             Design.FOCUS -> focus()
+            Design.INTERACTIVE -> focus(peekPeriod)
             Design.PATH -> error("Responsive path handled above")
         }
         return bitmap
@@ -144,7 +145,7 @@ internal class DesignRenderer(context: Context) {
             Design.ROUTE->"#14171D" to "#FFC15A"
             Design.SPORT->"#080808" to "#D6FF42"
             Design.BLUEPRINT->"#E9F2FC" to "#174BA0"
-            Design.GLASS,Design.FOCUS,Design.PATH->"#152230" to "#CFB47D"
+            Design.GLASS,Design.FOCUS,Design.PATH,Design.INTERACTIVE->"#152230" to "#CFB47D"
         }
         rect(0f,0f,360f,360f,bg,24f)
         text(design.title,24f,24f,312f,34f,24f,fg,true)
@@ -401,7 +402,7 @@ internal class DesignRenderer(context: Context) {
         text("الانصراف ${d.finish}",210f,336f,131f,20f,12f,fg,true)
         text("عرض الجدول  ‹",17f,336f,134f,20f,12f,muted,true,"left")
     }
-    private fun focus() {
+    private fun focus(peekPeriod:Int?=null) {
         val fg="#F1F0EA";val muted="#A7B5C1";val gold="#CFB47D"
         val slot=d.focus!!;val live=d.ui.live!=null
         val lessons=d.ui.slots
@@ -415,23 +416,31 @@ internal class DesignRenderer(context: Context) {
         val rows=(lessons.size+columns-1)/columns
         val tileH=if(rows>1)25f else 43f
         val tileW=(336f-5f*(columns-1))/columns
+        val selected=peekPeriod?.takeIf{period->lessons.any{it.period==period}}
+        val tiles=LessonPeek.tiles(d,selected)
         lessons.forEachIndexed { i,lesson ->
-            val x=12f+(columns-1-i%columns)*(tileW+5f)
-            val y=57f+(i/columns)*(tileH+4f)
+            val tile=tiles[i];val x=tile.left;val y=tile.top
+            val expanded=lesson.period==selected
             val active=lesson.state==com.mrabah.oneuischedule.data.SlotState.LIVE
             val past=lesson.state==com.mrabah.oneuischedule.data.SlotState.DONE
             val tint=if(past) "#71818E" else GlassAgenda.color(lesson.section)
-            rect(x,y,tileW,tileH,if(active)"#293134" else "#192A38",7f,if(active)gold else "#344A5C")
+            rect(x,y,tileW,tile.height(),if(active)"#293134" else "#192A38",7f,if(active)gold else "#344A5C")
             if(active)circle(x+tileW-6f,y+6f,1.6f,gold)
             text(periodName(lesson.period).removePrefix("الحصة "),x+4f,y+1f,tileW-8f,if(rows>1)12f else 20f,
                 if(rows>1)9f else 13f,if(past)"#71818E" else fg,true,"center",8f)
             section(DesignDay.section(lesson),x+3f,y+if(rows>1)12f else 21f,tileW-6f,if(rows>1)12f else 20f,
                 if(rows>1)11f else 17f,tint)
+            if(expanded) {
+                text("من ${DesignDay.clock(lesson.bell.start)}",x+3f,y+tileH,tileW-6f,13f,10f,fg,align="center",minSize=8f)
+                text("إلى ${DesignDay.clock(lesson.bell.end)}",x+3f,y+tileH+13f,tileW-6f,13f,10f,fg,align="center",minSize=8f)
+            }
         }
         val done=lessons.count{it.state==com.mrabah.oneuischedule.data.SlotState.DONE}
         val ahead=lessons.count{it.state==com.mrabah.oneuischedule.data.SlotState.AHEAD}
         val summary=if(live) "$done انتهت · $ahead بعد الحالية" else if(d.ui.isToday) "$done انتهت · $ahead قادمة" else "${lessons.size} حصص في هذا اليوم"
-        text(summary,16f,if(rows>1)112f else 104f,328f,15f,11f,muted,align="center")
+        if(selected==null)text(summary,16f,if(rows>1)112f else 104f,328f,15f,11f,muted,align="center")
+        c.save()
+        if(rows>1 && selected!=null) {c.translate(0f,153f);c.scale(1f,207f/227f);c.translate(0f,-133f)}
         rect(6f,133f,348f,194f,"#132331",9f,"#2D4253")
         rect(15f,142f,48f,23f,"#CFB47D",10f)
         text(if(live)"الآن" else "القادمة",18f,142f,42f,23f,12f,"#152230",true,"center")
@@ -459,6 +468,7 @@ internal class DesignRenderer(context: Context) {
             text("التالي: ${periodName(next.period)} · ${DesignDay.section(next)}",94f,338f,249f,18f,12f,muted,true,minSize=9f)
             clock(DesignDay.clock(next.bell.start),17f,338f,67f,18f,13f,muted)
         } else text("آخر حصة اليوم · الانصراف ${d.finish}",17f,338f,326f,18f,12f,muted,true,"center")
+        c.restore()
     }
     private fun path(w:Float,h:Float,mode:TimelineLayout) {
         val fg="#F1F0EA";val muted="#A7B5C1";val gold="#CFB47D";val doneColor="#86AAA4"

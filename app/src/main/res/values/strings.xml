@@ -32,4 +32,6 @@
     <string name="design_focus_description">اسم الحصة ووقتها والعد التنازلي، مع آخر نقطة للفصل. اضغط لتحرير ملاحظة الفصل.</string>
     <string name="design_path_label">مسار الحصص</string>
     <string name="design_path_description">خط زمني يتكيف مع حجم الودجت؛ علامة صح للمنتهية وذهبي للحالية.</string>
+    <string name="design_interactive_label">حصصي التفاعلية</string>
+    <string name="design_interactive_description">اضغط الحصة لعرض بدايتها ونهايتها مؤقتًا، واضغط الملاحظة لتحريرها.</string>
 </resources>

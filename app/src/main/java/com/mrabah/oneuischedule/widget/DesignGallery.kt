@@ -34,11 +34,12 @@ internal fun DesignGallery(config:Config) {
             Text("تصاميم الودجت",style=MaterialTheme.typography.headlineMedium)
             Text("هذه معاينة فعلية من نفس محرك الودجت. أفضل تطابق في مساحة مربعة؛ اضغط على الودجت لفتح ملاحظة الحصة وتجهيزها.")
         }
-        items(listOf(Design.PATH,Design.FOCUS,Design.GLASS) + Design.entries.filter { it != Design.GLASS && it != Design.FOCUS && it != Design.PATH }){design ->
+        items(listOf(Design.INTERACTIVE,Design.PATH,Design.FOCUS,Design.GLASS) + Design.entries.filter { it != Design.GLASS && it != Design.FOCUS && it != Design.PATH && it != Design.INTERACTIVE }){design ->
             val bitmap=remember(design,day){DesignRenderer(c).render(design,day,
                 task=PreparationStore.task(c,day.key).ifBlank{"تحديد التجهيز"},done=PreparationStore.done(c,day.key))}
             Column {
                 Text(design.title,style=MaterialTheme.typography.titleLarge)
+                if(design==Design.INTERACTIVE) Text("اضغط بطاقة الحصة في الشاشة الرئيسية لكشف وقتها ٥ ثوانٍ. اضغطها ثانية لإغلاقها.")
                 if(design==Design.PATH) Text("اسحب حواف الودجت لتغيير حجمه: مختصر، أفقي، متوازن أو مفصّل حسب المساحة.")
                 Image(bitmap.asImageBitmap(),contentDescription=day.summary,
                     modifier=Modifier.fillMaxWidth().aspectRatio(1f))

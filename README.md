@@ -129,3 +129,14 @@ future nodes hollow. Larger layouts include class notes and the upcoming agenda.
 It retains the current day after dismissal and explicitly labels breaks/free time.
 Native render tests cover four allocations in live, break, free and completed states;
 launcher sizing still needs physical device verification. Previous widgets remain.
+
+### حصصي التفاعلية
+
+A separate widget reveals start/end times by tapping a lesson tile. Only one tile
+is expanded per widget; tapping it again closes it, switching tiles resets the
+five-second deadline. A bounded asynchronous broadcast keeps the collapse task
+alive; expiration is also checked on every redraw. State is scoped by widget ID
+and displayed date. Accessible native RemoteViews hit targets track the painted
+tiles, including a second row. The lower note area retains classroom note editing.
+Tests cover switching/expiry races, isolation, actual RemoteViews inflation and
+expanded first/last tiles in four- and seven-lesson days.

@@ -44,6 +44,7 @@ internal object DesignWidgets {
         Design.GLASS to GlassWidgetReceiver::class.java,
         Design.FOCUS to FocusWidgetReceiver::class.java,
         Design.PATH to PathWidgetReceiver::class.java,
+        Design.INTERACTIVE to InteractiveWidgetReceiver::class.java,
     )
     fun updateAll(context: Context) {
         val manager=AppWidgetManager.getInstance(context)
@@ -55,7 +56,7 @@ internal object DesignWidgets {
             }
         }
     }
-    fun update(context:Context,manager:AppWidgetManager,id:Int,style:Design,
+    @Synchronized fun update(context:Context,manager:AppWidgetManager,id:Int,style:Design,
                day:DesignDay=DesignDay.build(ScheduleStore.load(context)),renderer:DesignRenderer=DesignRenderer(context)) {
         val opts=manager.getAppWidgetOptions(id)
         // Android 12 provides the full portrait/landscape size list. Supplying
@@ -71,23 +72,24 @@ internal object DesignWidgets {
             android.util.SizeF(opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH,320).coerceAtLeast(120).toFloat(),opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT,320).coerceAtLeast(120).toFloat())
         ).distinct() else listOf(fallback)
         val layouts=(sizes?.takeIf { it.isNotEmpty() } ?: fallbackSizes).associateWith { size ->
-            makeViews(context,style,if(style==Design.PATH) DesignDay(com.mrabah.oneuischedule.data.ScheduleEngine.today(day.ui.config,day.now),day.now) else day,renderer,size.width,size.height)
+            makeViews(context,style,if(style==Design.PATH) DesignDay(com.mrabah.oneuischedule.data.ScheduleEngine.today(day.ui.config,day.now),day.now) else day,renderer,size.width,size.height,id)
         }
         manager.updateAppWidget(id,if(layouts.size==1) layouts.values.first() else RemoteViews(layouts))
     }
-    private fun makeViews(c:Context,style:Design,day:DesignDay,renderer:DesignRenderer,w:Float,h:Float):RemoteViews {
+    internal fun makeViews(c:Context,style:Design,day:DesignDay,renderer:DesignRenderer,w:Float,h:Float,id:Int):RemoteViews {
         val width=w.coerceIn(120f,900f);val height=h.coerceIn(120f,900f)
         // Conservative bitmap budget: max 640px long edge per orientation.
         val density=minOf(2f,640f/maxOf(width,height))
+        val selected=if(style==Design.INTERACTIVE) LessonPeek.selected(c,id,day.ui.date.toString()) else null
         val bitmap=renderer.render(style,day,(width*density).toInt(),(height*density).toInt(),
-            PreparationStore.task(c,day.key).ifBlank { "تحديد التجهيز" },PreparationStore.done(c,day.key),width,height)
+            PreparationStore.task(c,day.key).ifBlank { "تحديد التجهيز" },PreparationStore.done(c,day.key),width,height,selected)
         val views=RemoteViews(c.packageName,R.layout.design_widget)
         views.setImageViewBitmap(R.id.design_image,bitmap)
-        views.setContentDescription(R.id.design_image,if(style==Design.FOCUS || style==Design.PATH) "${day.ui.slots.size} حصص: ${day.ui.slots.joinToString { periodName(it.period) + " الفصل " + DesignDay.section(it) }}، ${day.day}، ${day.focus?.let { periodName(it.period) } ?: "لا توجد حصص"}، الفصل ${day.section}، ${day.range}، ${day.countText} ${day.countLabel}، ${ClassNotes.get(c,day.focus?.section)?.text ?: "إضافة ملاحظة الفصل"}" else day.summary)
+        views.setContentDescription(R.id.design_image,if(style==Design.FOCUS || style==Design.PATH || style==Design.INTERACTIVE) "${day.ui.slots.size} حصص: ${day.ui.slots.joinToString { periodName(it.period) + " الفصل " + DesignDay.section(it) }}، ${day.day}، ${day.focus?.let { periodName(it.period) } ?: "لا توجد حصص"}، الفصل ${day.section}، ${day.range}، ${day.countText} ${day.countLabel}، ${ClassNotes.get(c,day.focus?.section)?.text ?: "إضافة ملاحظة الفصل"}" else day.summary)
         val intent=Intent(c,DesignLessonActivity::class.java)
             .setData(Uri.parse("schedule-design://lesson/${day.key ?: "empty"}"))
             .putExtra("key",day.key).putExtra("title","${day.day} · ${day.period} · ${day.section}")
-        val target=if((style==Design.FOCUS || style==Design.PATH) && day.focus?.section!=null) ClassNotes.intent(c,day.focus!!.section!!) else if(style==Design.PATH) Intent(c,com.mrabah.oneuischedule.MainActivity::class.java).putExtra("open_tab",1) else intent
+        val target=if((style==Design.FOCUS || style==Design.PATH || style==Design.INTERACTIVE) && day.focus?.section!=null) ClassNotes.intent(c,day.focus!!.section!!) else if(style==Design.PATH) Intent(c,com.mrabah.oneuischedule.MainActivity::class.java).putExtra("open_tab",1) else intent
         val open=PendingIntent.getActivity(c,0,target,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         views.setOnClickPendingIntent(R.id.design_image,open)
         views.setViewVisibility(R.id.design_schedule,if((style==Design.TICKET || style==Design.GLASS) && day.key!=null) View.VISIBLE else View.GONE)
@@ -119,6 +121,25 @@ internal object DesignWidgets {
                 .putExtra("key",day.key)
             val action=if(PreparationStore.task(c,day.key).isBlank()) open else PendingIntent.getBroadcast(c,0,toggle,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
             views.setOnClickPendingIntent(R.id.design_task,action)
+        }
+        views.removeAllViews(R.id.design_peeks)
+        if(style==Design.INTERACTIVE && day.focus!=null) {
+            val scale=minOf(width,height)/360f
+            val tiles=LessonPeek.tiles(day,selected)
+            day.ui.slots.forEachIndexed { i,slot ->
+                val tile=tiles[i]
+                val hit=RemoteViews(c.packageName,R.layout.design_peek_hit)
+                hit.setViewLayoutWidth(R.id.design_peek_hit,tile.width()*scale,TypedValue.COMPLEX_UNIT_DIP)
+                hit.setViewLayoutHeight(R.id.design_peek_hit,tile.height()*scale,TypedValue.COMPLEX_UNIT_DIP)
+                hit.setViewLayoutMargin(R.id.design_peek_hit,RemoteViews.MARGIN_LEFT,(width-360*scale)/2+tile.left*scale,TypedValue.COMPLEX_UNIT_DIP)
+                hit.setViewLayoutMargin(R.id.design_peek_hit,RemoteViews.MARGIN_TOP,(height-360*scale)/2+tile.top*scale,TypedValue.COMPLEX_UNIT_DIP)
+                hit.setContentDescription(R.id.design_peek_hit,"${periodName(slot.period)}، الفصل ${DesignDay.section(slot)}، ${if(selected==slot.period) "إخفاء الوقت" else "إظهار الوقت"}، من ${DesignDay.clock(slot.bell.start)} إلى ${DesignDay.clock(slot.bell.end)}")
+                val tap=Intent(c,InteractiveWidgetReceiver::class.java).setAction(LessonPeek.ACTION)
+                    .setData(Uri.parse("schedule-peek://widget/$id/${day.ui.date}/${slot.period}"))
+                    .putExtra("widget",id).putExtra("date",day.ui.date.toString()).putExtra("period",slot.period)
+                hit.setOnClickPendingIntent(R.id.design_peek_hit,PendingIntent.getBroadcast(c,0,tap,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+                views.addView(R.id.design_peeks,hit)
+            }
         }
         return views
     }
