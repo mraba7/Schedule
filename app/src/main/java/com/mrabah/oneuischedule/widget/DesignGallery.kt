@@ -29,27 +29,37 @@ internal fun DesignGallery(config:Config) {
     var now by remember { mutableStateOf(LocalDateTime.now()) }
     LaunchedEffect(Unit){while(true){delay(60_000);now=LocalDateTime.now()}}
     val day=remember(config,now){DesignDay.build(config,now)}
+    var group by androidx.compose.runtime.saveable.rememberSaveable {mutableStateOf(0)}
+    val ordered=listOf(Design.INTERACTIVE,Design.PATH,Design.FOCUS,Design.GLASS)+Design.entries.filter {it !in listOf(Design.INTERACTIVE,Design.PATH,Design.FOCUS,Design.GLASS)}
+    val visible=when(group){1->listOf(Design.INTERACTIVE,Design.PATH);2->ordered.filter {it !in listOf(Design.INTERACTIVE,Design.PATH)};else->ordered}
     LazyColumn(contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
         item {
             Text("تصاميم الودجت",style=MaterialTheme.typography.headlineMedium)
-            Text("هذه معاينة فعلية من نفس محرك الودجت. أفضل تطابق في مساحة مربعة؛ اضغط على الودجت لفتح ملاحظة الحصة وتجهيزها.")
+            Text("اختر ما يناسب يومك وأضفه إلى الشاشة الرئيسية.",color=MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                listOf("الكل","تفاعلي ومرن","بقية التصاميم").forEachIndexed { i,label ->
+                    FilterChip(selected=group==i,onClick={group=i},label={Text(label)})
+                }
+            }
         }
-        items(listOf(Design.INTERACTIVE,Design.PATH,Design.FOCUS,Design.GLASS) + Design.entries.filter { it != Design.GLASS && it != Design.FOCUS && it != Design.PATH && it != Design.INTERACTIVE }){design ->
+        items(visible,key={it.name}){design ->
             val bitmap=remember(design,day){DesignRenderer(c).render(design,day,
                 task=PreparationStore.task(c,day.key).ifBlank{"تحديد التجهيز"},done=PreparationStore.done(c,day.key))}
-            Column {
+            Card(shape=androidx.compose.foundation.shape.RoundedCornerShape(24.dp),colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.surface)) {
+            Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
                 Text(design.title,style=MaterialTheme.typography.titleLarge)
-                if(design==Design.INTERACTIVE) Text("اضغط بطاقة الحصة في الشاشة الرئيسية لكشف وقتها ٥ ثوانٍ. اضغطها ثانية لإغلاقها.")
+                if(design==Design.INTERACTIVE) Text("اضغط الحصة لعرض وقتها. ولحصص الانتظار يظهر زر مستقل لاختيار الفصل.")
                 if(design==Design.PATH) Text("اسحب حواف الودجت لتغيير حجمه: مختصر، أفقي، متوازن أو مفصّل حسب المساحة.")
                 Image(bitmap.asImageBitmap(),contentDescription=day.summary,
                     modifier=Modifier.fillMaxWidth().aspectRatio(1f))
-                OutlinedButton(onClick={
+                Button(onClick={
                     val manager=AppWidgetManager.getInstance(c)
                     if(manager.isRequestPinAppWidgetSupported) {
                         val accepted=manager.requestPinAppWidget(ComponentName(c,DesignWidgets.receivers.getValue(design)),null,null)
                         if(!accepted) Toast.makeText(c,"أضف التصميم من قائمة أدوات الشاشة الرئيسية",Toast.LENGTH_LONG).show()
                     } else Toast.makeText(c,"اضغط مطولًا على الشاشة الرئيسية ثم الأدوات ← جدول الحصص",Toast.LENGTH_LONG).show()
                 },modifier=Modifier.fillMaxWidth()) {Text("إضافة إلى الشاشة الرئيسية")}
+            }
             }
         }
     }
@@ -60,7 +70,7 @@ class DesignLessonActivity:ComponentActivity() {
         super.onCreate(savedInstanceState)
         val key=intent.getStringExtra("key")
         setContent {
-            MaterialTheme {
+            com.mrabah.oneuischedule.ui.ScheduleTheme {
                 var task by remember {mutableStateOf(PreparationStore.task(this,key))}
                 var note by remember {mutableStateOf(PreparationStore.note(this,key))}
                 val day=remember {DesignDay.build(ScheduleStore.load(this))}

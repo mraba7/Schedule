@@ -33,7 +33,7 @@ class ClassNoteActivity:ComponentActivity() {
     override fun onCreate(savedInstanceState:Bundle?) {
         super.onCreate(savedInstanceState)
         val section=intent.getStringExtra("section")?.takeIf { it.isNotBlank() } ?: run { finish();return }
-        setContent { MaterialTheme {
+        setContent { com.mrabah.oneuischedule.ui.ScheduleTheme {
             var note by remember { mutableStateOf(ClassNotes.get(this,section)?.text.orEmpty()) }
             var reminder by remember { mutableStateOf(ClassNotes.get(this,section)?.reminder ?: true) }
             val existing=remember { ClassNotes.get(this,section) }

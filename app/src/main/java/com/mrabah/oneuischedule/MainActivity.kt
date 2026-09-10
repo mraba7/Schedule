@@ -13,6 +13,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -55,6 +57,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -87,46 +91,13 @@ import java.time.format.TextStyle as JavaTextStyle
 import java.time.temporal.ChronoUnit
 import java.util.Locale
 
-/**
- * IBM Plex Sans Arabic: Arabic and Latin drawn as one family, so "الحصة 2"
- * and "8:05" share a baseline. The widget cannot use it — the launcher's
- * process only reaches system fonts.
- */
-private val PlexArabic = FontFamily(
-    Font(R.font.plex_arabic_regular, FontWeight.Normal),
-    Font(R.font.plex_arabic_medium, FontWeight.Medium),
-    Font(R.font.plex_arabic_semibold, FontWeight.SemiBold),
-    Font(R.font.plex_arabic_bold, FontWeight.Bold),
-)
-
-private fun typographyOf(base: Typography) = Typography(
-    displayLarge = base.displayLarge.copy(fontFamily = PlexArabic),
-    displayMedium = base.displayMedium.copy(fontFamily = PlexArabic),
-    displaySmall = base.displaySmall.copy(fontFamily = PlexArabic),
-    headlineLarge = base.headlineLarge.copy(fontFamily = PlexArabic),
-    headlineMedium = base.headlineMedium.copy(fontFamily = PlexArabic),
-    headlineSmall = base.headlineSmall.copy(fontFamily = PlexArabic),
-    titleLarge = base.titleLarge.copy(fontFamily = PlexArabic),
-    titleMedium = base.titleMedium.copy(fontFamily = PlexArabic),
-    titleSmall = base.titleSmall.copy(fontFamily = PlexArabic),
-    bodyLarge = base.bodyLarge.copy(fontFamily = PlexArabic),
-    bodyMedium = base.bodyMedium.copy(fontFamily = PlexArabic),
-    bodySmall = base.bodySmall.copy(fontFamily = PlexArabic),
-    labelLarge = base.labelLarge.copy(fontFamily = PlexArabic),
-    labelMedium = base.labelMedium.copy(fontFamily = PlexArabic),
-    labelSmall = base.labelSmall.copy(fontFamily = PlexArabic),
-)
-
 private val CANCELLED = "CANCELLED"
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val context = LocalContext.current
-            val scheme = if (isSystemInDarkTheme()) dynamicDarkColorScheme(context)
-            else dynamicLightColorScheme(context)
-            MaterialTheme(colorScheme = scheme, typography = typographyOf(MaterialTheme.typography)) {
+            com.mrabah.oneuischedule.ui.ScheduleTheme {
                 AppShell(intent.getIntExtra("open_tab", 0))
             }
         }
@@ -141,7 +112,9 @@ class MainActivity : ComponentActivity() {
 private fun AppShell(initialTab: Int = 0) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var tab by remember { mutableStateOf(initialTab.coerceIn(0, 3)) }
+    var tab by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(initialTab.coerceIn(0, 4)) }
+    var dirty by remember { mutableStateOf(false) }
+    var pendingTab by remember { mutableStateOf<Int?>(null) }
     var config by remember { mutableStateOf(ScheduleStore.load(context)) }
     DisposableEffect(context) {
         val prefs=context.getSharedPreferences("schedule_config", android.content.Context.MODE_PRIVATE)
@@ -161,15 +134,22 @@ private fun AppShell(initialTab: Int = 0) {
         scope.launch { updateEveryWidget(context) }
     }
 
+    androidx.activity.compose.BackHandler(enabled=dirty || tab!=0) {
+        if(dirty) pendingTab=0 else tab=0
+    }
+    if(pendingTab!=null) AlertDialog(onDismissRequest={pendingTab=null},
+        title={Text("تعديلات لم تُحفظ")},text={Text("ارجع لحفظ تعديلاتك، أو انتقل وتجاهلها.")},
+        confirmButton={TextButton(onClick={dirty=false;tab=pendingTab!!;pendingTab=null}){Text("تجاهل وانتقل")}},
+        dismissButton={TextButton(onClick={pendingTab=null}){Text("الرجوع للتعديل")}})
     Scaffold(
         bottomBar = {
             NavigationBar {
-                listOf("اليوم", "الجدول", "المنهج", "التصاميم").forEachIndexed { index, label ->
+                listOf("اليوم", "الجدول", "المنهج", "الودجت", "الإعدادات").forEachIndexed { index, label ->
                     NavigationBarItem(
                         selected = tab == index,
-                        onClick = { tab = index },
-                        icon = {},
-                        label = { Text(label, fontSize = 13.sp) },
+                        onClick = { if(dirty && index!=tab) pendingTab=index else tab=index },
+                        icon = { com.mrabah.oneuischedule.ui.NavSymbol(index) },
+                        label = { Text(label, fontSize = 10.sp, maxLines=1) },
                     )
                 }
             }
@@ -178,9 +158,9 @@ private fun AppShell(initialTab: Int = 0) {
         Box(Modifier.padding(padding)) {
             when (tab) {
                 0 -> TodayScreen(config, ::commit)
-                1 -> ScheduleScreen(config, ::commit)
+                1, 4 -> ScheduleScreen(config, ::commit, settingsOnly=tab==4, onDirty={dirty=it})
                 2 -> SyllabusScreen(config, ::commit)
-                else -> com.mrabah.oneuischedule.widget.DesignGallery(config)
+                3 -> com.mrabah.oneuischedule.widget.DesignGallery(config)
             }
         }
     }
@@ -191,14 +171,16 @@ private fun AppShell(initialTab: Int = 0) {
  * ══════════════════════════════════════════════════════════════ */
 
 @Composable
-private fun TodayScreen(config: Config, commit: (Config) -> Unit) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val locale = Locale.getDefault()
-    val clock = DateTimeFormatter.ofPattern("h:mm", locale)
-    val now = LocalDateTime.now()
-    val ui = ScheduleEngine.build(config, now)
+private fun TodayScreen(config:Config,commit:(Config)->Unit) {
+    var editing by remember { mutableStateOf<Pair<LocalDate,Int>?>(null) }
+    com.mrabah.oneuischedule.ui.TodayDashboard(config) { date,period -> editing=date to period }
+    editing?.let { (date,period) -> DayEditDialog(config,date,period,{editing=null}) {commit(it);editing=null} }
+}
 
+@Composable
+private fun UpdatePanel() {
+    val context=LocalContext.current
+    val scope=rememberCoroutineScope()
     var update by remember { mutableStateOf<UpdateChecker.Result?>(null) }
     var checking by remember { mutableStateOf(true) }
     var checkFailed by remember { mutableStateOf(false) }
@@ -217,13 +199,9 @@ private fun TodayScreen(config: Config, commit: (Config) -> Unit) {
 
     LaunchedEffect(Unit) { runCheck() }
 
-    var editing by remember { mutableStateOf<Int?>(null) }
 
-    LazyColumn(
-        contentPadding = PaddingValues(20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        item {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        run {
             val found = update
             if (found == null || !found.newer) {
                 // Silence is not an answer: say which state we are in.
@@ -259,7 +237,7 @@ private fun TodayScreen(config: Config, commit: (Config) -> Unit) {
         }
 
         update?.takeIf { it.newer }?.let { found ->
-            item {
+            run {
                 Card(
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(
@@ -321,6 +299,7 @@ private fun TodayScreen(config: Config, commit: (Config) -> Unit) {
                             )
                         }
                         if (failed) {
+                            TextButton(onClick={uriHandler.openUri(found.page)}) {Text("فتح صفحة التنزيل")}
                             Text(
                                 "تعذّر التنزيل — افتح الصفحة يدويًا",
                                 fontSize = 12.sp,
@@ -333,163 +312,6 @@ private fun TodayScreen(config: Config, commit: (Config) -> Unit) {
             }
         }
 
-        item {
-            Column {
-                Text(
-                    ui.dayOfWeek.getDisplayName(JavaTextStyle.FULL, locale) +
-                        if (ui.isToday) "" else " · القادم",
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    ui.date.format(DateTimeFormatter.ofPattern("d MMMM yyyy", locale)),
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-
-        ui.holiday?.let { holiday ->
-            item {
-                Card(
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer
-                    ),
-                ) {
-                    Column(Modifier.padding(18.dp)) {
-                        Text(holiday.label, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                        Text(
-                            "${holiday.from} إلى ${holiday.to}",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-        }
-
-        ui.focus?.let { slot ->
-            item {
-                Card(
-                    shape = RoundedCornerShape(26.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    ),
-                ) {
-                    Column(Modifier.padding(20.dp)) {
-                        Text(
-                            if (ui.live != null) "الآن · باقي ${ui.minutesLeftInLive} دقيقة"
-                            else "القادمة · الحصة ${slot.period}",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium,
-                        )
-                        Spacer(Modifier.height(6.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                slot.displaySection ?: "انتظار",
-                                fontSize = 44.sp,
-                                fontWeight = FontWeight.Bold,
-                            )
-                            Spacer(Modifier.weight(1f))
-                            Column(horizontalAlignment = Alignment.End) {
-                                Text(slot.bell.start.format(clock), fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                                Text("حتى ${slot.bell.end.format(clock)}", fontSize = 12.sp)
-                            }
-                        }
-                        if (slot.isStandby) {
-                            TextButton(onClick={context.startActivity(com.mrabah.oneuischedule.widget.StandbyAssignments.intent(context,ui.date,slot.period))}) {
-                                Text(if(slot.standbySection==null) "تحديد فصل الانتظار" else "تغيير فصل الانتظار")
-                            }
-                        }
-                        if (slot.note.isNotBlank()) {
-                            Spacer(Modifier.height(8.dp))
-                            Text(slot.note, fontSize = 14.sp)
-                        }
-                        if (ui.live != null) {
-                            Spacer(Modifier.height(12.dp))
-                            LinearProgressIndicator(
-                                progress = { ui.progress },
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        items@ for (slot in ui.slots) {
-            item(key = "slot-${slot.period}") {
-                Card(
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (slot.state == SlotState.DONE)
-                            MaterialTheme.colorScheme.surfaceContainerLow
-                        else MaterialTheme.colorScheme.surfaceContainerHigh
-                    ),
-                ) {
-                    Column(
-                        Modifier.fillMaxWidth().clickable { editing = slot.period }.padding(16.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                "${slot.period}",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.width(24.dp),
-                            )
-                            Text(
-                                "${slot.bell.start.format(clock)} – ${slot.bell.end.format(clock)}",
-                                fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Spacer(Modifier.weight(1f))
-                            if (slot.overridden) {
-                                Text("معدّلة اليوم", fontSize = 10.sp, color = MaterialTheme.colorScheme.primary)
-                                Spacer(Modifier.width(8.dp))
-                            }
-                            Text(
-                                slot.displaySection ?: "انتظار",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
-                        if (slot.isStandby) {
-                            TextButton(onClick={context.startActivity(com.mrabah.oneuischedule.widget.StandbyAssignments.intent(context,ui.date,slot.period))}) {
-                                Text(if(slot.standbySection==null) "تحديد فصل الانتظار" else "تغيير فصل الانتظار")
-                            }
-                        }
-                        if (slot.note.isNotBlank()) {
-                            Text(
-                                slot.note,
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(top = 4.dp),
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        item {
-            Text(
-                "اضغط أي حصة لتعديلها اليوم فقط أو لإضافة ملاحظة",
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-
-    editing?.let { period ->
-        DayEditDialog(
-            config = config,
-            date = ui.date,
-            period = period,
-            onDismiss = { editing = null },
-            onApply = { next -> commit(next); editing = null },
-        )
     }
 }
 
@@ -516,7 +338,7 @@ private fun DayEditDialog(
         onDismissRequest = onDismiss,
         title = { Text("الحصة $period · ${date}") },
         text = {
-            Column {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
                 Text("تبديل لهذا اليوم فقط", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(6.dp))
                 options.chunked(3).forEach { rowItems ->
@@ -562,9 +384,14 @@ private fun DayEditDialog(
  * ══════════════════════════════════════════════════════════════ */
 
 @Composable
-private fun ScheduleScreen(config: Config, commit: (Config) -> Unit) {
+internal fun ScheduleScreen(config: Config, commit: (Config) -> Unit, settingsOnly:Boolean=false, onDirty:(Boolean)->Unit={}) {
     val context = LocalContext.current
-    var draft by remember(config) { mutableStateOf(config) }
+    var draft by androidx.compose.runtime.saveable.rememberSaveable(config,settingsOnly,stateSaver=androidx.compose.runtime.saveable.Saver<Config,String>(save={ScheduleStore.exportJson(it)},restore={ScheduleStore.importJson(it)})) { mutableStateOf(config) }
+    var category by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(0) }
+    var resetConfirm by remember { mutableStateOf(false) }
+    var removeSection by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(draft,config) {onDirty(draft!=config)}
+    DisposableEffect(Unit) {onDispose {onDirty(false)}}
     var problem by remember { mutableStateOf<String?>(null) }
     var saved by remember { mutableStateOf(false) }
     var addingSection by remember { mutableStateOf(false) }
@@ -582,31 +409,33 @@ private fun ScheduleScreen(config: Config, commit: (Config) -> Unit) {
         ActivityResultContracts.CreateDocument("application/json")
     ) { uri ->
         uri?.let {
-            context.contentResolver.openOutputStream(it)?.use { out ->
-                out.write(ScheduleStore.exportJson(draft).toByteArray())
+            val result=runCatching {
+                val out=context.contentResolver.openOutputStream(it) ?: error("تعذّر فتح الملف")
+                out.use {stream -> stream.write(ScheduleStore.exportJson(draft).toByteArray())}
             }
+            if(result.isFailure)problem="تعذّر تصدير الملف. اختر موقعًا آخر." else android.widget.Toast.makeText(context,"تم تصدير الجدول",android.widget.Toast.LENGTH_SHORT).show()
         }
     }
 
-    val importFile = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri ->
+    val importFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let {
-            val text = context.contentResolver.openInputStream(it)
-                ?.bufferedReader()?.use { r -> r.readText() }
-            val loaded = text?.let { t -> ScheduleStore.importJson(t) }
-            if (loaded != null) {
-                draft = loaded
-                commit(loaded)
-            } else {
-                problem = "الملف غير صالح"
-            }
+            val loaded=runCatching {
+                context.contentResolver.openInputStream(it)?.bufferedReader()?.use { reader ->
+                    ScheduleStore.importJson(reader.readText())
+                }
+            }.getOrNull()
+            if(loaded!=null && validate(loaded)==null) {
+                draft=loaded
+                problem=null
+                saved=false
+            } else problem="تعذّر استيراد الجدول. تأكد من صلاحية ملف النسخة الاحتياطية."
         }
     }
 
     val pickTone = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
+        if(result.resultCode!=android.app.Activity.RESULT_OK)return@rememberLauncherForActivityResult
         val uri: Uri? = result.data?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
         val next = draft.copy(bellUri = uri?.toString().orEmpty())
         draft = next
@@ -618,11 +447,22 @@ private fun ScheduleScreen(config: Config, commit: (Config) -> Unit) {
         saved = false
     }
 
+    Column(Modifier.fillMaxSize()) {
     LazyColumn(
+        modifier=Modifier.weight(1f),
         contentPadding = PaddingValues(20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item { Header("الجدول", "عدّل ثم احفظ — الودجتات تتحدّث فورًا") }
+        item { Header(if(settingsOnly) "الإعدادات" else "جدولك الأسبوعي",if(settingsOnly) "التنبيهات والتحديثات وبياناتك" else "نظّم حصصك وفصولك وأوقات الدوام") }
+        if(!settingsOnly) item {
+            Row(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                listOf("الحصص","التوقيت","الفصول").forEachIndexed { i,label ->
+                    androidx.compose.material3.FilterChip(selected=category==i,onClick={category=i},label={Text(label)})
+                }
+            }
+        }
+        if(settingsOnly) item { UpdatePanel() }
+        if(!settingsOnly && category==1) {
 
         item { SectionTitle("التوقيت النشط") }
         item {
@@ -665,7 +505,9 @@ private fun ScheduleScreen(config: Config, commit: (Config) -> Unit) {
             }
         }
 
-        item { SectionTitle("الشعب والمادة") }
+        }
+        if(!settingsOnly && category==2) {
+        item { SectionTitle("الفصول والمادة") }
         item {
             Card(shape = RoundedCornerShape(20.dp)) {
                 Column(Modifier.padding(16.dp)) {
@@ -677,23 +519,15 @@ private fun ScheduleScreen(config: Config, commit: (Config) -> Unit) {
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Spacer(Modifier.height(10.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        draft.sections.take(5).forEach { section ->
-                            OutlinedButton(
-                                onClick = {
-                                    edit(draft.copy(sections = draft.sections - section))
-                                },
-                                shape = RoundedCornerShape(14.dp),
-                                modifier = Modifier.weight(1f),
-                            ) { Text(section, fontSize = 11.sp) }
+                    draft.sections.forEach { section ->
+                        Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+                            Text("الفصل $section",Modifier.weight(1f))
+                            TextButton(onClick={removeSection=section}) {Text("حذف")}
                         }
                     }
                     TextButton(onClick = { addingSection = true }) { Text("إضافة شعبة") }
                     Text(
-                        "اضغط شعبة لحذفها",
+                        "تظهر هذه الفصول عند اختيار حصة في جدولك",
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -701,6 +535,8 @@ private fun ScheduleScreen(config: Config, commit: (Config) -> Unit) {
             }
         }
 
+        }
+        if(!settingsOnly && category==0) {
         item { SectionTitle("الجدول الأسبوعي") }
         for (day in ScheduleStore.DAYS) {
             item(key = "day-${day.name}") {
@@ -712,9 +548,11 @@ private fun ScheduleScreen(config: Config, commit: (Config) -> Unit) {
             }
         }
 
+        }
+        if(!settingsOnly && category==1) {
         item { SectionTitle("الإجازات") }
-        draft.holidays.forEach { holiday ->
-            item(key = "hol-${holiday.from}") {
+        draft.holidays.forEachIndexed { index,holiday ->
+            item(key = "hol-$index-${holiday.from}") {
                 Card(shape = RoundedCornerShape(18.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(14.dp),
@@ -742,6 +580,8 @@ private fun ScheduleScreen(config: Config, commit: (Config) -> Unit) {
             ) { Text("إضافة إجازة") }
         }
 
+        }
+        if(settingsOnly) {
         item { SectionTitle("التنبيهات") }
         item {
             Card(shape = RoundedCornerShape(20.dp)) {
@@ -858,37 +698,29 @@ private fun ScheduleScreen(config: Config, commit: (Config) -> Unit) {
             }
         }
 
-        item {
-            Column {
-                problem?.let {
-                    Text(
-                        it,
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(bottom = 8.dp),
-                    )
-                }
-                Button(
-                    onClick = {
-                        val issue = validate(draft)
-                        if (issue != null) {
-                            problem = issue
-                        } else {
-                            problem = null
-                            commit(draft)
-                            saved = true
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
-                    shape = RoundedCornerShape(26.dp),
-                ) { Text(if (saved) "تم الحفظ ✓" else "حفظ", fontSize = 16.sp) }
-
-                TextButton(
-                    onClick = { ScheduleStore.reset(context); commit(Defaults.config) },
-                    modifier = Modifier.fillMaxWidth(),
-                ) { Text("استعادة الجدول الأصلي") }
-            }
+        item {TextButton(onClick={resetConfirm=true}) {Text("استعادة الجدول الأصلي")}}
         }
+    }
+    if(draft!=config || problem!=null || saved) Card(Modifier.fillMaxWidth().padding(horizontal=20.dp,vertical=8.dp),shape=RoundedCornerShape(18.dp)) {
+        Column(Modifier.padding(12.dp)) {
+            problem?.let {Text(it,color=MaterialTheme.colorScheme.error)}
+            if(draft!=config) Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                Button(onClick={val issue=validate(draft);problem=issue;if(issue==null){commit(draft);saved=true}},modifier=Modifier.weight(1f)) {Text("حفظ التعديلات")}
+                TextButton(onClick={draft=config;problem=null;saved=false}){Text("تراجع")}
+            } else if(saved)Text("تم حفظ التعديلات ✓",color=MaterialTheme.colorScheme.primary)
+        }
+    }
+    }
+    if(resetConfirm) AlertDialog(onDismissRequest={resetConfirm=false},title={Text("استعادة الجدول الأصلي؟")},
+        text={Text("سيتم استبدال جدولك وتكليفات الانتظار بالإعدادات الأصلية. صدّر نسخة احتياطية أولًا إذا احتجتها.")},
+        confirmButton={TextButton(onClick={ScheduleStore.reset(context);commit(Defaults.config);draft=Defaults.config;resetConfirm=false}){Text("استعادة")}},
+        dismissButton={TextButton(onClick={resetConfirm=false}){Text("إلغاء")}})
+    removeSection?.let { section ->
+        val used=draft.week.values.any { duties -> duties.values.any {it==Duty.Teach(section)} } || draft.overrides.values.any {it==Duty.Teach(section)}
+        AlertDialog(onDismissRequest={removeSection=null},title={Text("حذف الفصل $section؟")},
+            text={Text(if(used) "هذا الفصل مرتبط بحصص. عدّل حصصه أولًا لحفظ سلامة الجدول." else "سيُزال من قائمة فصول التدريس.")},
+            confirmButton={TextButton(onClick={if(!used)edit(draft.copy(sections=draft.sections-section));removeSection=null}){Text(if(used)"حسنًا" else "حذف")}},
+            dismissButton={TextButton(onClick={removeSection=null}){Text("إلغاء")}})
     }
 
     if (addingSection) {
@@ -897,7 +729,7 @@ private fun ScheduleScreen(config: Config, commit: (Config) -> Unit) {
             initial = "",
             onDismiss = { addingSection = false },
         ) { value ->
-            if (value.isNotBlank()) edit(draft.copy(sections = draft.sections + value.trim()))
+            if (value.isNotBlank()) edit(draft.copy(sections = (draft.sections + value.trim().take(40)).distinct()))
             addingSection = false
         }
     }
@@ -917,7 +749,9 @@ private fun ScheduleScreen(config: Config, commit: (Config) -> Unit) {
  * ══════════════════════════════════════════════════════════════ */
 
 @Composable
-private fun SyllabusScreen(config: Config, commit: (Config) -> Unit) {
+internal fun SyllabusScreen(config: Config, commit: (Config) -> Unit) {
+    val context=LocalContext.current
+    var query by androidx.compose.runtime.saveable.rememberSaveable {mutableStateOf("")}
     val load = ScheduleEngine.weeklyLoad(config)
     val lead = config.progress.values.maxOfOrNull { it.taught } ?: 0
 
@@ -954,8 +788,11 @@ private fun SyllabusScreen(config: Config, commit: (Config) -> Unit) {
         }
 
         item { SectionTitle("تقدّم المنهج") }
-        for (section in config.sections) {
+        item {OutlinedTextField(value=query,onValueChange={query=it},label={Text("ابحث عن فصل")},singleLine=true,modifier=Modifier.fillMaxWidth())}
+        if(config.sections.none {it.contains(query.trim(),ignoreCase=true)})item {Text("لا يوجد فصل مطابق للبحث")}
+        for (section in config.sections.filter {it.contains(query.trim(),ignoreCase=true)}) {
             item(key = "prog-$section") {
+                TextButton(onClick={context.startActivity(com.mrabah.oneuischedule.widget.ClassNotes.intent(context,section))}) {Text("ملاحظة وتنبيه الفصل $section")}
                 ProgressCard(
                     section = section,
                     progress = config.progress[section] ?: SectionProgress(),
@@ -1050,10 +887,16 @@ private fun TimeButton(time: LocalTime, onPicked: (LocalTime) -> Unit) {
 @Composable
 private fun DayCard(day: DayOfWeek, config: Config, onCell: (Int, Duty?) -> Unit) {
     val duties = config.templateOn(day)
-    val cycle: List<Duty?> = buildList {
-        add(null)
-        config.sections.forEach { add(Duty.Teach(it)) }
-        add(Duty.Standby)
+    var choosing by remember { mutableStateOf<Int?>(null) }
+    choosing?.let { period ->
+        AlertDialog(onDismissRequest={choosing=null},title={Text("الحصة $period")},
+            text={LazyColumn {
+                item {TextButton(onClick={onCell(period,null);choosing=null},modifier=Modifier.fillMaxWidth()){Text("بدون حصة")}}
+                item {TextButton(onClick={onCell(period,Duty.Standby);choosing=null},modifier=Modifier.fillMaxWidth()){Text("حصة انتظار")}}
+                items(config.sections.size) { i ->
+                    TextButton(onClick={onCell(period,Duty.Teach(config.sections[i]));choosing=null},modifier=Modifier.fillMaxWidth()){Text("الفصل ${config.sections[i]}")}
+                }
+            }},confirmButton={TextButton(onClick={choosing=null}){Text("إغلاق")}})
     }
 
     Card(
@@ -1078,15 +921,15 @@ private fun DayCard(day: DayOfWeek, config: Config, onCell: (Int, Duty?) -> Unit
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(38.dp)
+                                .height(48.dp)
+                                .semantics {contentDescription="${day.name} الحصة $period"}
                                 .background(
                                     if (duty != null) MaterialTheme.colorScheme.primaryContainer
                                     else MaterialTheme.colorScheme.surfaceVariant,
                                     RoundedCornerShape(12.dp),
                                 )
                                 .clickable {
-                                    val index = cycle.indexOfFirst { it == duty }
-                                    onCell(period, cycle[(index + 1) % cycle.size])
+                                    choosing=period
                                 },
                             contentAlignment = Alignment.Center,
                         ) {

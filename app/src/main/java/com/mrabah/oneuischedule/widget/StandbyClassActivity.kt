@@ -49,7 +49,7 @@ class StandbyClassActivity:ComponentActivity() {
             sendBroadcast(Intent(this,ScheduleWidgetReceiver::class.java).setAction(ScheduleWidgetReceiver.ACTION_TICK))
             finish()
         }
-        setContent {MaterialTheme {Surface(Modifier.fillMaxSize()) {
+        setContent {com.mrabah.oneuischedule.ui.ScheduleTheme {Surface(Modifier.fillMaxSize()) {
             var selected by rememberSaveable {mutableStateOf(config.standbySections["$date#$period"].orEmpty())}
             var newClass by rememberSaveable {mutableStateOf("")}
             LazyColumn(contentPadding=PaddingValues(24.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
