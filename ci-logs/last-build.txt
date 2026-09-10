@@ -25,11 +25,11 @@ Daemon will be stopped at the end of the build
 > Task :app:generateReleaseLintVitalReportModel
 > Task :app:mergeReleaseJniLibFolders
 > Task :app:mergeReleaseNativeLibs
+> Task :app:checkReleaseDuplicateClasses
 
 > Task :app:stripReleaseDebugSymbols
 Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so.
 
-> Task :app:checkReleaseDuplicateClasses
 > Task :app:mergeReleaseArtProfile
 > Task :app:extractReleaseNativeSymbolTables FROM-CACHE
 > Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
@@ -43,9 +43,9 @@ Unable to strip the following libraries, packaging them as they are: libandroidx
 > Task :app:compressReleaseAssets FROM-CACHE
 > Task :app:extractReleaseVersionControlInfo
 > Task :app:convertLinkedResourcesToProtoRelease
+> Task :app:expandReleaseArtProfileWildcards
 > Task :app:mergeReleaseJavaResource
 > Task :app:collectReleaseDependencies
-> Task :app:expandReleaseArtProfileWildcards
 > Task :app:sdkReleaseDependencyData
 > Task :app:validateSigningRelease
 > Task :app:writeReleaseAppMetadata
@@ -61,7 +61,7 @@ Unable to strip the following libraries, packaging them as they are: libandroidx
 > Task :app:packageRelease
 > Task :app:createReleaseApkListingFileRedirect
 > Task :app:assembleRelease
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1788979943051.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1789013741392.json
 
-BUILD SUCCESSFUL in 1m 55s
+BUILD SUCCESSFUL in 1m 56s
 51 actionable tasks: 28 executed, 2 from cache, 21 up-to-date
