@@ -119,7 +119,7 @@ internal fun TodayDashboard(config:Config, fixedNow:LocalDateTime?=null,onEdit:(
                         }
                         Text(when(slot.state){SlotState.DONE->"✓ انتهت";SlotState.LIVE->"الآن";else->"قادمة"},color=MaterialTheme.colorScheme.primary,style=MaterialTheme.typography.labelMedium)
                     }
-                    Text("${slot.bell.start.format(clock)} — ${slot.bell.end.format(clock)}",color=fg)
+                    Text("من ${slot.bell.start.format(clock)} إلى ${slot.bell.end.format(clock)}",color=fg)
                     if(slot.note.isNotBlank())Text(slot.note,style=MaterialTheme.typography.bodySmall)
                     if(slot.isStandby)TextButton(onClick={context.startActivity(StandbyAssignments.intent(context,ui.date,slot.period))}){Text("فصل الانتظار")}
                     if(slot.overridden)Text("تعديل لهذا اليوم فقط",style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.primary)

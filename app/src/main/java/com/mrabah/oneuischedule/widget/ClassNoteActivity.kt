@@ -37,7 +37,7 @@ class ClassNoteActivity:ComponentActivity() {
             var note by remember { mutableStateOf(ClassNotes.get(this,section)?.text.orEmpty()) }
             var reminder by remember { mutableStateOf(ClassNotes.get(this,section)?.reminder ?: true) }
             val existing=remember { ClassNotes.get(this,section) }
-            Surface(Modifier.fillMaxSize()) {
+            Surface(Modifier.fillMaxSize().safeDrawingPadding().imePadding()) {
                 LazyColumn(contentPadding=PaddingValues(24.dp),verticalArrangement=Arrangement.spacedBy(18.dp)) {
                     item { Text("آخر نقطة للفصل $section",style=MaterialTheme.typography.headlineSmall) }
                     item { Text("اكتب أين توقفت. تظهر الملاحظة لهذا الفصل في حصصه القادمة حتى تحديثها أو إنهائها.") }

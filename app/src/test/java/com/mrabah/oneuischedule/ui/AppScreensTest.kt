@@ -5,7 +5,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.activity.compose.setContent
+import androidx.compose.runtime.Composable
 import com.mrabah.oneuischedule.ScheduleScreen
 import com.mrabah.oneuischedule.data.Defaults
 import com.mrabah.oneuischedule.data.Duty
@@ -24,11 +26,15 @@ import android.graphics.Bitmap
 @Config(sdk=[34],qualifiers="ar-rSA-w411dp-h891dp")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class AppScreensTest {
-    @get:Rule val compose=createAndroidComposeRule<androidx.activity.ComponentActivity>()
+    @get:Rule val compose=createEmptyComposeRule()
+    private lateinit var controller:org.robolectric.android.controller.ActivityController<androidx.activity.ComponentActivity>
+    @org.junit.Before fun createHost() {controller=org.robolectric.Robolectric.buildActivity(androidx.activity.ComponentActivity::class.java);controller.get().setTheme(com.mrabah.oneuischedule.R.style.Theme_OneUISchedule);controller.setup()}
+    @org.junit.After fun closeHost() {controller.pause().stop().destroy()}
+    private fun content(body:@Composable ()->Unit) {compose.runOnUiThread {controller.get().setContent(content=body)}}
     private fun capture(name:String) {
         val folder=File("build/design-previews").apply{mkdirs()}
         compose.runOnIdle {
-            val view=compose.activity.window.decorView
+            val view=controller.get().window.decorView
             val bitmap=Bitmap.createBitmap(view.width,view.height,Bitmap.Config.ARGB_8888)
             view.draw(android.graphics.Canvas(bitmap))
             File(folder,"app-$name-live.png").outputStream().use{bitmap.compress(Bitmap.CompressFormat.PNG,100,it)}
@@ -36,7 +42,7 @@ class AppScreensTest {
         }
     }
     @Test fun todayShowsLiveCountdownAndCanOpenTomorrow() {
-        compose.setContent {ScheduleTheme(dark=false){Surface(Modifier.fillMaxSize()){TodayDashboard(Defaults.config,LocalDateTime.of(2026,9,7,8,30)){_,_->}}}}
+        content {ScheduleTheme(dark=false){Surface(Modifier.fillMaxSize()){TodayDashboard(Defaults.config,LocalDateTime.of(2026,9,7,8,30)){_,_->}}}}
         compose.onNodeWithText("جارية الآن").assertExists()
         compose.onNodeWithText("25:00").assertExists()
         capture("today-light")
@@ -45,13 +51,13 @@ class AppScreensTest {
         compose.onNodeWithText("جارية الآن").assertDoesNotExist()
     }
     @Test fun finishedDayKeepsItsCompletedLessons() {
-        compose.setContent {ScheduleTheme(dark=true){Surface(Modifier.fillMaxSize()){TodayDashboard(Defaults.config,LocalDateTime.of(2026,9,7,16,0)){_,_->}}}}
+        content {ScheduleTheme(dark=true){Surface(Modifier.fillMaxSize()){TodayDashboard(Defaults.config,LocalDateTime.of(2026,9,7,16,0)){_,_->}}}}
         compose.onNodeWithText("اكتمل يومك الدراسي").assertExists()
         capture("completed-dark")
     }
     @Test fun scheduleUsesExplicitChoiceAndSavesOnlyOnConfirmation() {
         var saved=com.mrabah.oneuischedule.data.Defaults.config
-        compose.setContent {ScheduleTheme(dark=false){Surface(Modifier.fillMaxSize()){ScheduleScreen(Defaults.config,{saved=it})}}}
+        content {ScheduleTheme(dark=false){Surface(Modifier.fillMaxSize()){ScheduleScreen(Defaults.config,{saved=it})}}}
         compose.onNodeWithContentDescription("SUNDAY الحصة 1").performClick()
         compose.onNodeWithText("حصة انتظار").performClick()
         assertEquals(Defaults.config,saved)

@@ -74,7 +74,7 @@ class DesignLessonActivity:ComponentActivity() {
                 var task by remember {mutableStateOf(PreparationStore.task(this,key))}
                 var note by remember {mutableStateOf(PreparationStore.note(this,key))}
                 val day=remember {DesignDay.build(ScheduleStore.load(this))}
-                Surface(modifier=Modifier.fillMaxSize()) {
+                Surface(modifier=Modifier.fillMaxSize().safeDrawingPadding().imePadding()) {
                     LazyColumn(contentPadding=PaddingValues(24.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
                         item {Text(intent.getStringExtra("title") ?: "تفاصيل الحصة",style=MaterialTheme.typography.headlineSmall)}
                         if(key==null) {

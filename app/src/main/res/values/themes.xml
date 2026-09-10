@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- DeviceDefault picks up One UI's own styling on Samsung. -->
-    <style name="Theme.OneUISchedule" parent="@android:style/Theme.DeviceDefault.DayNight" />
+    <style name="Theme.OneUISchedule" parent="@android:style/Theme.DeviceDefault.DayNight">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
 </resources>
