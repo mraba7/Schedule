@@ -9,11 +9,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.text.font.*
 import com.mrabah.oneuischedule.R
 
-/**
- * IBM Plex Sans Arabic: Arabic and Latin drawn as one family, so "الحصة 2"
- * and "8:05" share a baseline. The widget cannot use it — the launcher's
- * process only reaches system fonts.
- */
+/** Shared Arabic typography across the app and widget detail screens. */
 internal val PlexArabic = FontFamily(
     Font(R.font.plex_arabic_regular, FontWeight.Normal),
     Font(R.font.plex_arabic_medium, FontWeight.Medium),

@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import com.mrabah.oneuischedule.ScheduleScreen
 import com.mrabah.oneuischedule.data.Defaults
 import com.mrabah.oneuischedule.data.Duty
@@ -24,11 +24,16 @@ import android.graphics.Bitmap
 @Config(sdk=[34],qualifiers="ar-rSA-w411dp-h891dp")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class AppScreensTest {
-    @get:Rule val compose=createComposeRule()
+    @get:Rule val compose=createAndroidComposeRule<androidx.activity.ComponentActivity>()
     private fun capture(name:String) {
         val folder=File("build/design-previews").apply{mkdirs()}
-        val bitmap=compose.onRoot().captureToImage().asAndroidBitmap()
-        File(folder,"app-$name-live.png").outputStream().use{bitmap.compress(Bitmap.CompressFormat.PNG,100,it)}
+        compose.runOnIdle {
+            val view=compose.activity.window.decorView
+            val bitmap=Bitmap.createBitmap(view.width,view.height,Bitmap.Config.ARGB_8888)
+            view.draw(android.graphics.Canvas(bitmap))
+            File(folder,"app-$name-live.png").outputStream().use{bitmap.compress(Bitmap.CompressFormat.PNG,100,it)}
+            bitmap.recycle()
+        }
     }
     @Test fun todayShowsLiveCountdownAndCanOpenTomorrow() {
         compose.setContent {ScheduleTheme(dark=false){Surface(Modifier.fillMaxSize()){TodayDashboard(Defaults.config,LocalDateTime.of(2026,9,7,8,30)){_,_->}}}}
