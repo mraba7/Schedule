@@ -70,6 +70,31 @@ class LessonPeekTest {
         assertTrue(hits.getChildAt(0).isClickable)
         assertTrue(hits.getChildAt(0).contentDescription.toString().contains("08:05"))
     }
+    @Test fun standbyTimeAndClassHaveSeparateClickTargets() {
+        val now=LocalDateTime.of(2026,9,10,7,0)
+        val config=Defaults.config.copy(week=mapOf(java.time.DayOfWeek.THURSDAY to (1..7).associateWith { com.mrabah.oneuischedule.data.Duty.Standby }))
+        val day=DesignDay.build(config,now)
+        val shadow=org.robolectric.Shadows.shadowOf(RuntimeEnvironment.getApplication())
+        val collapsed=DesignWidgets.makeViews(c,Design.INTERACTIVE,day,DesignRenderer(c),360f,360f,97).apply(c,FrameLayout(c))
+        collapsed.findViewById<FrameLayout>(R.id.design_peeks).getChildAt(0).performClick()
+        assertEquals(LessonPeek.ACTION,shadow.broadcastIntents.last().action)
+        LessonPeek.toggle(c,97,day.ui.date.toString(),1)
+        val expanded=DesignWidgets.makeViews(c,Design.INTERACTIVE,day,DesignRenderer(c),360f,360f,97).apply(c,FrameLayout(c))
+        val hits=expanded.findViewById<FrameLayout>(R.id.design_peeks)
+        assertEquals(8,hits.childCount)
+        hits.getChildAt(1).performClick()
+        val launched=shadow.nextStartedActivity
+        assertEquals(StandbyClassActivity::class.java.name,launched.component!!.className)
+        assertEquals(1,launched.getIntExtra("period",-1))
+        for(period in listOf(1,7)) {
+            val tiles=LessonPeek.tiles(day,period)
+            tiles.indices.forEach { a -> (a+1 until tiles.size).forEach { b -> assertFalse(android.graphics.RectF.intersects(tiles[a],tiles[b])) } }
+            val bitmap=DesignRenderer(c).render(Design.INTERACTIVE,day,peekPeriod=period)
+            val folder=File("build/design-previews").apply{mkdirs()}
+            File(folder,"standby-time-and-class-$period.png").outputStream().use {bitmap.compress(Bitmap.CompressFormat.PNG,100,it)}
+            bitmap.recycle()
+        }
+    }
     @Test fun expandedCardsDoNotOverlapAndRenderOnBothRows() {
         val now=LocalDateTime.of(2026,9,7,8,30)
         val all=Defaults.config.copy(week=mapOf(java.time.DayOfWeek.MONDAY to (1..7).associateWith { com.mrabah.oneuischedule.data.Duty.Teach("2/1") }))

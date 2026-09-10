@@ -433,6 +433,11 @@ internal class DesignRenderer(context: Context) {
             if(expanded) {
                 text("من ${DesignDay.clock(lesson.bell.start)}",x+3f,y+tileH,tileW-6f,13f,10f,fg,align="center",minSize=8f)
                 text("إلى ${DesignDay.clock(lesson.bell.end)}",x+3f,y+tileH+13f,tileW-6f,13f,10f,fg,align="center",minSize=8f)
+                if(lesson.isStandby) {
+                    rect(x+3f,y+tileH+28f,tileW-6f,23f,"#344754",6f)
+                    text(if(lesson.standbySection==null) "تحديد الفصل" else "تغيير الفصل",x+4f,y+tileH+28f,tileW-8f,23f,10f,gold,true,"center",8f)
+                }
+
             }
         }
         val done=lessons.count{it.state==com.mrabah.oneuischedule.data.SlotState.DONE}
@@ -440,7 +445,8 @@ internal class DesignRenderer(context: Context) {
         val summary=if(live) "$done انتهت · $ahead بعد الحالية" else if(d.ui.isToday) "$done انتهت · $ahead قادمة" else "${lessons.size} حصص في هذا اليوم"
         if(selected==null)text(summary,16f,if(rows>1)112f else 104f,328f,15f,11f,muted,align="center")
         c.save()
-        if(rows>1 && selected!=null) {c.translate(0f,153f);c.scale(1f,207f/227f);c.translate(0f,-133f)}
+        val bodyTop=maxOf(133f,(tiles.maxOfOrNull { it.bottom } ?: 125f)+8f)
+        if(bodyTop>133f) {c.translate(0f,bodyTop);c.scale(1f,(360f-bodyTop)/227f);c.translate(0f,-133f)}
         rect(6f,133f,348f,194f,"#132331",9f,"#2D4253")
         rect(15f,142f,48f,23f,"#CFB47D",10f)
         text(if(live)"الآن" else "القادمة",18f,142f,42f,23f,12f,"#152230",true,"center")

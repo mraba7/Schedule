@@ -138,11 +138,22 @@ internal object DesignWidgets {
                 val tap=Intent(c,InteractiveWidgetReceiver::class.java).setAction(LessonPeek.ACTION)
                     .setData(Uri.parse("schedule-peek://widget/$id/${day.ui.date}/${slot.period}"))
                     .putExtra("widget",id).putExtra("date",day.ui.date.toString()).putExtra("period",slot.period)
-                hit.setOnClickPendingIntent(R.id.design_peek_hit,if(slot.isStandby)
+                hit.setOnClickPendingIntent(R.id.design_peek_hit,if(slot.isStandby && style!=Design.INTERACTIVE)
                     PendingIntent.getActivity(c,0,StandbyAssignments.intent(c,day.ui.date,slot.period),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
                     else PendingIntent.getBroadcast(c,0,tap,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
-                if(slot.isStandby)hit.setContentDescription(R.id.design_peek_hit,"${periodName(slot.period)} انتظار، ${slot.displaySection ?: "لم يحدد الفصل"}، اختيار فصل الانتظار")
+                if(slot.isStandby && style!=Design.INTERACTIVE)hit.setContentDescription(R.id.design_peek_hit,"${periodName(slot.period)} انتظار، ${slot.displaySection ?: "لم يحدد الفصل"}، اختيار فصل الانتظار")
                 views.addView(R.id.design_peeks,hit)
+                if(style==Design.INTERACTIVE && slot.isStandby && selected==slot.period) {
+                    val edit=RemoteViews(c.packageName,R.layout.design_peek_hit)
+                    edit.setViewLayoutWidth(R.id.design_peek_hit,(tile.width()-6f)*scale,TypedValue.COMPLEX_UNIT_DIP)
+                    edit.setViewLayoutHeight(R.id.design_peek_hit,26f*scale,TypedValue.COMPLEX_UNIT_DIP)
+                    edit.setViewLayoutMargin(R.id.design_peek_hit,RemoteViews.MARGIN_LEFT,(width-360*scale)/2+(tile.left+3f)*scale,TypedValue.COMPLEX_UNIT_DIP)
+                    edit.setViewLayoutMargin(R.id.design_peek_hit,RemoteViews.MARGIN_TOP,(height-360*scale)/2+(tile.bottom-26f)*scale,TypedValue.COMPLEX_UNIT_DIP)
+                    edit.setContentDescription(R.id.design_peek_hit,"تحديد أو تغيير فصل الانتظار")
+                    edit.setOnClickPendingIntent(R.id.design_peek_hit,PendingIntent.getActivity(c,0,StandbyAssignments.intent(c,day.ui.date,slot.period),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+                    views.addView(R.id.design_peeks,edit)
+                }
+
             }
         }
         return views

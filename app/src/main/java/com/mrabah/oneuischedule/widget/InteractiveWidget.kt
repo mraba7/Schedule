@@ -31,10 +31,11 @@ internal object LessonPeek {
         val rows=(count+columns-1)/columns;val h=if(rows>1)25f else 43f
         val width=(336f-5f*(columns-1))/columns
         val selectedIndex=day.ui.slots.indexOfFirst{it.period==selected}
+        val expansion=if(day.ui.slots.getOrNull(selectedIndex)?.isStandby==true)54f else 28f
         return day.ui.slots.mapIndexed { i,slot ->
             val x=12f+(columns-1-i%columns)*(width+5f)
-            val y=57f+(i/columns)*(h+4f)+if(selectedIndex>=0 && selectedIndex/columns<i/columns)28f else 0f
-            android.graphics.RectF(x,y,x+width,y+h+if(slot.period==selected)28f else 0f)
+            val y=57f+(i/columns)*(h+4f)+if(selectedIndex>=0 && selectedIndex/columns<i/columns)expansion else 0f
+            android.graphics.RectF(x,y,x+width,y+h+if(slot.period==selected)expansion else 0f)
         }
     }
     fun clear(c:Context,id:Int) {prefs(c).edit().remove("until:$id").remove("date:$id").remove("period:$id").apply()}
