@@ -50,6 +50,8 @@ data class Config(
     val voiceId: String = "", // empty = the engine default
     val liveUpdate: Boolean = true,
     val progress: Map<String, SectionProgress> = emptyMap(),
+    val schoolSections: List<String> = emptyList(),
+    val standbySections: Map<String, String> = emptyMap(),
 ) {
     fun bell(period: Int): Bell = bells.first { it.period == period }
     val workdays: Set<DayOfWeek> get() = week.keys
@@ -252,6 +254,8 @@ object ScheduleStore {
             .put("voiceId", c.voiceId)
             .put("liveUpdate", c.liveUpdate)
             .put("progress", progress)
+            .put("schoolSections", JSONArray(c.schoolSections))
+            .put("standbySections", JSONObject(c.standbySections))
     }
 
     private fun parse(json: JSONObject): Config {
@@ -320,6 +324,8 @@ object ScheduleStore {
             voiceId = json.optString("voiceId", ""),
             liveUpdate = json.optBoolean("liveUpdate", true),
             progress = progress,
+            schoolSections = json.optJSONArray("schoolSections")?.let { a -> (0 until a.length()).map { a.getString(it) } } ?: emptyList(),
+            standbySections = json.optJSONObject("standbySections")?.let { o -> o.keys().asSequence().associateWith { o.getString(it) } } ?: emptyMap(),
         )
     }
 }
@@ -337,7 +343,9 @@ data class Slot(
     val state: SlotState,
     val note: String = "",
     val overridden: Boolean = false,
+    val standbySection: String? = null,
 ) {
+    val displaySection: String? get() = section ?: if(isStandby) standbySection else null
     val isStandby: Boolean get() = duty is Duty.Standby
     val section: String? get() = (duty as? Duty.Teach)?.section
 }
@@ -471,6 +479,7 @@ object ScheduleEngine {
                     state = state,
                     note = config.noteFor(date.dayOfWeek, period),
                     overridden = isOverridden(config, date, period),
+                    standbySection = if(duty is Duty.Standby) config.standbySections["$date#$period"] else null,
                 )
             }
             .sortedBy { it.period }

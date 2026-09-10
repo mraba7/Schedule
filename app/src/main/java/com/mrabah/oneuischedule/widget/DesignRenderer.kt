@@ -423,7 +423,7 @@ internal class DesignRenderer(context: Context) {
             val expanded=lesson.period==selected
             val active=lesson.state==com.mrabah.oneuischedule.data.SlotState.LIVE
             val past=lesson.state==com.mrabah.oneuischedule.data.SlotState.DONE
-            val tint=if(past) "#71818E" else GlassAgenda.color(lesson.section)
+            val tint=if(past) "#71818E" else GlassAgenda.color(lesson.displaySection)
             rect(x,y,tileW,tile.height(),if(active)"#293134" else "#192A38",7f,if(active)gold else "#344A5C")
             if(active)circle(x+tileW-6f,y+6f,1.6f,gold)
             text(periodName(lesson.period).removePrefix("الحصة "),x+4f,y+1f,tileW-8f,if(rows>1)12f else 20f,
@@ -445,8 +445,8 @@ internal class DesignRenderer(context: Context) {
         rect(15f,142f,48f,23f,"#CFB47D",10f)
         text(if(live)"الآن" else "القادمة",18f,142f,42f,23f,12f,"#152230",true,"center")
         text(periodName(slot.period),70f,141f,272f,36f,29f,fg,true,minSize=22f)
-        rect(246f,180f,96f,22f,"#203D41",11f,GlassAgenda.color(slot.section))
-        text("الفصل ${d.section}",251f,180f,86f,22f,13f,GlassAgenda.color(slot.section),true,"center",10f)
+        rect(246f,180f,96f,22f,"#203D41",11f,GlassAgenda.color(slot.displaySection))
+        text("الفصل ${d.section}",251f,180f,86f,22f,13f,GlassAgenda.color(slot.displaySection),true,"center",10f)
         val note=ClassNotes.get(appContext,slot.section)?.text
         rect(15f,210f,330f,25f,"#1D3040",8f)
         icon("note",323f,215f,muted,15f)
@@ -502,7 +502,7 @@ internal class DesignRenderer(context: Context) {
                     text(periodName(s.period).removePrefix("الحصة "),x-cell/2+4f,y-58f,cell-8f,18f,if(cell<60)9f else 12f,
                         if(past)"#738795" else fg,true,"center",8f)
                     section(DesignDay.section(s),x-cell/2+4f,y-38f,cell-8f,19f,if(cell<60)12f else 15f,
-                        if(past)"#738795" else GlassAgenda.color(s.section))
+                        if(past)"#738795" else GlassAgenda.color(s.displaySection))
                 }
                 circle(x,y,radius+1,"#152230")
                 circle(x,y,radius,if(past)doneColor else if(active)gold else muted,!past && !active,1f)

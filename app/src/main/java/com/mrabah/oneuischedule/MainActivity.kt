@@ -47,6 +47,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.Typography
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -142,6 +143,15 @@ private fun AppShell(initialTab: Int = 0) {
     val scope = rememberCoroutineScope()
     var tab by remember { mutableStateOf(initialTab.coerceIn(0, 3)) }
     var config by remember { mutableStateOf(ScheduleStore.load(context)) }
+    DisposableEffect(context) {
+        val prefs=context.getSharedPreferences("schedule_config", android.content.Context.MODE_PRIVATE)
+        val listener=android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, _ ->
+            config=ScheduleStore.load(context)
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
 
     fun commit(next: Config) {
         config = next
@@ -377,7 +387,7 @@ private fun TodayScreen(config: Config, commit: (Config) -> Unit) {
                         Spacer(Modifier.height(6.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                slot.section ?: "انتظار",
+                                slot.displaySection ?: "انتظار",
                                 fontSize = 44.sp,
                                 fontWeight = FontWeight.Bold,
                             )
@@ -385,6 +395,11 @@ private fun TodayScreen(config: Config, commit: (Config) -> Unit) {
                             Column(horizontalAlignment = Alignment.End) {
                                 Text(slot.bell.start.format(clock), fontSize = 20.sp, fontWeight = FontWeight.Bold)
                                 Text("حتى ${slot.bell.end.format(clock)}", fontSize = 12.sp)
+                            }
+                        }
+                        if (slot.isStandby) {
+                            TextButton(onClick={context.startActivity(com.mrabah.oneuischedule.widget.StandbyAssignments.intent(context,ui.date,slot.period))}) {
+                                Text(if(slot.standbySection==null) "تحديد فصل الانتظار" else "تغيير فصل الانتظار")
                             }
                         }
                         if (slot.note.isNotBlank()) {
@@ -435,10 +450,15 @@ private fun TodayScreen(config: Config, commit: (Config) -> Unit) {
                                 Spacer(Modifier.width(8.dp))
                             }
                             Text(
-                                slot.section ?: "انتظار",
+                                slot.displaySection ?: "انتظار",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                             )
+                        }
+                        if (slot.isStandby) {
+                            TextButton(onClick={context.startActivity(com.mrabah.oneuischedule.widget.StandbyAssignments.intent(context,ui.date,slot.period))}) {
+                                Text(if(slot.standbySection==null) "تحديد فصل الانتظار" else "تغيير فصل الانتظار")
+                            }
                         }
                         if (slot.note.isNotBlank()) {
                             Text(

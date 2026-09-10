@@ -15,7 +15,7 @@ internal data class DesignDay(val ui: com.mrabah.oneuischedule.data.ScheduleUi, 
     val focus get() = ui.focus
     val upcoming get() = ui.slots.filter { it.state == SlotState.AHEAD && it.period != focus?.period }
     val key get() = focus?.let { "${ui.date}#${it.period}" }
-    val section get() = focus?.section ?: if (focus == null) "—" else "انتظار"
+    val section get() = focus?.displaySection ?: if (focus == null) "—" else "انتظار"
     val subject get() = if (focus==null) "لا توجد حصص" else if (focus?.section != null) ui.config.subject else "حصة انتظار"
     val day: String get() {
         val name = ui.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, Locale("ar"))
@@ -65,7 +65,7 @@ internal data class DesignDay(val ui: com.mrabah.oneuischedule.data.ScheduleUi, 
     companion object {
         fun build(config: Config, now: LocalDateTime = LocalDateTime.now()) = DesignDay(ScheduleEngine.build(config, now), now)
         fun clock(time: LocalTime) = time.format(DateTimeFormatter.ofPattern("HH:mm", Locale.US))
-        fun section(slot: Slot) = slot.section ?: "انتظار"
+        fun section(slot: Slot) = slot.displaySection ?: "انتظار"
     }
 }
 

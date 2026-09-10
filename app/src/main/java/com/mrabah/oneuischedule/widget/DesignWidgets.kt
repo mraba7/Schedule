@@ -89,7 +89,7 @@ internal object DesignWidgets {
         val intent=Intent(c,DesignLessonActivity::class.java)
             .setData(Uri.parse("schedule-design://lesson/${day.key ?: "empty"}"))
             .putExtra("key",day.key).putExtra("title","${day.day} · ${day.period} · ${day.section}")
-        val target=if((style==Design.FOCUS || style==Design.PATH || style==Design.INTERACTIVE) && day.focus?.section!=null) ClassNotes.intent(c,day.focus!!.section!!) else if(style==Design.PATH) Intent(c,com.mrabah.oneuischedule.MainActivity::class.java).putExtra("open_tab",1) else intent
+        val target=if(day.focus?.isStandby==true) StandbyAssignments.intent(c,day.ui.date,day.focus!!.period) else if((style==Design.FOCUS || style==Design.PATH || style==Design.INTERACTIVE) && day.focus?.section!=null) ClassNotes.intent(c,day.focus!!.section!!) else if(style==Design.PATH) Intent(c,com.mrabah.oneuischedule.MainActivity::class.java).putExtra("open_tab",1) else intent
         val open=PendingIntent.getActivity(c,0,target,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         views.setOnClickPendingIntent(R.id.design_image,open)
         views.setViewVisibility(R.id.design_schedule,if((style==Design.TICKET || style==Design.GLASS) && day.key!=null) View.VISIBLE else View.GONE)
@@ -123,10 +123,11 @@ internal object DesignWidgets {
             views.setOnClickPendingIntent(R.id.design_task,action)
         }
         views.removeAllViews(R.id.design_peeks)
-        if(style==Design.INTERACTIVE && day.focus!=null) {
+        if((style==Design.INTERACTIVE || style==Design.FOCUS) && day.focus!=null) {
             val scale=minOf(width,height)/360f
             val tiles=LessonPeek.tiles(day,selected)
             day.ui.slots.forEachIndexed { i,slot ->
+                if(style!=Design.INTERACTIVE && !slot.isStandby)return@forEachIndexed
                 val tile=tiles[i]
                 val hit=RemoteViews(c.packageName,R.layout.design_peek_hit)
                 hit.setViewLayoutWidth(R.id.design_peek_hit,tile.width()*scale,TypedValue.COMPLEX_UNIT_DIP)
@@ -137,7 +138,10 @@ internal object DesignWidgets {
                 val tap=Intent(c,InteractiveWidgetReceiver::class.java).setAction(LessonPeek.ACTION)
                     .setData(Uri.parse("schedule-peek://widget/$id/${day.ui.date}/${slot.period}"))
                     .putExtra("widget",id).putExtra("date",day.ui.date.toString()).putExtra("period",slot.period)
-                hit.setOnClickPendingIntent(R.id.design_peek_hit,PendingIntent.getBroadcast(c,0,tap,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+                hit.setOnClickPendingIntent(R.id.design_peek_hit,if(slot.isStandby)
+                    PendingIntent.getActivity(c,0,StandbyAssignments.intent(c,day.ui.date,slot.period),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+                    else PendingIntent.getBroadcast(c,0,tap,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+                if(slot.isStandby)hit.setContentDescription(R.id.design_peek_hit,"${periodName(slot.period)} انتظار، ${slot.displaySection ?: "لم يحدد الفصل"}، اختيار فصل الانتظار")
                 views.addView(R.id.design_peeks,hit)
             }
         }
