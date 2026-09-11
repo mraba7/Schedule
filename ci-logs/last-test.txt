@@ -9,20 +9,20 @@ Daemon will be stopped at the end of the build
 > Task :app:mapDebugSourceSetPaths
 > Task :app:generateDebugResources
 > Task :app:packageDebugResources
-> Task :app:mergeDebugResources
 > Task :app:createDebugCompatibleScreenManifests
 > Task :app:extractDeepLinksDebug FROM-CACHE
 > Task :app:parseDebugLocalResources
+> Task :app:mergeDebugResources
 > Task :app:processDebugMainManifest
 > Task :app:processDebugManifest
 > Task :app:javaPreCompileDebug FROM-CACHE
 > Task :app:preDebugUnitTestBuild UP-TO-DATE
 > Task :app:javaPreCompileDebugUnitTest FROM-CACHE
 > Task :app:mergeDebugShaders
-> Task :app:processDebugManifestForPackage
 > Task :app:compileDebugShaders NO-SOURCE
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
+> Task :app:processDebugManifestForPackage
 > Task :app:buildKotlinToolingMetadata
 > Task :app:preReleaseBuild UP-TO-DATE
 > Task :app:generateReleaseBuildConfig
@@ -41,8 +41,8 @@ Daemon will be stopped at the end of the build
 > Task :app:processReleaseManifest
 > Task :app:javaPreCompileRelease FROM-CACHE
 > Task :app:preReleaseUnitTestBuild UP-TO-DATE
-> Task :app:processReleaseManifestForPackage
 > Task :app:javaPreCompileReleaseUnitTest FROM-CACHE
+> Task :app:processReleaseManifestForPackage
 > Task :app:mergeReleaseShaders
 > Task :app:compileReleaseShaders NO-SOURCE
 > Task :app:generateReleaseAssets UP-TO-DATE
@@ -63,27 +63,29 @@ w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneui
 > Task :app:compileReleaseJavaWithJavac
 > Task :app:compileDebugJavaWithJavac
 > Task :app:processDebugJavaRes
-> Task :app:bundleDebugClassesToRuntimeJar
 > Task :app:bundleDebugClassesToCompileJar
-> Task :app:processReleaseJavaRes
-> Task :app:bundleReleaseClassesToRuntimeJar
+> Task :app:bundleDebugClassesToRuntimeJar
 > Task :app:bundleReleaseClassesToCompileJar
-> Task :app:compileDebugUnitTestKotlin
-> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:bundleReleaseClassesToRuntimeJar
+> Task :app:processReleaseJavaRes
 > Task :app:compileReleaseUnitTestKotlin
+> Task :app:compileReleaseUnitTestJavaWithJavac NO-SOURCE
+> Task :app:compileDebugUnitTestKotlin
+> Task :app:processReleaseUnitTestJavaRes
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
 > Task :app:processDebugUnitTestJavaRes
 > Task :app:testDebugUnitTest
 
 WorkspaceScreensTest > classPageCanCreateAndFindANoteAtLargeFont FAILED
-    androidx.test.espresso.AppNotIdleException at WorkspaceScreensTest.kt:44
+    androidx.test.espresso.AppNotIdleException at WorkspaceScreensTest.kt:48
 
 WorkspaceScreensTest > monthlyCalendarShowsHolidayEditorAndCancelsSafely FAILED
-    androidx.test.espresso.AppNotIdleException at WorkspaceScreensTest.kt:54
+    androidx.test.espresso.AppNotIdleException at WorkspaceScreensTest.kt:58
 
 62 tests completed, 2 failed
 
 > Task :app:testDebugUnitTest FAILED
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/tests-1789163253187.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/tests-1789163627609.json
 
 FAILURE: Build failed with an exception.
 
@@ -94,5 +96,5 @@ Execution failed for task ':app:testDebugUnitTest'.
 * Try:
 > Run with --scan to get full insights.
 
-BUILD FAILED in 3m 28s
-55 actionable tasks: 46 executed, 9 from cache
+BUILD FAILED in 3m 29s
+56 actionable tasks: 47 executed, 9 from cache
