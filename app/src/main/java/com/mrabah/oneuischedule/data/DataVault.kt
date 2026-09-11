@@ -39,7 +39,7 @@ internal object DataVault {
     private fun validate(data:JSONObject) {
         require(data.getInt("version")==1){"إصدار النسخة غير مدعوم"}
         val s=data.getJSONObject("stores")
-        require(s.keys().asSequence().all{it in stores}){"محتوى غير مدعوم"}
+        require(s.keys().asSequence().toSet()==stores.toSet()){"محتوى غير مدعوم"}
         val raw=s.optJSONObject("schedule_config")?.optJSONObject("config_json")?.optString("value")
         if(raw!=null)require(ScheduleStore.importJson(raw)?.let{ScheduleValidation.problem(it)==null}==true){"الجدول في النسخة غير صالح"}
         s.keys().forEach {name->s.getJSONObject(name).let {p->p.keys().forEach {key->
@@ -78,13 +78,30 @@ internal object DataVault {
     fun preview(c:Context,input:InputStream):Import {
         val stage=File(c.cacheDir,"restore-${UUID.randomUUID()}").apply{mkdirs()}
         try {
+            val buffered=input.buffered()
+            buffered.mark(4)
+            val magic=ByteArray(4);val read=buffered.read(magic);buffered.reset()
+            if(read<2 || magic[0]!=80.toByte() || magic[1]!=75.toByte()) {
+                val text=buffered.use { source ->
+                    val out=ByteArrayOutputStream();val buffer=ByteArray(8192)
+                    while(true){val n=source.read(buffer);if(n<0)break;require(out.size()+n<=4*1024*1024){"ملف الجدول كبير جدًا"};out.write(buffer,0,n)}
+                    out.toByteArray()
+                }
+                require(text.size<=4*1024*1024){"ملف الجدول أكبر من الحد المسموح"}
+                val config=ScheduleStore.importJson(String(text,Charsets.UTF_8)) ?: error("ملف الجدول غير صالح")
+                val data=snapshot(c).put("label","نسخة جدول قديمة؛ تبقى ملاحظاتك وتجهيزاتك الحالية")
+                data.getJSONObject("stores").put("schedule_config",JSONObject().put("config_json",JSONObject().put("type","string").put("value",ScheduleStore.exportJson(config))))
+                validate(data)
+                return Import(data,stage)
+            }
             var total=0L;var count=0;val seen=mutableSetOf<String>()
-            ZipInputStream(input).use {zip->while(true){val entry=zip.nextEntry ?: break
+            ZipInputStream(buffered).use {zip->while(true){val entry=zip.nextEntry ?: break
                 require(++count<=1000 && seen.add(entry.name)){"عدد ملفات أو أسماء غير صالحة"}
                 require(entry.name=="data.json" || Regex("attachments/[a-zA-Z0-9._-]+").matches(entry.name)){"مسار ملف غير صالح"}
                 val target=File(stage,entry.name);target.parentFile!!.mkdirs()
                 target.outputStream().use {out->val buffer=ByteArray(8192);while(true){val n=zip.read(buffer);if(n<0)break;total+=n;require(total<=100L*1024*1024){"النسخة أكبر من 100 ميجابايت"};out.write(buffer,0,n)}}
             }}
+            require(File(stage,"data.json").length()<=4*1024*1024){"ملف البيانات أكبر من الحد المسموح"}
             val data=JSONObject(File(stage,"data.json").readText());validate(data)
             return Import(data,stage)
         }catch(t:Throwable){stage.deleteRecursively();throw t}
@@ -96,6 +113,7 @@ internal object DataVault {
         restore(c,import.data);import.discard()
     }
     fun daily(c:Context) {
+        if(!c.getSharedPreferences("app_preferences",0).getBoolean("daily_backup",true))return
         val file=File(folder(c,"daily-backups"),"${java.time.LocalDate.now()}.zip")
         if(file.exists())return
         val temporary=File(file.parentFile,"pending.tmp")

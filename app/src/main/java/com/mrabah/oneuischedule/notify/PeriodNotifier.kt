@@ -189,7 +189,7 @@ object PeriodNotifier {
     /* ── scheduling ─────────────────────────────────────────── */
 
     private fun armNext(context: Context, config: Config, now: LocalDateTime) {
-        val at = nextEvent(config, now) ?: return
+        val at = nextEvent(config, now) ?: run {cancel(context);return}
         val trigger = at.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         val manager = alarms(context) ?: return
         try {
@@ -203,15 +203,16 @@ object PeriodNotifier {
         }
     }
 
-    private fun nextEvent(config: Config, now: LocalDateTime): LocalDateTime? {
+    internal fun nextEvent(config: Config, now: LocalDateTime): LocalDateTime? {
         // while a period runs, tick every minute so the progress bar moves
-        if (config.liveUpdate && ScheduleEngine.build(config, now).live != null) {
+        if (config.liveUpdate && config.mutedDate!=now.toLocalDate().toString() && ScheduleEngine.build(config, now).live?.let {if(it.isStandby)config.notifyStandby else config.notifyTeaching}==true) {
             return now.truncatedTo(java.time.temporal.ChronoUnit.MINUTES).plusMinutes(1)
         }
         var date = now.toLocalDate()
         repeat(370) {
             val day = date
-            val marks: LocalDateTime? = ScheduleEngine.dutiesOn(config, day).keys
+            val duties=if(config.mutedDate==day.toString()) emptyMap() else ScheduleEngine.dutiesOn(config,day).filterValues {if(it is com.mrabah.oneuischedule.data.Duty.Standby)config.notifyStandby else config.notifyTeaching}
+            val marks: LocalDateTime? = duties.keys
                 .mapNotNull { p -> com.mrabah.oneuischedule.data.SchoolTools.bells(config,day).firstOrNull { bell -> bell.period == p } }
                 .flatMap { bell ->
                     buildList<LocalDateTime> {

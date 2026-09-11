@@ -54,20 +54,77 @@ internal fun WeekTools(config:Config,commit:(Config)->Unit) {
 
 @Composable
 internal fun CalendarScreen(config:Config,commit:(Config)->Unit) {
-    var month by remember{mutableStateOf(YearMonth.now())};var selected by remember{mutableStateOf(LocalDate.now())}
-    var editing by remember{mutableStateOf<Holiday?>(null)};var original by remember{mutableStateOf<Holiday?>(null)}
+    var month by remember { mutableStateOf(YearMonth.now()) }
+    var selected by remember { mutableStateOf(LocalDate.now()) }
+    var editing by remember { mutableStateOf<Holiday?>(null) }
+    var original by remember { mutableStateOf<Holiday?>(null) }
+    val cells=List(month.atDay(1).dayOfWeek.value%7){0}+(1..month.lengthOfMonth()).toList()
+    val next=config.holidays.filter {it.to>=LocalDate.now()}.minByOrNull {it.from}
     LazyColumn(contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-        item{Text("التقويم الدراسي",style=MaterialTheme.typography.headlineMedium);Row(horizontalArrangement=Arrangement.SpaceBetween,modifier=Modifier.fillMaxWidth()){TextButton(onClick={month=month.minusMonths(1)}){Text("السابق")};Text("${month.month.getDisplayName(TextStyle.FULL,Locale("ar"))} ${month.year}");TextButton(onClick={month=month.plusMonths(1)}){Text("التالي")}}}
-        item{Row(Modifier.fillMaxWidth()){listOf("أحد","اثن","ثلا","أرب","خمي","جمع","سبت").forEach{Text(it,Modifier.weight(1f),style=MaterialTheme.typography.labelSmall)}}}
-        val cells=List(month.atDay(1).dayOfWeek.value%7){0}+(1..month.lengthOfMonth()).toList()
-        cells.chunked(7).forEach{week->item{Row(Modifier.fillMaxWidth()){week.forEach {day->if(day==0)Spacer(Modifier.weight(1f)) else {val date=month.atDay(day);val holiday=config.holidayOn(date);TextButton(onClick={selected=date},modifier=Modifier.weight(1f).heightIn(min=48.dp),contentPadding=PaddingValues(0.dp),colors=ButtonDefaults.textButtonColors(containerColor=if(selected==date)MaterialTheme.colorScheme.primaryContainer else if(holiday!=null)MaterialTheme.colorScheme.secondaryContainer else androidx.compose.ui.graphics.Color.Transparent)){Text(day.toString())}};repeat(7-week.size){Spacer(Modifier.weight(1f))}}}}
-        item{Text("$selected",style=MaterialTheme.typography.titleLarge);Text(config.holidayOn(selected)?.label ?: "${ScheduleEngine.dutiesOn(config,selected).size} حصص في هذا اليوم");SchoolTools.profile(config,selected)?.let{Text("التوقيت: ${it.name}")}}
-        item{OutlinedButton(onClick={original=null;editing=Holiday(selected,selected,"إجازة")}){Text("إضافة إجازة")}}
-        val next=config.holidays.filter{it.to>=LocalDate.now()}.minByOrNull{it.from}
-        if(next!=null)item{Card(Modifier.fillMaxWidth()){Column(Modifier.padding(16.dp)){Text("${next.label} · ${next.from} إلى ${next.to}");Text("العودة بعد الإجازة: ${ScheduleEngine.nextWorkday(config,next.to)}")}}}
-        config.holidays.sortedBy{it.from}.forEach{holiday->item{Card(Modifier.fillMaxWidth()){Column(Modifier.padding(16.dp)){Text(holiday.label);Text("${holiday.from} إلى ${holiday.to}");TextButton(onClick={original=holiday;editing=holiday}){Text("تعديل الإجازة")}}}}}
+        item {
+            Text("التقويم الدراسي",style=MaterialTheme.typography.headlineMedium)
+            Row(horizontalArrangement=Arrangement.SpaceBetween,modifier=Modifier.fillMaxWidth()) {
+                TextButton(onClick={month=month.minusMonths(1)}) {Text("السابق")}
+                Text("${month.month.getDisplayName(TextStyle.FULL,Locale("ar"))} ${month.year}")
+                TextButton(onClick={month=month.plusMonths(1)}) {Text("التالي")}
+            }
+        }
+        item {
+            Row(Modifier.fillMaxWidth()) {
+                listOf("أحد","اثن","ثلا","أرب","خمي","جمع","سبت").forEach {label ->
+                    Text(label,Modifier.weight(1f),style=MaterialTheme.typography.labelSmall)
+                }
+            }
+        }
+        cells.chunked(7).forEach {week ->
+            item {
+                Row(Modifier.fillMaxWidth()) {
+                    week.forEach {day ->
+                        if(day==0) Spacer(Modifier.weight(1f)) else {
+                            val date=month.atDay(day)
+                            val holiday=config.holidayOn(date)
+                            val color=if(selected==date)MaterialTheme.colorScheme.primaryContainer else if(holiday!=null)MaterialTheme.colorScheme.secondaryContainer else androidx.compose.ui.graphics.Color.Transparent
+                            TextButton(onClick={selected=date},modifier=Modifier.weight(1f).heightIn(min=48.dp),contentPadding=PaddingValues(0.dp),colors=ButtonDefaults.textButtonColors(containerColor=color)) {Text(day.toString())}
+                        }
+                    }
+                    repeat(7-week.size) {Spacer(Modifier.weight(1f))}
+                }
+            }
+        }
+        item {
+            Text(selected.toString(),style=MaterialTheme.typography.titleLarge)
+            Text(config.holidayOn(selected)?.label ?: "${ScheduleEngine.dutiesOn(config,selected).size} حصص في هذا اليوم")
+            SchoolTools.profile(config,selected)?.let {Text("التوقيت: ${it.name}")}
+            OutlinedButton(onClick={original=null;editing=Holiday(selected,selected,"إجازة")}) {Text("إضافة إجازة")}
+        }
+        if(next!=null) item {
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("${next.label} · ${next.from} إلى ${next.to}")
+                    Text("العودة بعد الإجازة: ${ScheduleEngine.nextWorkday(config,next.to)}")
+                }
+            }
+        }
+        config.holidays.sortedBy {it.from}.forEach {holiday ->
+            item {
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp)) {
+                        Text(holiday.label)
+                        Text("${holiday.from} إلى ${holiday.to}")
+                        TextButton(onClick={original=holiday;editing=holiday}) {Text("تعديل الإجازة")}
+                    }
+                }
+            }
+        }
     }
-    editing?.let {HolidayEditor(it,{editing=null},onDelete=if(original==null)null else ({commit(config.copy(holidays=config.holidays-original!!));editing=null})){updated->commit(config.copy(holidays=(config.holidays-listOfNotNull(original).toSet()+updated).sortedBy{it.from}));editing=null}}
+    editing?.let {holiday ->
+        val remove:(()->Unit)?=original?.let {old -> {commit(config.copy(holidays=config.holidays-old));editing=null}}
+        HolidayEditor(holiday,{editing=null},remove) {updated ->
+            val retained=config.holidays.filter {it!=original}
+            commit(config.copy(holidays=(retained+updated).sortedBy {it.from}))
+            editing=null
+        }
+    }
 }
 @Composable
 private fun HolidayEditor(initial:Holiday,onDismiss:()->Unit,onDelete:(()->Unit)?,onSave:(Holiday)->Unit) {

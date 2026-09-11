@@ -30,7 +30,7 @@ internal fun DataScreen() {
     LazyColumn(contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
         item {Text("حماية بياناتك",style=MaterialTheme.typography.headlineMedium);Text("النسخة الشاملة تشمل الجدول والفصول والملاحظات والتجهيزات والمرفقات والتخصيص.")}
         item {Button(enabled=!busy,onClick={export.launch("schedule-${java.time.LocalDate.now()}.zip")},modifier=Modifier.fillMaxWidth()){Text("تصدير نسخة شاملة")}}
-        item {OutlinedButton(enabled=!busy,onClick={load.launch(arrayOf("application/zip","application/octet-stream"))},modifier=Modifier.fillMaxWidth()){Text("استيراد ومعاينة نسخة")}}
+        item {OutlinedButton(enabled=!busy,onClick={load.launch(arrayOf("application/zip","application/json","text/plain","application/octet-stream"))},modifier=Modifier.fillMaxWidth()){Text("استيراد ومعاينة نسخة")}}
         if(busy)item {LinearProgressIndicator(Modifier.fillMaxWidth())}
         if(message.isNotBlank())item{Text(message)}
         item {Text("نسخ محلية تلقائية",style=MaterialTheme.typography.titleLarge);Text("عند أول فتح للتطبيق يوميًا تُحفظ نسخة محلية، مع الاحتفاظ بآخر 7 نسخ. صدّر نسخة خارج الجهاز قبل حذفه أو تبديله.")}

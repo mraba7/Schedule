@@ -14,7 +14,7 @@ import java.util.zip.*
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk=[32])
 class SchoolToolsTest {
-    private val c get()=RuntimeEnvironment.getApplication()
+    private val c:android.content.Context get()=RuntimeEnvironment.getApplication()
     @Test fun profilesReplaceTimesAndDutiesOnlyInsideTheirDates() {
         val date=LocalDate.of(2026,9,13)
         val profile=TimetableProfile("exam","اختبارات",date,date.plusDays(2),Defaults.summerBells.map{it.copy(start=it.start.plusHours(2),end=it.end.plusHours(2))},mapOf(DayOfWeek.SUNDAY to mapOf(1 to Duty.Teach("2/3"))))
@@ -79,4 +79,21 @@ class SchoolToolsTest {
         ClassJournal.save(c,lesson.copy(done=false))
         assertEquals(first-1,ScheduleStore.load(c).progress["2/1"]!!.taught)
     }
+    @Test fun oldJsonBackupPreservesNewerNotesWhenRestoringOnlySchedule() {
+        ClassNotes.save(c,"2/1","احتفظ بهذه الملاحظة",false)
+        val old=ScheduleStore.exportJson(Defaults.config.copy(subject="جدول قديم"))
+        val preview=DataVault.preview(c,ByteArrayInputStream(old.toByteArray()))
+        DataVault.apply(c,preview)
+        assertEquals("جدول قديم",ScheduleStore.load(c).subject)
+        assertEquals("احتفظ بهذه الملاحظة",ClassNotes.get(c,"2/1")!!.text)
+    }
+    @Test fun muteAndPeriodTypesControlTheNextBellWithoutStoppingFutureDays() {
+        val now=LocalDateTime.of(2026,9,13,6,0)
+        val base=Defaults.config.copy(liveUpdate=false,week=mapOf(DayOfWeek.SUNDAY to mapOf(1 to Duty.Standby),DayOfWeek.MONDAY to mapOf(1 to Duty.Teach("2/1"))))
+        val muted=base.copy(mutedDate=now.toLocalDate().toString())
+        assertEquals(now.toLocalDate().plusDays(1),com.mrabah.oneuischedule.notify.PeriodNotifier.nextEvent(muted,now)!!.toLocalDate())
+        assertEquals(now.toLocalDate().plusDays(1),com.mrabah.oneuischedule.notify.PeriodNotifier.nextEvent(base.copy(notifyStandby=false),now)!!.toLocalDate())
+        assertNull(com.mrabah.oneuischedule.notify.PeriodNotifier.nextEvent(base.copy(notifyStandby=false,notifyTeaching=false),now))
+    }
+
 }
