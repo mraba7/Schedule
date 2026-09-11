@@ -52,6 +52,7 @@ data class Config(
     val progress: Map<String, SectionProgress> = emptyMap(),
     val schoolSections: List<String> = emptyList(),
     val standbySections: Map<String, String> = emptyMap(),
+    val appliedCalendars: Set<String> = emptySet(),
 ) {
     fun bell(period: Int): Bell = bells.first { it.period == period }
     val workdays: Set<DayOfWeek> get() = week.keys
@@ -150,16 +151,17 @@ object ScheduleStore {
     )
 
     fun load(context: Context): Config {
-        val raw = prefs(context).getString(KEY, null) ?: return Defaults.config
-        return try {
-            parse(JSONObject(raw))
-        } catch (t: Throwable) {
-            Defaults.config
-        }
+        val raw=prefs(context).getString(KEY,null)
+        val original=if(raw==null) Defaults.config else runCatching {parse(JSONObject(raw))}.getOrElse {Defaults.config}
+        val config=AcademicCalendar.apply(original)
+        // Persist the migration before reminder code loads the configuration again.
+        // Keeping the marker inside the backup preserves later manual removals.
+        if(config!=original)prefs(context).edit().putString(KEY,encode(config).toString()).apply()
+        return config
     }
 
     fun save(context: Context, config: Config) {
-        prefs(context).edit().putString(KEY, encode(config).toString()).apply()
+        prefs(context).edit().putString(KEY, encode(AcademicCalendar.apply(config)).toString()).apply()
         com.mrabah.oneuischedule.widget.ClassNoteReminders.sync(context)
     }
 
@@ -256,6 +258,7 @@ object ScheduleStore {
             .put("progress", progress)
             .put("schoolSections", JSONArray(c.schoolSections))
             .put("standbySections", JSONObject(c.standbySections))
+            .put("appliedCalendars", JSONArray(c.appliedCalendars.toList()))
     }
 
     private fun parse(json: JSONObject): Config {
@@ -326,6 +329,7 @@ object ScheduleStore {
             progress = progress,
             schoolSections = json.optJSONArray("schoolSections")?.let { a -> (0 until a.length()).map { a.getString(it) } } ?: emptyList(),
             standbySections = json.optJSONObject("standbySections")?.let { o -> o.keys().asSequence().associateWith { o.getString(it) } } ?: emptyMap(),
+            appliedCalendars = json.optJSONArray("appliedCalendars")?.let { a -> (0 until a.length()).map {a.getString(it)}.toSet() } ?: emptySet(),
         )
     }
 }
