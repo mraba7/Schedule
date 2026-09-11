@@ -36,7 +36,7 @@ internal fun ClassHub(config:Config) {
     LazyColumn(contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
         item{Text("الفصول والمنهج",style=MaterialTheme.typography.headlineMedium);Text("${load.teaching} تدريس · ${load.standby} انتظار أسبوعيًا")}
         item{OutlinedTextField(query,{query=it},label={Text("ابحث عن فصل")},modifier=Modifier.fillMaxWidth(),singleLine=true)}
-        item{Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){FilterChip(!school,{school=false},label={Text("فصولي")});FilterChip(school,{school=true},label={Text("كل المدرسة")});TextButton(onClick={adding=true}){Text("إضافة")}}}
+        item{Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(8.dp)){FilterChip(!school,{school=false},label={Text("فصولي")});FilterChip(school,{school=true},label={Text("كل المدرسة")});TextButton(onClick={adding=true}){Text("إضافة")}}}
         entries.filter{it.contains(query.trim(),true)}.forEach {section->item {
             val progress=config.progress[section] ?: SectionProgress()
             val color=Color(android.graphics.Color.parseColor(SchoolTools.color(config,section)))
@@ -66,7 +66,7 @@ internal fun ClassPage(config:Config,section:String,commit:(Config)->Unit) {
         item {Text("لون الفصل",style=MaterialTheme.typography.labelLarge);Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(8.dp)) {listOf("#D6B879","#96BFE0","#C2A0DB","#88CBBF","#E3A18F","#B8C68B").forEach {hex->OutlinedButton(onClick={commit(config.copy(classColors=config.classColors+(section to hex)))},colors=ButtonDefaults.outlinedButtonColors(containerColor=Color(android.graphics.Color.parseColor(hex)),contentColor=Color(0xFF142332))){Text(if(SchoolTools.color(config,section)==hex)"✓" else "لون")}}}}
         item {val progress=config.progress[section] ?: SectionProgress();Text("${progress.taught} درسًا منجزًا",style=MaterialTheme.typography.titleMedium);if(progress.last.isNotBlank())Text("آخر درس: ${progress.last}");if(progress.next.isNotBlank())Text("الدرس القادم: ${progress.next}")}
         item {TextButton(onClick={c.startActivity(ClassNotes.intent(c,section))}){Text("آخر نقطة محفوظة وتنبيه الفصل")};ClassNotes.get(c,section)?.let{Text(it.text)}}
-        item {Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){Button(onClick={editing=JournalEntry(section=section,title="")}){Text("ملاحظة جديدة")};OutlinedButton(onClick={editing=JournalEntry(section=section,title="",lesson=true)}){Text("إضافة درس")}}}
+        item {Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(8.dp)){Button(onClick={editing=JournalEntry(section=section,title="")}){Text("ملاحظة جديدة")};OutlinedButton(onClick={editing=JournalEntry(section=section,title="",lesson=true)}){Text("إضافة درس")}}}
         item {Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)){listOf("الكل","المنهج","الملاحظات","المنجز").forEachIndexed{i,label->FilterChip(filter==i,{filter=i},label={Text(label)})}}}
         val visible=entries.filter{when(filter){1->it.lesson;2->!it.lesson;3->it.done;else->true}}
         if(visible.isEmpty())item{Text("لا توجد عناصر في هذا القسم. أضف درسًا أو ملاحظة.")}
@@ -99,11 +99,12 @@ private fun JournalEditor(entry:JournalEntry,sections:List<String>,onDismiss:()-
     val c=LocalContext.current;val scope=rememberCoroutineScope()
     var title by rememberSaveable{mutableStateOf(entry.title)};var unit by rememberSaveable{mutableStateOf(entry.unit)};var text by rememberSaveable{mutableStateOf(entry.text)}
     var reminder by rememberSaveable{mutableStateOf(entry.remind)};var all by rememberSaveable{mutableStateOf(false)}
+    val notificationPermission=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()){granted->if(!granted)reminder=false}
     var attachment by remember{mutableStateOf(Triple(entry.file,entry.fileName,entry.mime))};var error by remember{mutableStateOf("")};var busy by remember{mutableStateOf(false)}
     val picker=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()){uri->if(uri!=null)scope.launch{busy=true;runCatching{kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO){ClassJournal.attach(c,uri)}}.onSuccess{attachment=it}.onFailure{error=it.message.orEmpty()};busy=false}}
     AlertDialog(onDismissRequest=onDismiss,title={Text(if(entry.lesson)"الوحدة والدرس" else "ملاحظة الفصل")},text={Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(10.dp)){
         OutlinedTextField(title,{title=it.take(120)},label={Text("العنوان")});OutlinedTextField(unit,{unit=it.take(120)},label={Text(if(entry.lesson)"الوحدة" else "التصنيف")});OutlinedTextField(text,{text=it.take(4000)},label={Text("التفاصيل أو الصفحة")},minLines=3)
-        Row(verticalAlignment=Alignment.CenterVertically){Checkbox(reminder,{reminder=it});Text("ذكّرني في الحصة القادمة")}
+        Row(verticalAlignment=Alignment.CenterVertically){Checkbox(reminder,{enabled->reminder=enabled;if(enabled && android.os.Build.VERSION.SDK_INT>=33 && androidx.core.content.ContextCompat.checkSelfPermission(c,android.Manifest.permission.POST_NOTIFICATIONS)!=android.content.pm.PackageManager.PERMISSION_GRANTED)notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)});Text("ذكّرني في الحصة القادمة")}
         if(entry.lesson && sections.size>1)Row(verticalAlignment=Alignment.CenterVertically){Checkbox(all,{all=it});Text("نسخ خطة الدرس إلى بقية فصولي")}
         OutlinedButton(enabled=!busy,onClick={picker.launch(arrayOf("image/*","application/pdf","application/vnd.openxmlformats-officedocument.wordprocessingml.document"))}){Text(if(attachment.first.isBlank())"إرفاق صورة أو ملف" else attachment.second)}
         if(attachment.first.isNotBlank())TextButton(onClick={attachment=Triple("","","")}){Text("إزالة المرفق من العنصر")}

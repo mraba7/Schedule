@@ -26,6 +26,9 @@ class SchoolToolsTest {
         assertEquals(config,ScheduleStore.importJson(ScheduleStore.exportJson(config)))
         assertTrue(ScheduleEngine.dutiesOn(config.copy(holidays=listOf(Holiday(date,date,"إجازة"))),date).isEmpty())
     }
+    @Test fun emptyBellScheduleCannotBeImported() {
+        assertNull(ScheduleStore.importJson(ScheduleStore.exportJson(Defaults.config.copy(bells=emptyList()))))
+    }
     @Test fun copyingAndSwappingDoNotMutateTheSource() {
         val base=Defaults.config.copy(week=mapOf(DayOfWeek.SUNDAY to mapOf(1 to Duty.Teach("2/1"),2 to Duty.Standby)))
         val copy=SchoolTools.copyDay(base,DayOfWeek.SUNDAY,DayOfWeek.MONDAY)
@@ -94,6 +97,23 @@ class SchoolToolsTest {
         assertEquals(now.toLocalDate().plusDays(1),com.mrabah.oneuischedule.notify.PeriodNotifier.nextEvent(muted,now)!!.toLocalDate())
         assertEquals(now.toLocalDate().plusDays(1),com.mrabah.oneuischedule.notify.PeriodNotifier.nextEvent(base.copy(notifyStandby=false),now)!!.toLocalDate())
         assertNull(com.mrabah.oneuischedule.notify.PeriodNotifier.nextEvent(base.copy(notifyStandby=false,notifyTeaching=false),now))
+    }
+
+    @Test fun multipleJournalRemindersOpenTheirClassAndOnlyFireOnce() {
+        val saved=LocalDateTime.of(2026,9,13,12,0)
+        ScheduleStore.save(c,Defaults.config.copy(week=mapOf(DayOfWeek.MONDAY to mapOf(1 to Duty.Teach("2/1")))))
+        listOf("صفحة ٣٠","أوراق العمل").forEach {title->ClassJournal.save(c,JournalEntry(section="2/1",title=title,text=title,remind=true,savedAt=saved))}
+        val at=saved.toLocalDate().plusDays(1).atTime(Defaults.config.bells.first().start)
+        ClassNoteReminders.sync(c,at)
+        val manager=c.getSystemService(android.app.NotificationManager::class.java)
+        assertEquals(2,manager.activeNotifications.size)
+        assertTrue(ClassJournal.forClass(c,"2/1").all{it.delivered})
+        val intent=org.robolectric.Shadows.shadowOf(manager.activeNotifications.first().notification.contentIntent).savedIntent
+        assertEquals("class",intent.getStringExtra("page"))
+        assertEquals("2/1",intent.getStringExtra("section"))
+        manager.cancelAll()
+        ClassNoteReminders.sync(c,at.plusMinutes(1))
+        assertTrue(manager.activeNotifications.isEmpty())
     }
 
 }

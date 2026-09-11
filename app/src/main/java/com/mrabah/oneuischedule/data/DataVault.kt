@@ -128,6 +128,7 @@ internal object ScheduleValidation {
     fun problem(c:Config):String? {
         if(c.sections.isEmpty())return "أضف فصلًا واحدًا على الأقل"
         val bells=c.bells.sortedBy{it.period}
+        if(bells.isEmpty())return "أضف توقيت حصة واحدة على الأقل"
         if(bells.map{it.period}.distinct().size!=bells.size)return "رقم حصة مكرر"
         if(bells.any{it.period !in 1..7 || java.time.Duration.between(it.start,it.end).toMinutes()<5})return "تأكد من مدة كل حصة"
         if(bells.zipWithNext().any{(a,b)->b.start<a.end})return "أوقات الحصص متداخلة"

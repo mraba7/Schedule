@@ -25,6 +25,8 @@ internal fun DataScreen() {
     val export=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")){uri->if(uri!=null)work{withContext(Dispatchers.IO){c.contentResolver.openOutputStream(uri)!!.use{DataVault.export(c,it)}};message="تم تصدير البيانات والمرفقات"}}
     val load=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()){uri->if(uri!=null)work{preview=withContext(Dispatchers.IO){c.contentResolver.openInputStream(uri)!!.use{DataVault.preview(c,it)}}}}
     DisposableEffect(Unit){onDispose{preview?.discard()}}
+    val preferences=remember{c.getSharedPreferences("app_preferences",0)}
+    var dailyEnabled by remember{mutableStateOf(preferences.getBoolean("daily_backup",true))}
     val daily=remember(revision){DataVault.dailyFiles(c)}
     val snapshots=remember(revision){DataVault.snapshots(c)}
     LazyColumn(contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
@@ -34,6 +36,7 @@ internal fun DataScreen() {
         if(busy)item {LinearProgressIndicator(Modifier.fillMaxWidth())}
         if(message.isNotBlank())item{Text(message)}
         item {Text("نسخ محلية تلقائية",style=MaterialTheme.typography.titleLarge);Text("عند أول فتح للتطبيق يوميًا تُحفظ نسخة محلية، مع الاحتفاظ بآخر 7 نسخ. صدّر نسخة خارج الجهاز قبل حذفه أو تبديله.")}
+        item {Row(verticalAlignment=androidx.compose.ui.Alignment.CenterVertically){Text("النسخ اليومي التلقائي",Modifier.weight(1f));Switch(dailyEnabled,{enabled->DataVault.checkpoint(c,"تغيير النسخ التلقائي");dailyEnabled=enabled;preferences.edit().putBoolean("daily_backup",enabled).apply()})}}
         if(daily.isEmpty())item{Text("لم تُنشأ نسخة يومية بعد")}
         daily.forEach {file->item{OutlinedButton(enabled=!busy,onClick={work{preview=withContext(Dispatchers.IO){file.inputStream().use{DataVault.preview(c,it)}}}}){Text("معاينة ${file.nameWithoutExtension}")}}}
         item {Text("سجل التعديلات",style=MaterialTheme.typography.titleLarge);Text("استرجاع نقطة سابقة يعيد البيانات المحفوظة في تلك النقطة. تُحفظ نقطة أخرى قبل الاسترجاع.")}

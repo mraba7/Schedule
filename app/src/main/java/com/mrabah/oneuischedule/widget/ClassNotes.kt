@@ -94,7 +94,7 @@ internal object ClassNoteReminders {
         journal.forEach { entry ->
             val visit=ClassNotes.next(config,ClassNote(entry.section,entry.text,entry.savedAt),now) ?: return@forEach
             if(visit.start<=now && enabled && config.mutedDate!=now.toLocalDate().toString()) {
-                val target=Intent(c,com.mrabah.oneuischedule.MainActivity::class.java).setData(Uri.parse("schedule-journal://${entry.id}")).putExtra("open_tab",2).putExtra("section",entry.section)
+                val target=Intent(c,com.mrabah.oneuischedule.ui.StudioActivity::class.java).setData(Uri.parse("schedule-journal://${entry.id}")).putExtra("page","class").putExtra("section",entry.section)
                 val open=PendingIntent.getActivity(c,0,target,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
                 try {
                     NotificationManagerCompat.from(c).notify(entry.id,7402,NotificationCompat.Builder(c,CHANNEL).setSmallIcon(android.R.drawable.ic_dialog_info)

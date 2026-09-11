@@ -17,16 +17,35 @@ Mohammed Rabah Al-Harbi · Al-Ansar High School · summer timetable
 No `local.properties` is included — Studio writes it with your own SDK path on
 first open.
 
-## What you edit later
+## Managing your school day
 
-Everything that changes lives in **one file**:
-`app/src/main/java/com/mrabah/oneuischedule/data/ScheduleData.kt`
+Use the app to edit the weekly schedule; no source edits are needed.
 
-- `BellTimes` — arrival, assembly, and the seven periods.
-- `Schedule.week` — which section you teach each period, and standby duty.
+- **الجدول**: review the full week, copy a day, swap two periods, or make a
+  date-only override. Review the change before saving it.
+- **الفصول**: choose class colors, keep multiple notes and unit/lesson plans,
+  attach private files, record completed lessons, and request a reminder at the
+  next matching class. Standby assignments stay separate from viewing their time.
+- **التقويم**: browse months and add/edit holidays. Holidays override teaching
+  duties, including dated timetable profiles.
+- **الإعدادات → الأوقات الخاصة**: dated summer/winter/Ramadan/exam times,
+  optionally with their own weekly duties. The normal timetable resumes afterward.
+- **الإعدادات → البيانات والاسترجاع**: export a ZIP with user preferences and
+  attachments, preview before restoring, or undo using the last 30 checkpoints.
+  Daily local backups are made on the first app opening each day (last seven).
+  Export outside the device before uninstalling; local copies are removed with it.
+  Old schedule-only JSON backups keep current notes and attachments.
+- **الإعدادات → تخصيص الودجت**: independent text size, panel opacity, note/next
+  visibility, and interactive time peek duration for the illustrated widgets.
+- **الإعدادات → التنبيهات**: teaching/standby choices, advance/end reminder minutes,
+  sounds, and mute for today. Notification permission remains required on Android 13+.
 
-For the winter timetable, copy `BellTimes` to `WinterBellTimes` and switch the
-reference rather than overwriting — you'll want to switch back in May.
+## Validation
+
+GitHub Actions runs both debug and release unit tests, including Robolectric
+interaction tests and native widget/UI rendering, before building the signed APK.
+Rendered previews are attached to each successful release. Branch releases are
+prereleases; successful main builds become the official in-app update.
 
 ## What's where
 
