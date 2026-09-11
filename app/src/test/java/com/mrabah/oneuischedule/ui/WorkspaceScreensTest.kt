@@ -30,17 +30,25 @@ class WorkspaceScreensTest {
     @Test fun classPageCanCreateAndFindANoteAtLargeFont() {
         host.get().getSharedPreferences("app_preferences",0).edit().putFloat("font",1.3f).commit()
         content{ClassPage(Defaults.config,"2/1",{})}
-        compose.onNodeWithText("ملاحظة جديدة").performScrollTo().performClick()
+        compose.onNodeWithText("ملاحظة جديدة").performScrollTo()
+        compose.mainClock.autoAdvance=false
+        compose.onNodeWithText("ملاحظة جديدة").performClick()
+        compose.mainClock.advanceTimeBy(1000)
         compose.onNodeWithText("العنوان").performTextInput("تجربة الخلايا")
         compose.onNodeWithText("التفاصيل أو الصفحة").performTextInput("صفحة ٣٠")
         compose.onNodeWithText("حفظ").performClick()
+        compose.mainClock.advanceTimeBy(1000)
+        compose.mainClock.autoAdvance=true
         compose.onNodeWithText("تجربة الخلايا").performScrollTo().assertExists()
         capture("class-large-font")
     }
     @Test fun monthlyCalendarShowsHolidayEditorAndCancelsSafely() {
         var saved=false
         content{CalendarScreen(Defaults.config,{saved=true})}
-        compose.onNodeWithText("إضافة إجازة").performScrollTo().performClick()
+        compose.onNodeWithText("إضافة إجازة").performScrollTo()
+        compose.mainClock.autoAdvance=false
+        compose.onNodeWithText("إضافة إجازة").performClick()
+        compose.mainClock.advanceTimeBy(1000)
         compose.onNodeWithText("تفاصيل الإجازة").assertExists()
         capture("holiday-editor")
         compose.onNodeWithText("إلغاء").performClick()

@@ -71,6 +71,14 @@ jobs:
           path: app/build/design-previews/
           if-no-files-found: warn
 
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-reports
+          path: app/build/test-results/
+          if-no-files-found: warn
+
       - name: Upload APK
         if: steps.build.outcome == 'success'
         uses: actions/upload-artifact@v4
