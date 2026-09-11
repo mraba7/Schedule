@@ -1,93 +1,61 @@
-app:mergeReleaseShaders
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.9/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:generateDebugBuildConfig
+> Task :app:generateDebugResValues FROM-CACHE
+> Task :app:checkDebugAarMetadata
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug FROM-CACHE
+> Task :app:parseDebugLocalResources
+> Task :app:mergeDebugResources
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:javaPreCompileDebug FROM-CACHE
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest FROM-CACHE
+> Task :app:mergeDebugShaders
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets
+> Task :app:buildKotlinToolingMetadata
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:generateReleaseBuildConfig
+> Task :app:generateReleaseResValues FROM-CACHE
+> Task :app:checkReleaseAarMetadata
+> Task :app:mapReleaseSourceSetPaths
+> Task :app:generateReleaseResources
+> Task :app:packageReleaseResources
+> Task :app:parseReleaseLocalResources FROM-CACHE
+> Task :app:createReleaseCompatibleScreenManifests
+> Task :app:extractDeepLinksRelease FROM-CACHE
+> Task :app:processReleaseMainManifest
+> Task :app:processReleaseManifest
+> Task :app:processDebugManifestForPackage
 > Task :app:processReleaseManifestForPackage
+> Task :app:javaPreCompileRelease FROM-CACHE
+> Task :app:preReleaseUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileReleaseUnitTest FROM-CACHE
+> Task :app:mergeReleaseShaders
 > Task :app:compileReleaseShaders NO-SOURCE
 > Task :app:generateReleaseAssets UP-TO-DATE
 > Task :app:mergeReleaseAssets
+> Task :app:processDebugResources
 > Task :app:mergeReleaseResources
+> Task :app:packageDebugUnitTestForUnitTest
+> Task :app:generateDebugUnitTestConfig
 > Task :app:processReleaseResources
 > Task :app:packageReleaseUnitTestForUnitTest
 > Task :app:generateReleaseUnitTestConfig
 
-> Task :app:compileDebugKotlin FAILED
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/data/ScheduleData.kt:347:34 Unresolved reference 'decode'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/data/ScheduleData.kt:422:57 Unresolved reference 'date'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/data/SchoolTools.kt:25:208 Syntax error: Unexpected tokens (use ';' to separate expressions on the same line).
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/data/SchoolTools.kt:25:211 Syntax error: Expecting ')'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/data/SchoolTools.kt:33:2 Syntax error: Missing '}.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:45:9 'fun item(key: Any? = ..., contentType: Any? = ..., content: @Composable() ComposableFunction1<LazyItemScope, Unit>): Unit' cannot be called in this context with an implicit receiver. Use an explicit receiver if necessary.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:45:14 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:45:74 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:46:9 'fun item(key: Any? = ..., contentType: Any? = ..., content: @Composable() ComposableFunction1<LazyItemScope, Unit>): Unit' cannot be called in this context with an implicit receiver. Use an explicit receiver if necessary.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:46:14 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:47:9 'fun item(key: Any? = ..., contentType: Any? = ..., content: @Composable() ComposableFunction1<LazyItemScope, Unit>): Unit' cannot be called in this context with an implicit receiver. Use an explicit receiver if necessary.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:47:14 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:47:53 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:47:76 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:47:142 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:48:9 'fun item(key: Any? = ..., contentType: Any? = ..., content: @Composable() ComposableFunction1<LazyItemScope, Unit>): Unit' cannot be called in this context with an implicit receiver. Use an explicit receiver if necessary.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:48:14 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:49:33 'fun item(key: Any? = ..., contentType: Any? = ..., content: @Composable() ComposableFunction1<LazyItemScope, Unit>): Unit' cannot be called in this context with an implicit receiver. Use an explicit receiver if necessary.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:49:38 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:51:32 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:55:1 Modifier 'internal' is not applicable to 'local function'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:69:19 Unresolved reference 'HolidayEditor'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:69:163 Cannot infer type for this parameter. Please specify it explicitly.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:69:258 Overload resolution ambiguity between candidates:
-fun <T, R : Comparable<R>> Array<out T>.sortedBy(crossinline selector: (T) -> R?): List<T>
-fun <R : Comparable<R>> BooleanArray.sortedBy(crossinline selector: (Boolean) -> R?): List<Boolean>
-fun <R : Comparable<R>> ByteArray.sortedBy(crossinline selector: (Byte) -> R?): List<Byte>
-fun <R : Comparable<R>> CharArray.sortedBy(crossinline selector: (Char) -> R?): List<Char>
-fun <R : Comparable<R>> DoubleArray.sortedBy(crossinline selector: (Double) -> R?): List<Double>
-fun <R : Comparable<R>> FloatArray.sortedBy(crossinline selector: (Float) -> R?): List<Float>
-fun <R : Comparable<R>> IntArray.sortedBy(crossinline selector: (Int) -> R?): List<Int>
-fun <R : Comparable<R>> LongArray.sortedBy(crossinline selector: (Long) -> R?): List<Long>
-fun <R : Comparable<R>> ShortArray.sortedBy(crossinline selector: (Short) -> R?): List<Short>
-fun <T, R : Comparable<R>> Iterable<T>.sortedBy(crossinline selector: (T) -> R?): List<T>
-fun <T, R : Comparable<R>> Sequence<T>.sortedBy(crossinline selector: (T) -> R?): Sequence<T>
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:72:1 Modifier 'private' is not applicable to 'local function'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:78:1 Modifier 'internal' is not applicable to 'local function'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:85:14 Cannot infer type for this parameter. Please specify it explicitly.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:85:17 Cannot infer type for this parameter. Please specify it explicitly.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:85:27 Unresolved reference 'ProfileEditor'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:85:72 Cannot infer type for this parameter. Please specify it explicitly.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:85:147 Unresolved reference 'id'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:88:1 Modifier 'private' is not applicable to 'local function'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:101:2 Syntax error: Expecting '}'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/ClassPages.kt:42:75 Unresolved reference 'color'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/ClassPages.kt:66:512 Unresolved reference 'color'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/DataScreen.kt:35:19 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/DataScreen.kt:39:23 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/StudioActivity.kt:35:33 Unresolved reference 'CalendarScreen'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/StudioActivity.kt:36:33 Unresolved reference 'ProfilesScreen'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:123:182 Unresolved reference 'Color'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:123:234 Unresolved reference 'color'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/widget/DesignRenderer.kt:27:87 Unresolved reference 'color'.
-
 > Task :app:compileReleaseKotlin FAILED
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/data/ScheduleData.kt:347:34 Unresolved reference 'decode'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/data/ScheduleData.kt:422:57 Unresolved reference 'date'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/data/SchoolTools.kt:25:208 Syntax error: Unexpected tokens (use ';' to separate expressions on the same line).
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/data/SchoolTools.kt:25:211 Syntax error: Expecting ')'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/data/SchoolTools.kt:33:2 Syntax error: Missing '}.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:45:9 'fun item(key: Any? = ..., contentType: Any? = ..., content: @Composable() ComposableFunction1<LazyItemScope, Unit>): Unit' cannot be called in this context with an implicit receiver. Use an explicit receiver if necessary.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:45:14 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:45:74 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:46:9 'fun item(key: Any? = ..., contentType: Any? = ..., content: @Composable() ComposableFunction1<LazyItemScope, Unit>): Unit' cannot be called in this context with an implicit receiver. Use an explicit receiver if necessary.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:46:14 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:47:9 'fun item(key: Any? = ..., contentType: Any? = ..., content: @Composable() ComposableFunction1<LazyItemScope, Unit>): Unit' cannot be called in this context with an implicit receiver. Use an explicit receiver if necessary.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:47:14 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:47:53 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:47:76 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:47:142 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:48:9 'fun item(key: Any? = ..., contentType: Any? = ..., content: @Composable() ComposableFunction1<LazyItemScope, Unit>): Unit' cannot be called in this context with an implicit receiver. Use an explicit receiver if necessary.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:48:14 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:49:33 'fun item(key: Any? = ..., contentType: Any? = ..., content: @Composable() ComposableFunction1<LazyItemScope, Unit>): Unit' cannot be called in this context with an implicit receiver. Use an explicit receiver if necessary.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:49:38 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:51:32 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:55:1 Modifier 'internal' is not applicable to 'local function'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:69:19 Unresolved reference 'HolidayEditor'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:69:163 Cannot infer type for this parameter. Please specify it explicitly.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:69:258 Overload resolution ambiguity between candidates:
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:70:19 Unresolved reference 'HolidayEditor'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:70:163 Cannot infer type for this parameter. Please specify it explicitly.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:70:258 Overload resolution ambiguity between candidates:
 fun <T, R : Comparable<R>> Array<out T>.sortedBy(crossinline selector: (T) -> R?): List<T>
 fun <R : Comparable<R>> BooleanArray.sortedBy(crossinline selector: (Boolean) -> R?): List<Boolean>
 fun <R : Comparable<R>> ByteArray.sortedBy(crossinline selector: (Byte) -> R?): List<Byte>
@@ -99,43 +67,47 @@ fun <R : Comparable<R>> LongArray.sortedBy(crossinline selector: (Long) -> R?): 
 fun <R : Comparable<R>> ShortArray.sortedBy(crossinline selector: (Short) -> R?): List<Short>
 fun <T, R : Comparable<R>> Iterable<T>.sortedBy(crossinline selector: (T) -> R?): List<T>
 fun <T, R : Comparable<R>> Sequence<T>.sortedBy(crossinline selector: (T) -> R?): Sequence<T>
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:72:1 Modifier 'private' is not applicable to 'local function'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:78:1 Modifier 'internal' is not applicable to 'local function'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:85:14 Cannot infer type for this parameter. Please specify it explicitly.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:85:17 Cannot infer type for this parameter. Please specify it explicitly.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:85:27 Unresolved reference 'ProfileEditor'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:85:72 Cannot infer type for this parameter. Please specify it explicitly.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:85:147 Unresolved reference 'id'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:88:1 Modifier 'private' is not applicable to 'local function'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:101:2 Syntax error: Expecting '}'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/ClassPages.kt:42:75 Unresolved reference 'color'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/ClassPages.kt:66:512 Unresolved reference 'color'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/DataScreen.kt:35:19 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/DataScreen.kt:39:23 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/StudioActivity.kt:35:33 Unresolved reference 'CalendarScreen'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:73:1 Modifier 'private' is not applicable to 'local function'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:79:1 Modifier 'internal' is not applicable to 'local function'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:86:14 Cannot infer type for this parameter. Please specify it explicitly.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:86:17 Cannot infer type for this parameter. Please specify it explicitly.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:86:27 Unresolved reference 'ProfileEditor'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:86:72 Cannot infer type for this parameter. Please specify it explicitly.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:86:147 Unresolved reference 'id'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:89:1 Modifier 'private' is not applicable to 'local function'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:102:2 Syntax error: Expecting '}'.
 e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/StudioActivity.kt:36:33 Unresolved reference 'ProfilesScreen'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:123:182 Unresolved reference 'Color'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:123:234 Unresolved reference 'color'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/widget/DesignRenderer.kt:27:87 Unresolved reference 'color'.
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/tests-1789089695462.json
+
+> Task :app:compileDebugKotlin FAILED
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:70:19 Unresolved reference 'HolidayEditor'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:70:163 Cannot infer type for this parameter. Please specify it explicitly.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:70:258 Overload resolution ambiguity between candidates:
+fun <T, R : Comparable<R>> Array<out T>.sortedBy(crossinline selector: (T) -> R?): List<T>
+fun <R : Comparable<R>> BooleanArray.sortedBy(crossinline selector: (Boolean) -> R?): List<Boolean>
+fun <R : Comparable<R>> ByteArray.sortedBy(crossinline selector: (Byte) -> R?): List<Byte>
+fun <R : Comparable<R>> CharArray.sortedBy(crossinline selector: (Char) -> R?): List<Char>
+fun <R : Comparable<R>> DoubleArray.sortedBy(crossinline selector: (Double) -> R?): List<Double>
+fun <R : Comparable<R>> FloatArray.sortedBy(crossinline selector: (Float) -> R?): List<Float>
+fun <R : Comparable<R>> IntArray.sortedBy(crossinline selector: (Int) -> R?): List<Int>
+fun <R : Comparable<R>> LongArray.sortedBy(crossinline selector: (Long) -> R?): List<Long>
+fun <R : Comparable<R>> ShortArray.sortedBy(crossinline selector: (Short) -> R?): List<Short>
+fun <T, R : Comparable<R>> Iterable<T>.sortedBy(crossinline selector: (T) -> R?): List<T>
+fun <T, R : Comparable<R>> Sequence<T>.sortedBy(crossinline selector: (T) -> R?): Sequence<T>
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:73:1 Modifier 'private' is not applicable to 'local function'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:79:1 Modifier 'internal' is not applicable to 'local function'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:86:14 Cannot infer type for this parameter. Please specify it explicitly.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:86:17 Cannot infer type for this parameter. Please specify it explicitly.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:86:27 Unresolved reference 'ProfileEditor'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:86:72 Cannot infer type for this parameter. Please specify it explicitly.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:86:147 Unresolved reference 'id'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:89:1 Modifier 'private' is not applicable to 'local function'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:102:2 Syntax error: Expecting '}'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/StudioActivity.kt:36:33 Unresolved reference 'ProfilesScreen'.
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/tests-1789118597260.json
 
 FAILURE: Build completed with 2 failures.
 
 1: Task failed with an exception.
------------
-* What went wrong:
-Execution failed for task ':app:compileReleaseKotlin'.
-> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
-   > Compilation error. See log for more details
-
-* Try:
-> Run with --stacktrace option to get the stack trace.
-> Run with --info or --debug option to get more log output.
-> Run with --scan to get full insights.
-> Get more help at https://help.gradle.org.
-==============================================================================
-
-2: Task failed with an exception.
 -----------
 * What went wrong:
 Execution failed for task ':app:compileDebugKotlin'.
@@ -149,5 +121,19 @@ Execution failed for task ':app:compileDebugKotlin'.
 > Get more help at https://help.gradle.org.
 ==============================================================================
 
-BUILD FAILED in 36s
+2: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':app:compileReleaseKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+BUILD FAILED in 33s
 43 actionable tasks: 34 executed, 9 from cache
