@@ -9,10 +9,10 @@ Daemon will be stopped at the end of the build
 > Task :app:mapDebugSourceSetPaths
 > Task :app:generateDebugResources
 > Task :app:packageDebugResources
+> Task :app:mergeDebugResources
 > Task :app:createDebugCompatibleScreenManifests
 > Task :app:extractDeepLinksDebug FROM-CACHE
 > Task :app:parseDebugLocalResources
-> Task :app:mergeDebugResources
 > Task :app:processDebugMainManifest
 > Task :app:processDebugManifest
 > Task :app:javaPreCompileDebug FROM-CACHE
@@ -21,6 +21,7 @@ Daemon will be stopped at the end of the build
 > Task :app:mergeDebugShaders
 > Task :app:compileDebugShaders NO-SOURCE
 > Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:processDebugManifestForPackage
 > Task :app:mergeDebugAssets
 > Task :app:buildKotlinToolingMetadata
 > Task :app:preReleaseBuild UP-TO-DATE
@@ -29,111 +30,72 @@ Daemon will be stopped at the end of the build
 > Task :app:checkReleaseAarMetadata
 > Task :app:mapReleaseSourceSetPaths
 > Task :app:generateReleaseResources
+> Task :app:processDebugResources
+> Task :app:packageDebugUnitTestForUnitTest
+> Task :app:generateDebugUnitTestConfig
 > Task :app:packageReleaseResources
 > Task :app:parseReleaseLocalResources FROM-CACHE
 > Task :app:createReleaseCompatibleScreenManifests
 > Task :app:extractDeepLinksRelease FROM-CACHE
 > Task :app:processReleaseMainManifest
 > Task :app:processReleaseManifest
-> Task :app:processDebugManifestForPackage
-> Task :app:processReleaseManifestForPackage
 > Task :app:javaPreCompileRelease FROM-CACHE
+> Task :app:processReleaseManifestForPackage
 > Task :app:preReleaseUnitTestBuild UP-TO-DATE
 > Task :app:javaPreCompileReleaseUnitTest FROM-CACHE
 > Task :app:mergeReleaseShaders
 > Task :app:compileReleaseShaders NO-SOURCE
 > Task :app:generateReleaseAssets UP-TO-DATE
 > Task :app:mergeReleaseAssets
-> Task :app:processDebugResources
 > Task :app:mergeReleaseResources
-> Task :app:packageDebugUnitTestForUnitTest
-> Task :app:generateDebugUnitTestConfig
 > Task :app:processReleaseResources
 > Task :app:packageReleaseUnitTestForUnitTest
 > Task :app:generateReleaseUnitTestConfig
+> Task :app:compileDebugKotlin
+> Task :app:compileReleaseKotlin
+w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/MainActivity.kt:392:38 'fun <T : Parcelable!> getParcelableExtra(p0: String!): T?' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/widget/ScheduleWidget.kt:669:20 'static field ACTION_WALLPAPER_CHANGED: String' is deprecated. Deprecated in Java.
 
-> Task :app:compileReleaseKotlin FAILED
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:70:19 Unresolved reference 'HolidayEditor'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:70:163 Cannot infer type for this parameter. Please specify it explicitly.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:70:258 Overload resolution ambiguity between candidates:
-fun <T, R : Comparable<R>> Array<out T>.sortedBy(crossinline selector: (T) -> R?): List<T>
-fun <R : Comparable<R>> BooleanArray.sortedBy(crossinline selector: (Boolean) -> R?): List<Boolean>
-fun <R : Comparable<R>> ByteArray.sortedBy(crossinline selector: (Byte) -> R?): List<Byte>
-fun <R : Comparable<R>> CharArray.sortedBy(crossinline selector: (Char) -> R?): List<Char>
-fun <R : Comparable<R>> DoubleArray.sortedBy(crossinline selector: (Double) -> R?): List<Double>
-fun <R : Comparable<R>> FloatArray.sortedBy(crossinline selector: (Float) -> R?): List<Float>
-fun <R : Comparable<R>> IntArray.sortedBy(crossinline selector: (Int) -> R?): List<Int>
-fun <R : Comparable<R>> LongArray.sortedBy(crossinline selector: (Long) -> R?): List<Long>
-fun <R : Comparable<R>> ShortArray.sortedBy(crossinline selector: (Short) -> R?): List<Short>
-fun <T, R : Comparable<R>> Iterable<T>.sortedBy(crossinline selector: (T) -> R?): List<T>
-fun <T, R : Comparable<R>> Sequence<T>.sortedBy(crossinline selector: (T) -> R?): Sequence<T>
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:73:1 Modifier 'private' is not applicable to 'local function'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:79:1 Modifier 'internal' is not applicable to 'local function'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:86:14 Cannot infer type for this parameter. Please specify it explicitly.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:86:17 Cannot infer type for this parameter. Please specify it explicitly.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:86:27 Unresolved reference 'ProfileEditor'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:86:72 Cannot infer type for this parameter. Please specify it explicitly.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:86:147 Unresolved reference 'id'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:89:1 Modifier 'private' is not applicable to 'local function'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:102:2 Syntax error: Expecting '}'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/StudioActivity.kt:36:33 Unresolved reference 'ProfilesScreen'.
+> Task :app:compileDebugKotlin
+w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/MainActivity.kt:392:38 'fun <T : Parcelable!> getParcelableExtra(p0: String!): T?' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/widget/ScheduleWidget.kt:669:20 'static field ACTION_WALLPAPER_CHANGED: String' is deprecated. Deprecated in Java.
 
-> Task :app:compileDebugKotlin FAILED
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:70:19 Unresolved reference 'HolidayEditor'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:70:163 Cannot infer type for this parameter. Please specify it explicitly.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:70:258 Overload resolution ambiguity between candidates:
-fun <T, R : Comparable<R>> Array<out T>.sortedBy(crossinline selector: (T) -> R?): List<T>
-fun <R : Comparable<R>> BooleanArray.sortedBy(crossinline selector: (Boolean) -> R?): List<Boolean>
-fun <R : Comparable<R>> ByteArray.sortedBy(crossinline selector: (Byte) -> R?): List<Byte>
-fun <R : Comparable<R>> CharArray.sortedBy(crossinline selector: (Char) -> R?): List<Char>
-fun <R : Comparable<R>> DoubleArray.sortedBy(crossinline selector: (Double) -> R?): List<Double>
-fun <R : Comparable<R>> FloatArray.sortedBy(crossinline selector: (Float) -> R?): List<Float>
-fun <R : Comparable<R>> IntArray.sortedBy(crossinline selector: (Int) -> R?): List<Int>
-fun <R : Comparable<R>> LongArray.sortedBy(crossinline selector: (Long) -> R?): List<Long>
-fun <R : Comparable<R>> ShortArray.sortedBy(crossinline selector: (Short) -> R?): List<Short>
-fun <T, R : Comparable<R>> Iterable<T>.sortedBy(crossinline selector: (T) -> R?): List<T>
-fun <T, R : Comparable<R>> Sequence<T>.sortedBy(crossinline selector: (T) -> R?): Sequence<T>
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:73:1 Modifier 'private' is not applicable to 'local function'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:79:1 Modifier 'internal' is not applicable to 'local function'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:86:14 Cannot infer type for this parameter. Please specify it explicitly.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:86:17 Cannot infer type for this parameter. Please specify it explicitly.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:86:27 Unresolved reference 'ProfileEditor'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:86:72 Cannot infer type for this parameter. Please specify it explicitly.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:86:147 Unresolved reference 'id'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:89:1 Modifier 'private' is not applicable to 'local function'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/CalendarTools.kt:102:2 Syntax error: Expecting '}'.
-e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/StudioActivity.kt:36:33 Unresolved reference 'ProfilesScreen'.
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/tests-1789118597260.json
+> Task :app:compileReleaseJavaWithJavac
+> Task :app:compileDebugJavaWithJavac
+> Task :app:processDebugJavaRes
+> Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:bundleReleaseClassesToRuntimeJar
+> Task :app:processReleaseJavaRes
+> Task :app:bundleDebugClassesToCompileJar
+> Task :app:bundleReleaseClassesToCompileJar
+> Task :app:compileDebugUnitTestKotlin
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processDebugUnitTestJavaRes
+> Task :app:compileReleaseUnitTestKotlin
+> Task :app:testDebugUnitTest
 
-FAILURE: Build completed with 2 failures.
+WorkspaceScreensTest > monthlyCalendarShowsHolidayEditorAndCancelsSafely FAILED
+    androidx.test.espresso.AppNotIdleException at WorkspaceScreensTest.kt:43
 
-1: Task failed with an exception.
------------
+WorkspaceScreensTest > classPageCanCreateAndFindANoteAtLargeFont FAILED
+    androidx.test.espresso.AppNotIdleException at WorkspaceScreensTest.kt:33
+
+LessonPeekTest > instancesDatesAndExpiredStateAreIsolated FAILED
+    java.lang.AssertionError at LessonPeekTest.kt:42
+
+60 tests completed, 3 failed
+
+> Task :app:testDebugUnitTest FAILED
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/tests-1789119162033.json
+
+FAILURE: Build failed with an exception.
+
 * What went wrong:
-Execution failed for task ':app:compileDebugKotlin'.
-> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
-   > Compilation error. See log for more details
+Execution failed for task ':app:testDebugUnitTest'.
+> There were failing tests. See the report at: file:///home/runner/work/Schedule/Schedule/app/build/reports/tests/testDebugUnitTest/index.html
 
 * Try:
-> Run with --stacktrace option to get the stack trace.
-> Run with --info or --debug option to get more log output.
 > Run with --scan to get full insights.
-> Get more help at https://help.gradle.org.
-==============================================================================
 
-2: Task failed with an exception.
------------
-* What went wrong:
-Execution failed for task ':app:compileReleaseKotlin'.
-> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
-   > Compilation error. See log for more details
-
-* Try:
-> Run with --stacktrace option to get the stack trace.
-> Run with --info or --debug option to get more log output.
-> Run with --scan to get full insights.
-> Get more help at https://help.gradle.org.
-==============================================================================
-
-BUILD FAILED in 33s
-43 actionable tasks: 34 executed, 9 from cache
+BUILD FAILED in 3m 31s
+55 actionable tasks: 46 executed, 9 from cache
