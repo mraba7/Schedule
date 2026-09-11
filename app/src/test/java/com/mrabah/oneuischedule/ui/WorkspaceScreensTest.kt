@@ -17,6 +17,7 @@ import org.robolectric.android.controller.ActivityController
 import java.io.File
 import android.graphics.Bitmap
 
+@org.junit.FixMethodOrder(org.junit.runners.MethodSorters.NAME_ASCENDING)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk=[34],qualifiers="ar-rSA-w360dp-h740dp")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -25,13 +26,20 @@ class WorkspaceScreensTest {
     @get:Rule val testName=org.junit.rules.TestName()
     private lateinit var host:ActivityController<ComponentActivity>
     @Before fun start(){host=Robolectric.buildActivity(ComponentActivity::class.java);host.get().setTheme(com.mrabah.oneuischedule.R.style.Theme_OneUISchedule);host.setup().visible()}
-    @After fun stop(){capture(testName.methodName);host.pause().stop().destroy()}
+    @After fun stop(){
+        capture(testName.methodName)
+        compose.runOnUiThread {
+            val container=host.get().findViewById<android.view.ViewGroup>(android.R.id.content)
+            (container.getChildAt(0) as? androidx.compose.ui.platform.ComposeView)?.disposeComposition()
+        }
+        org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+        host.pause().stop().destroy()
+    }
     private fun content(body:@androidx.compose.runtime.Composable ()->Unit){compose.runOnUiThread{host.get().setContent{ScheduleTheme(dark=false){Surface(Modifier.fillMaxSize()){body()}}}}}
     private fun capture(name:String){compose.runOnUiThread{val view=host.get().window.decorView;val image=Bitmap.createBitmap(view.width,view.height,Bitmap.Config.ARGB_8888);view.draw(android.graphics.Canvas(image));val dir=File("build/design-previews").apply{mkdirs()};File(dir,"workspace-$name-live.png").outputStream().use{image.compress(Bitmap.CompressFormat.PNG,100,it)};image.recycle()}}
     @Test fun classPageCanCreateAndFindANoteAtLargeFont() {
         host.get().getSharedPreferences("app_preferences",0).edit().putFloat("font",1.3f).commit()
         content{ClassPage(Defaults.config,"2/1",{})}
-        compose.onNodeWithText("ملاحظة جديدة").performScrollTo()
         compose.onNodeWithText("ملاحظة جديدة").performClick()
         compose.onNodeWithText("العنوان").performTextInput("تجربة الخلايا")
         compose.onNodeWithText("التفاصيل أو الصفحة").performTextInput("صفحة ٣٠")
@@ -42,7 +50,6 @@ class WorkspaceScreensTest {
     @Test fun monthlyCalendarShowsHolidayEditorAndCancelsSafely() {
         var saved=false
         content{CalendarScreen(Defaults.config,{saved=true})}
-        compose.onNodeWithText("إضافة إجازة").performScrollTo()
         compose.onNodeWithText("إضافة إجازة").performClick()
         compose.onNodeWithText("تفاصيل الإجازة").assertExists()
         capture("holiday-editor")
