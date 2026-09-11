@@ -37,7 +37,7 @@ internal fun WeekTools(config:Config,commit:(Config)->Unit) {
     var p by remember{mutableStateOf(1)};var q by remember{mutableStateOf(2)}
     var pending by remember{mutableStateOf<Pair<String,Config>?>(null)}
     var message by remember{mutableStateOf("")}
-    LazyColumn(contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+    LazyColumn(modifier=Modifier.fillMaxSize(),contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
         item{Text("الأسبوع والنسخ والتبديل",style=MaterialTheme.typography.headlineMedium);Text("عرض أسبوع كامل؛ اسحب أفقيًا عند الحاجة.")}
         item{Column(Modifier.horizontalScroll(rememberScrollState())){
             Row{Text("اليوم",Modifier.width(85.dp));(1..7).forEach{Text("الحصة $it",Modifier.width(85.dp))}}
@@ -60,7 +60,7 @@ internal fun CalendarScreen(config:Config,commit:(Config)->Unit) {
     var original by remember { mutableStateOf<Holiday?>(null) }
     val cells=List(month.atDay(1).dayOfWeek.value%7){0}+(1..month.lengthOfMonth()).toList()
     val next=config.holidays.filter {it.to>=LocalDate.now()}.minByOrNull {it.from}
-    LazyColumn(contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+    LazyColumn(modifier=Modifier.fillMaxSize(),contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
         item {Column {
             Text("التقويم الدراسي",style=MaterialTheme.typography.headlineMedium)
             Row(horizontalArrangement=Arrangement.SpaceBetween,modifier=Modifier.fillMaxWidth()) {
@@ -135,7 +135,7 @@ private fun HolidayEditor(initial:Holiday,onDismiss:()->Unit,onDelete:(()->Unit)
 @Composable
 internal fun ProfilesScreen(config:Config,commit:(Config)->Unit) {
     var editing by remember{mutableStateOf<TimetableProfile?>(null)}
-    LazyColumn(contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+    LazyColumn(modifier=Modifier.fillMaxSize(),contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
         item{Text("الأوقات الخاصة",style=MaterialTheme.typography.headlineMedium);Text("يُفعّل التوقيت تلقائيًا خلال تاريخه فقط. تبقى الإجازات أولوية فوق أي توقيت.")}
         item{Row(Modifier.horizontalScroll(rememberScrollState())){listOf("صيفي","شتوي","رمضان","اختبارات").forEach{name->OutlinedButton(onClick={editing=TimetableProfile(UUID.randomUUID().toString(),name,LocalDate.now(),LocalDate.now().plusDays(6),if(name=="شتوي")Defaults.winterBells else config.bells,if(name=="اختبارات")emptyMap() else null)}){Text("إضافة $name")}}}}
         config.profiles.forEach{profile->item{Card(Modifier.fillMaxWidth()){Column(Modifier.padding(16.dp)){Text(profile.name,style=MaterialTheme.typography.titleLarge);Text("${profile.from} إلى ${profile.to}");Text(if(profile.week==null)"نفس الحصص، بأوقات مختلفة" else "حصص مستقلة لهذه الفترة");Row{TextButton(onClick={editing=profile}){Text("تعديل")};TextButton(onClick={commit(config.copy(profiles=config.profiles-profile))}){Text("حذف · قابل للاسترجاع")}}}}}}

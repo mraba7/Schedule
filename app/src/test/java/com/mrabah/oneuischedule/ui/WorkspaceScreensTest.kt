@@ -35,7 +35,11 @@ class WorkspaceScreensTest {
         org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
         host.pause().stop().destroy()
     }
-    private fun content(body:@androidx.compose.runtime.Composable ()->Unit){compose.runOnUiThread{host.get().setContent{ScheduleTheme(dark=false){Surface(Modifier.fillMaxSize()){body()}}}}}
+    private fun content(body:@androidx.compose.runtime.Composable ()->Unit){
+        compose.runOnUiThread{host.get().setContent{ScheduleTheme(dark=false){Surface(Modifier.fillMaxSize()){body()}}}}
+        org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+        capture("initial-${testName.methodName}")
+    }
     private fun capture(name:String){compose.runOnUiThread{val view=host.get().window.decorView;val image=Bitmap.createBitmap(view.width,view.height,Bitmap.Config.ARGB_8888);view.draw(android.graphics.Canvas(image));val dir=File("build/design-previews").apply{mkdirs()};File(dir,"workspace-$name-live.png").outputStream().use{image.compress(Bitmap.CompressFormat.PNG,100,it)};image.recycle()}}
     @Test fun classPageCanCreateAndFindANoteAtLargeFont() {
         host.get().getSharedPreferences("app_preferences",0).edit().putFloat("font",1.3f).commit()
