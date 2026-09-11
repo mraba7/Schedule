@@ -1,0 +1,57 @@
+package com.mrabah.oneuischedule.ui
+
+import android.content.*
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.mrabah.oneuischedule.data.*
+import com.mrabah.oneuischedule.widget.*
+
+internal fun openStudio(c:Context,page:String,section:String="") {c.startActivity(Intent(c,StudioActivity::class.java).putExtra("page",page).putExtra("section",section))}
+class StudioActivity:ComponentActivity() {
+    override fun onCreate(savedInstanceState:Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {ScheduleTheme {
+            var config by remember {mutableStateOf(ScheduleStore.load(this))}
+            DisposableEffect(Unit) {
+                val prefs=getSharedPreferences("schedule_config",0)
+                val listener=android.content.SharedPreferences.OnSharedPreferenceChangeListener {_,_->config=ScheduleStore.load(this@StudioActivity)}
+                prefs.registerOnSharedPreferenceChangeListener(listener)
+                onDispose{prefs.unregisterOnSharedPreferenceChangeListener(listener)}
+            }
+            fun commit(next:Config) {ScheduleStore.save(this,next);config=ScheduleStore.load(this);com.mrabah.oneuischedule.notify.PeriodNotifier.sync(this);sendBroadcast(Intent(this,ScheduleWidgetReceiver::class.java).setAction(ScheduleWidgetReceiver.ACTION_TICK))}
+            Surface(Modifier.fillMaxSize().safeDrawingPadding().imePadding()) {Column {
+                TextButton(onClick={finish()}) {Text("رجوع")}
+                Box(Modifier.weight(1f)) {when(intent.getStringExtra("page")) {
+                    "data"->DataScreen()
+                    "class"->ClassPage(config,intent.getStringExtra("section").orEmpty(),::commit)
+                    "week"->WeekTools(config,::commit)
+                    "calendar"->CalendarScreen(config,::commit)
+                    "profiles"->ProfilesScreen(config,::commit)
+                    "alerts"->AlertsScreen(config,::commit)
+                    "widgets"->WidgetSettingsScreen()
+                    "appearance"->AppearanceScreen()
+                    else->ClassHub(config)
+                }}
+            }}
+        }}
+    }
+}
+
+@Composable
+internal fun SettingsHome() {
+    val c=androidx.compose.ui.platform.LocalContext.current
+    LazyColumn(contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(14.dp)) {
+        item {Text("الإعدادات",style=MaterialTheme.typography.headlineMedium)}
+        item {com.mrabah.oneuischedule.UpdatePanel()}
+        listOf("appearance" to ("المظهر والقراءة" to "الوضع الليلي وحجم النص"),"alerts" to ("التنبيهات" to "أنواع الحصص والأوقات والأصوات"),"widgets" to ("تخصيص الودجت" to "إعدادات مستقلة لكل نسخة"),"data" to ("البيانات والاسترجاع" to "نسخة شاملة، نسخ محلية تلقائية وسجل التعديلات"),"profiles" to ("الأوقات الخاصة" to "الصيف والشتاء ورمضان والاختبارات")).forEach {(page,labels)->item {
+            Card(onClick={openStudio(c,page)},modifier=Modifier.fillMaxWidth()){Column(Modifier.padding(20.dp)){Text(labels.first,style=MaterialTheme.typography.titleMedium);Text(labels.second,color=MaterialTheme.colorScheme.onSurfaceVariant)}}
+        }}
+    }
+}

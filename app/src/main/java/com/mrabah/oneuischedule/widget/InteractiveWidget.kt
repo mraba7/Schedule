@@ -15,10 +15,10 @@ internal object LessonPeek {
     private fun prefs(c:Context)=c.getSharedPreferences("widget_lesson_peek",Context.MODE_PRIVATE)
     fun selected(c:Context,id:Int,date:String,now:Long=SystemClock.elapsedRealtime()):Int? {
         val p=prefs(c);val left=p.getLong("until:$id",0)-now
-        return if(left in 1..5000 && p.getString("date:$id",null)==date) p.getInt("period:$id",-1).takeIf{it>0} else null
+        return if(left in 1..15000 && p.getString("date:$id",null)==date) p.getInt("period:$id",-1).takeIf{it>0} else null
     }
     @Synchronized fun toggle(c:Context,id:Int,date:String,period:Int,now:Long=SystemClock.elapsedRealtime()):Long {
-        val until=if(selected(c,id,date,now)==period)0 else now+5000
+        val until=if(selected(c,id,date,now)==period)0 else now+WidgetPreferences.get(c,id).peekSeconds*1000L
         prefs(c).edit().putString("date:$id",date).putInt("period:$id",period).putLong("until:$id",until).apply()
         return until
     }
@@ -38,7 +38,7 @@ internal object LessonPeek {
             android.graphics.RectF(x,y,x+width,y+h+if(slot.period==selected)expansion else 0f)
         }
     }
-    fun clear(c:Context,id:Int) {prefs(c).edit().remove("until:$id").remove("date:$id").remove("period:$id").apply()}
+    fun clear(c:Context,id:Int) {WidgetPreferences.clear(c,id);prefs(c).edit().remove("until:$id").remove("date:$id").remove("period:$id").apply()}
 }
 
 /** The UI timer must not keep a broadcast pending: Android may queue later taps. */

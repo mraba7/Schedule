@@ -53,6 +53,14 @@ data class Config(
     val schoolSections: List<String> = emptyList(),
     val standbySections: Map<String, String> = emptyMap(),
     val appliedCalendars: Set<String> = emptySet(),
+    val profiles: List<TimetableProfile> = emptyList(),
+    val classColors: Map<String,String> = emptyMap(),
+    val notifyTeaching:Boolean = true,
+    val notifyStandby:Boolean = true,
+    val preMinutes:Int = 5,
+    val endMinutes:Int = 5,
+    val mutedDate:String = "",
+
 ) {
     fun bell(period: Int): Bell = bells.first { it.period == period }
     val workdays: Set<DayOfWeek> get() = week.keys
@@ -161,11 +169,13 @@ object ScheduleStore {
     }
 
     fun save(context: Context, config: Config) {
+        DataVault.checkpoint(context,"تعديل الجدول والإعدادات")
         prefs(context).edit().putString(KEY, encode(AcademicCalendar.apply(config)).toString()).apply()
         com.mrabah.oneuischedule.widget.ClassNoteReminders.sync(context)
     }
 
     fun reset(context: Context) {
+        DataVault.checkpoint(context,"استعادة الجدول الأصلي")
         prefs(context).edit().remove(KEY).apply()
         com.mrabah.oneuischedule.widget.ClassNoteReminders.sync(context)
     }
@@ -173,7 +183,7 @@ object ScheduleStore {
     fun exportJson(config: Config): String = encode(config).toString(2)
 
     fun importJson(text: String): Config? = try {
-        parse(JSONObject(text))
+        parse(JSONObject(text)).takeIf{ScheduleValidation.problem(it)==null}
     } catch (t: Throwable) {
         null
     }
@@ -259,6 +269,10 @@ object ScheduleStore {
             .put("schoolSections", JSONArray(c.schoolSections))
             .put("standbySections", JSONObject(c.standbySections))
             .put("appliedCalendars", JSONArray(c.appliedCalendars.toList()))
+            .put("profiles",SchoolTools.encode(c.profiles)).put("classColors",JSONObject(c.classColors))
+            .put("notifyTeaching",c.notifyTeaching).put("notifyStandby",c.notifyStandby)
+            .put("preMinutes",c.preMinutes).put("endMinutes",c.endMinutes).put("mutedDate",c.mutedDate)
+
     }
 
     private fun parse(json: JSONObject): Config {
@@ -330,6 +344,11 @@ object ScheduleStore {
             schoolSections = json.optJSONArray("schoolSections")?.let { a -> (0 until a.length()).map { a.getString(it) } } ?: emptyList(),
             standbySections = json.optJSONObject("standbySections")?.let { o -> o.keys().asSequence().associateWith { o.getString(it) } } ?: emptyMap(),
             appliedCalendars = json.optJSONArray("appliedCalendars")?.let { a -> (0 until a.length()).map {a.getString(it)}.toSet() } ?: emptySet(),
+            profiles=SchoolTools.decode(json.optJSONArray("profiles")),
+            classColors=json.optJSONObject("classColors")?.let{o->o.keys().asSequence().associateWith{o.getString(it)}.filterValues{Regex("#[0-9A-Fa-f]{6}").matches(it)}} ?: emptyMap(),
+            notifyTeaching=json.optBoolean("notifyTeaching",true),notifyStandby=json.optBoolean("notifyStandby",true),
+            preMinutes=json.optInt("preMinutes",5).coerceIn(1,30),endMinutes=json.optInt("endMinutes",5).coerceIn(1,30),mutedDate=json.optString("mutedDate",""),
+
         )
     }
 }
@@ -378,7 +397,7 @@ object ScheduleEngine {
     fun dutiesOn(config: Config, date: LocalDate): Map<Int, Duty> {
         if (config.holidayOn(date) != null) return emptyMap()
 
-        val result = config.templateOn(date.dayOfWeek).toMutableMap()
+        val result = SchoolTools.week(config,date)[date.dayOfWeek].orEmpty().toMutableMap()
         val prefix = date.toString() + "#"
         config.overrides.forEach { (key, duty) ->
             if (key.startsWith(prefix)) {
@@ -400,7 +419,7 @@ object ScheduleEngine {
     fun build(config: Config, now: LocalDateTime): ScheduleUi {
         val today = now.toLocalDate()
         val lastEnd = dutiesOn(config, today).keys
-            .mapNotNull { p -> config.bells.firstOrNull { it.period == p }?.end }
+            .mapNotNull { p -> SchoolTools.bells(config,date).firstOrNull { it.period == p }?.end }
             .maxOrNull()
 
         val showToday = lastEnd != null && now.toLocalTime() < lastEnd
@@ -426,7 +445,7 @@ object ScheduleEngine {
 
         val date = now.toLocalDate()
         if (dutiesOn(config, date).isNotEmpty()) {
-            val closes = config.bells.maxOfOrNull { it.end }
+            val closes = SchoolTools.bells(config,now.toLocalDate()).maxOfOrNull { it.end }
             if (closes != null &&
                 !now.toLocalTime().isBefore(Defaults.assemblyStart) &&
                 now.toLocalTime().isBefore(closes)
@@ -441,7 +460,7 @@ object ScheduleEngine {
         val duties = dutiesOn(config, date)
         if (duties.isNotEmpty()) {
             duties.keys.forEach { p ->
-                config.bells.firstOrNull { it.period == p }?.let {
+                SchoolTools.bells(config,date).firstOrNull { it.period == p }?.let {
                     add(date.atTime(it.start))
                     add(date.atTime(it.end))
                 }
@@ -455,7 +474,7 @@ object ScheduleEngine {
     fun nextWorkday(config: Config, from: LocalDate): LocalDate {
         var d = from.plusDays(1)
         var guard = 0
-        while (dutiesOn(config, d).isEmpty() && guard++ < 21) d = d.plusDays(1)
+        while (dutiesOn(config, d).isEmpty() && guard++ < 370) d = d.plusDays(1)
         return d
     }
 
@@ -469,7 +488,7 @@ object ScheduleEngine {
 
         val slots = dutiesOn(config, date)
             .mapNotNull { (period, duty) ->
-                val bell = config.bells.firstOrNull { it.period == period } ?: return@mapNotNull null
+                val bell = SchoolTools.bells(config,date).firstOrNull { it.period == period } ?: return@mapNotNull null
                 val state = when {
                     clock == null -> SlotState.AHEAD
                     !clock.isBefore(bell.end) -> SlotState.DONE

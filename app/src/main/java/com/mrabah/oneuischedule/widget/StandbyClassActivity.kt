@@ -52,11 +52,14 @@ class StandbyClassActivity:ComponentActivity() {
         setContent {com.mrabah.oneuischedule.ui.ScheduleTheme {Surface(Modifier.fillMaxSize().safeDrawingPadding().imePadding()) {
             var selected by rememberSaveable {mutableStateOf(config.standbySections["$date#$period"].orEmpty())}
             var newClass by rememberSaveable {mutableStateOf("")}
+            var query by rememberSaveable {mutableStateOf("")}
             LazyColumn(contentPadding=PaddingValues(24.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
                 item {Text("تحديد فصل الانتظار",style=MaterialTheme.typography.headlineSmall)}
                 item {Text("${periodName(period)} · $date")}
                 item {Text("اختر من فصول المدرسة أو أضف فصلًا جديدًا. التكليف لهذه الحصة في هذا التاريخ فقط.")}
-                items(StandbyAssignments.choices(config)) {section ->
+                item {OutlinedTextField(query,{query=it},label={Text("بحث عن فصل")},singleLine=true,modifier=Modifier.fillMaxWidth())}
+                item {Text("الفصول المستخدمة مؤخرًا تظهر أولًا")}
+                items(StandbyAssignments.choices(config).sortedByDescending {section->config.standbySections.filterValues{it==section}.keys.maxOrNull().orEmpty()}.filter{it.contains(query.trim(),true)}) {section ->
                     OutlinedButton(onClick={selected=section;newClass=""},modifier=Modifier.fillMaxWidth()) {
                         Text(if(selected==section && newClass.isBlank())"✓ $section" else section)
                     }

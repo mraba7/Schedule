@@ -28,6 +28,7 @@ internal object ClassNotes {
     }
     fun all(c:Context)=prefs(c).all.keys.mapNotNull { get(c,it) }
     fun save(c:Context,section:String,text:String,reminder:Boolean,now:LocalDateTime=LocalDateTime.now()) {
+        com.mrabah.oneuischedule.data.DataVault.checkpoint(c,"تعديل ملاحظة الفصل")
         if(text.isBlank()) { complete(c,section);return }
         put(c,ClassNote(section,text.trim().take(1000),now,reminder))
         NotificationManagerCompat.from(c).cancel(section,7401)
@@ -40,6 +41,7 @@ internal object ClassNotes {
         if(get(c,n.section)==n) put(c,n.copy(delivered=true))
     }
     fun complete(c:Context,section:String) {
+        DataVault.checkpoint(c,"إنهاء ملاحظة الفصل")
         prefs(c).edit().remove(section).apply()
         NotificationManagerCompat.from(c).cancel(section,7401)
     }
@@ -48,7 +50,7 @@ internal object ClassNotes {
         for(offset in 0..366) {
             val date=now.toLocalDate().plusDays(offset.toLong())
             val duties=ScheduleEngine.dutiesOn(config,date)
-            config.bells.sortedBy { it.start }.forEach { bell ->
+            SchoolTools.bells(config,date).sortedBy { it.start }.forEach { bell ->
                 val section=(duties[bell.period] as? Duty.Teach)?.section
                 val start=date.atTime(bell.start);val end=date.atTime(bell.end)
                 if(section==n.section && start>n.savedAt && end>now) return ClassVisit(start,end,bell.period)
@@ -76,7 +78,7 @@ internal object ClassNoteReminders {
         ClassNotes.all(c).filter { it.reminder && !it.delivered }.forEach { note ->
             val visit=ClassNotes.next(config,note,now) ?: return@forEach
             if(visit.start<=now) {
-                if(enabled) {
+                if(enabled && config.mutedDate!=now.toLocalDate().toString()) {
                     val open=PendingIntent.getActivity(c,0,ClassNotes.intent(c,note.section),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
                     val notification=NotificationCompat.Builder(c,CHANNEL)
                         .setSmallIcon(android.R.drawable.ic_dialog_info)
@@ -88,8 +90,21 @@ internal object ClassNoteReminders {
                 }
             } else if(nextAt==null || visit.start<nextAt!!) nextAt=visit.start
         }
+        val journal=ClassJournal.all(c).filter {it.remind && !it.delivered && !it.done}
+        journal.forEach { entry ->
+            val visit=ClassNotes.next(config,ClassNote(entry.section,entry.text,entry.savedAt),now) ?: return@forEach
+            if(visit.start<=now && enabled && config.mutedDate!=now.toLocalDate().toString()) {
+                val target=Intent(c,com.mrabah.oneuischedule.MainActivity::class.java).setData(Uri.parse("schedule-journal://${entry.id}")).putExtra("open_tab",2).putExtra("section",entry.section)
+                val open=PendingIntent.getActivity(c,0,target,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+                try {
+                    NotificationManagerCompat.from(c).notify(entry.id,7402,NotificationCompat.Builder(c,CHANNEL).setSmallIcon(android.R.drawable.ic_dialog_info)
+                        .setContentTitle("الفصل ${entry.section} · ${entry.title}").setContentText(entry.text).setStyle(NotificationCompat.BigTextStyle().bigText(entry.text)).setContentIntent(open).setAutoCancel(true).build())
+                    ClassJournal.delivered(c,entry)
+                }catch(_:SecurityException){}
+            } else if(visit.start>now && (nextAt==null || visit.start<nextAt!!))nextAt=visit.start
+        }
         // A daily check also handles notes whose next class is not yet scheduled.
-        val at=nextAt ?: if(ClassNotes.all(c).any { it.reminder && !it.delivered }) now.toLocalDate().plusDays(1).atStartOfDay().plusHours(5) else return
+        val at=nextAt ?: if(ClassNotes.all(c).any { it.reminder && !it.delivered } || journal.isNotEmpty()) now.toLocalDate().plusDays(1).atStartOfDay().plusHours(5) else return
         val millis=at.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         try {
             if(manager.canScheduleExactAlarms()) manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,millis,alarm(c))

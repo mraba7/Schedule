@@ -21,12 +21,14 @@ internal object PreparationStore {
     fun note(c: Context,key:String?) = key?.let { prefs(c).getString("note:$it", "") }.orEmpty()
     fun done(c: Context,key:String?) = key!=null && prefs(c).getBoolean("done:$key",false)
     fun save(c:Context,key:String,task:String,note:String) {
+        com.mrabah.oneuischedule.data.DataVault.checkpoint(c,"تعديل تجهيز الحصة")
         val previous=PreparationStore.task(c,key)
         prefs(c).edit().putString("task:$key",task).putString("note:$key",note).apply {
             if(previous!=task) putBoolean("done:$key",false)
         }.apply()
     }
     fun toggle(c:Context,key:String) {
+        com.mrabah.oneuischedule.data.DataVault.checkpoint(c,"تغيير إنجاز التجهيز")
         if(task(c,key).isNotBlank()) prefs(c).edit().putBoolean("done:$key",!done(c,key)).apply()
     }
 }
@@ -81,8 +83,11 @@ internal object DesignWidgets {
         // Conservative bitmap budget: max 640px long edge per orientation.
         val density=minOf(2f,640f/maxOf(width,height))
         val selected=if(style==Design.INTERACTIVE) LessonPeek.selected(c,id,day.ui.date.toString()) else null
-        val bitmap=renderer.render(style,day,(width*density).toInt(),(height*density).toInt(),
-            PreparationStore.task(c,day.key).ifBlank { "تحديد التجهيز" },PreparationStore.done(c,day.key),width,height,selected)
+        val options=WidgetPreferences.get(c,id)
+        val task=PreparationStore.task(c,day.key).ifBlank { "تحديد التجهيز" };val done=PreparationStore.done(c,day.key)
+        val cacheKey=listOf(style,day.ui,day.now.truncatedTo(java.time.temporal.ChronoUnit.MINUTES),width,height,selected,options,task,done,ClassNotes.all(c)).joinToString("|")
+        val bitmap=WidgetBitmapCache.get(cacheKey) {renderer.render(style,day,(width*density).toInt(),(height*density).toInt(),task,done,width,height,selected,options)}
+
         val views=RemoteViews(c.packageName,R.layout.design_widget)
         views.setImageViewBitmap(R.id.design_image,bitmap)
         views.setContentDescription(R.id.design_image,if(style==Design.FOCUS || style==Design.PATH || style==Design.INTERACTIVE) "${day.ui.slots.size} حصص: ${day.ui.slots.joinToString { periodName(it.period) + " الفصل " + DesignDay.section(it) }}، ${day.day}، ${day.focus?.let { periodName(it.period) } ?: "لا توجد حصص"}، الفصل ${day.section}، ${day.range}، ${day.countText} ${day.countLabel}، ${ClassNotes.get(c,day.focus?.section)?.text ?: "إضافة ملاحظة الفصل"}" else day.summary)

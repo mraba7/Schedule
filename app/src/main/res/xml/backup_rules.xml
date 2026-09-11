@@ -2,4 +2,10 @@
 <full-backup-content>
     <include domain="sharedpref" path="schedule_config.xml" />
         <include domain="sharedpref" path="class_progress_notes.xml" />
+        <include domain="sharedpref" path="widget_lesson_details.xml" />
+        <include domain="sharedpref" path="class_journal.xml" />
+        <include domain="sharedpref" path="widget_preferences.xml" />
+        <include domain="sharedpref" path="app_preferences.xml" />
+        <include domain="file" path="attachments/" />
+        <include domain="file" path="history/" />
 </full-backup-content>

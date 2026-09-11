@@ -122,8 +122,8 @@ object PeriodNotifier {
         val today = now.toLocalDate()
         val time = now.toLocalTime()
 
-        if (announce) {
-            val duties = ScheduleEngine.dutiesOn(config, today)
+        if (announce && config.mutedDate!=today.toString()) {
+            val duties = ScheduleEngine.dutiesOn(config, today).filterValues {if(it is com.mrabah.oneuischedule.data.Duty.Standby) config.notifyStandby else config.notifyTeaching}
             fun sectionOf(period: Int): String =
                 (duties[period] as? com.mrabah.oneuischedule.data.Duty.Teach)?.section ?: "انتظار"
 
@@ -131,7 +131,7 @@ object PeriodNotifier {
             var body: String? = null
 
             duties.keys.sorted().forEach { period ->
-                val bell = config.bells.firstOrNull { it.period == period } ?: return@forEach
+                val bell = com.mrabah.oneuischedule.data.SchoolTools.bells(config,today).firstOrNull { it.period == period } ?: return@forEach
                 val section = sectionOf(period)
 
                 // Back-to-back periods make "five before the end" and "five
@@ -148,20 +148,20 @@ object PeriodNotifier {
                         body = section
                     }
 
-                    config.endAlert && near(time, bell.end.minusMinutes(END_ALERT_MINUTES)) -> {
+                    config.endAlert && near(time, bell.end.minusMinutes(config.endMinutes.toLong())) -> {
                         val nextPeriod = duties.keys.filter { it > period }.minOrNull()
-                        val nextBell = nextPeriod?.let { p -> config.bells.firstOrNull { it.period == p } }
+                        val nextBell = nextPeriod?.let { p -> com.mrabah.oneuischedule.data.SchoolTools.bells(config,today).firstOrNull { it.period == p } }
                         val backToBack = nextBell != null && nextBell.start == bell.end
-                        title = "باقي $END_ALERT_MINUTES دقائق على نهاية الحصة $period"
+                        title = "باقي ${config.endMinutes} دقائق على نهاية الحصة $period"
                         body = when {
                             backToBack -> "$section · التالية ${sectionOf(nextPeriod)}"
                             else -> section
                         }
                     }
 
-                    config.preAlert && near(time, bell.start.minusMinutes(PRE_ALERT_MINUTES)) -> {
+                    config.preAlert && near(time, bell.start.minusMinutes(config.preMinutes.toLong())) -> {
                         if (title == null) {
-                            title = "بعد $PRE_ALERT_MINUTES دقائق · الحصة $period"
+                            title = "بعد ${config.preMinutes} دقائق · الحصة $period"
                             body = lessonLine(config, section) ?: section
                         }
                     }
@@ -176,8 +176,8 @@ object PeriodNotifier {
 
         // live progress notification
         val live = ui.live
-        if (config.liveUpdate && live != null) {
-            postLive(context, config, live.section ?: "انتظار", live.period,
+        if (config.liveUpdate && live != null && config.mutedDate!=today.toString() && (if(live.isStandby)config.notifyStandby else config.notifyTeaching)) {
+            postLive(context, config, live.displaySection ?: "انتظار", live.period,
                 ui.progress, ui.minutesLeftInLive ?: 0L)
         } else {
             NotificationManagerCompat.from(context).cancel(ID_LIVE)
@@ -209,19 +209,19 @@ object PeriodNotifier {
             return now.truncatedTo(java.time.temporal.ChronoUnit.MINUTES).plusMinutes(1)
         }
         var date = now.toLocalDate()
-        repeat(8) {
+        repeat(370) {
             val day = date
             val marks: LocalDateTime? = ScheduleEngine.dutiesOn(config, day).keys
-                .mapNotNull { p -> config.bells.firstOrNull { bell -> bell.period == p } }
+                .mapNotNull { p -> com.mrabah.oneuischedule.data.SchoolTools.bells(config,day).firstOrNull { bell -> bell.period == p } }
                 .flatMap { bell ->
                     buildList<LocalDateTime> {
                         add(day.atTime(bell.start))
                         add(day.atTime(bell.end))
                         if (config.preAlert) {
-                            add(day.atTime(bell.start).minusMinutes(PRE_ALERT_MINUTES))
+                            add(day.atTime(bell.start).minusMinutes(config.preMinutes.toLong()))
                         }
                         if (config.endAlert) {
-                            add(day.atTime(bell.end).minusMinutes(END_ALERT_MINUTES))
+                            add(day.atTime(bell.end).minusMinutes(config.endMinutes.toLong()))
                         }
                     }
                 }

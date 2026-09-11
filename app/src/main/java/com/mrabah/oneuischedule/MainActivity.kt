@@ -13,6 +13,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.background
@@ -108,6 +109,8 @@ private fun AppShell(initialTab: Int = 0) {
     var dirty by remember { mutableStateOf(false) }
     var pendingTab by remember { mutableStateOf<Int?>(null) }
     var config by remember { mutableStateOf(ScheduleStore.load(context)) }
+    LaunchedEffect(Unit) { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {runCatching {com.mrabah.oneuischedule.data.DataVault.daily(context)}} }
+
     DisposableEffect(context) {
         val prefs=context.getSharedPreferences("schedule_config", android.content.Context.MODE_PRIVATE)
         val listener=android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, _ ->
@@ -136,7 +139,7 @@ private fun AppShell(initialTab: Int = 0) {
     Scaffold(
         bottomBar = {
             NavigationBar {
-                listOf("اليوم", "الجدول", "المنهج", "الودجت", "الإعدادات").forEachIndexed { index, label ->
+                listOf("اليوم", "الجدول", "الفصول", "الودجت", "الإعدادات").forEachIndexed { index, label ->
                     NavigationBarItem(
                         selected = tab == index,
                         onClick = { if(dirty && index!=tab) pendingTab=index else tab=index },
@@ -150,8 +153,9 @@ private fun AppShell(initialTab: Int = 0) {
         Box(Modifier.padding(padding)) {
             when (tab) {
                 0 -> TodayScreen(config, ::commit)
-                1, 4 -> ScheduleScreen(config, ::commit, settingsOnly=tab==4, onDirty={dirty=it})
-                2 -> SyllabusScreen(config, ::commit)
+                1 -> ScheduleScreen(config, ::commit, onDirty={dirty=it})
+                4 -> com.mrabah.oneuischedule.ui.SettingsHome()
+                2 -> com.mrabah.oneuischedule.ui.ClassHub(config)
                 3 -> com.mrabah.oneuischedule.widget.DesignGallery(config)
             }
         }
@@ -170,7 +174,7 @@ private fun TodayScreen(config:Config,commit:(Config)->Unit) {
 }
 
 @Composable
-private fun UpdatePanel() {
+internal fun UpdatePanel() {
     val context=LocalContext.current
     val scope=rememberCoroutineScope()
     var update by remember { mutableStateOf<UpdateChecker.Result?>(null) }
@@ -309,66 +313,23 @@ private fun UpdatePanel() {
 
 /** One-day change plus a recurring note, in a single sheet. */
 @Composable
-private fun DayEditDialog(
-    config: Config,
-    date: LocalDate,
-    period: Int,
-    onDismiss: () -> Unit,
-    onApply: (Config) -> Unit,
-) {
-    val key = "$date#$period"
-    val noteKey = "${date.dayOfWeek.name}#$period"
-    var note by remember { mutableStateOf(config.notes[noteKey].orEmpty()) }
-
-    val options = buildList {
-        add(null to "ملغاة اليوم")
-        add(Duty.Standby as Duty? to "انتظار")
-        config.sections.forEach { add(Duty.Teach(it) as Duty? to it) }
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("الحصة $period · ${date}") },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState())) {
-                Text("تبديل لهذا اليوم فقط", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(6.dp))
-                options.chunked(3).forEach { rowItems ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        rowItems.forEach { (duty, label) ->
-                            OutlinedButton(
-                                onClick = {
-                                    onApply(config.copy(overrides = config.overrides + (key to duty)))
-                                },
-                                shape = RoundedCornerShape(14.dp),
-                                modifier = Modifier.weight(1f),
-                            ) { Text(label, fontSize = 11.sp) }
-                        }
-                    }
-                }
-                Spacer(Modifier.height(10.dp))
-                OutlinedTextField(
-                    value = note,
-                    onValueChange = { note = it },
-                    label = { Text("ملاحظة تتكرر كل أسبوع") },
-                    singleLine = true,
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                onApply(config.copy(notes = config.notes + (noteKey to note.trim())))
-            }) { Text("حفظ الملاحظة") }
-        },
-        dismissButton = {
-            TextButton(onClick = {
-                onApply(config.copy(overrides = config.overrides - key))
-            }) { Text("إلغاء التبديل") }
-        },
-    )
+private fun DayEditDialog(config:Config,date:LocalDate,period:Int,onDismiss:()->Unit,onApply:(Config)->Unit) {
+    var weekly by remember {mutableStateOf(false)}
+    var selected by remember {mutableStateOf(ScheduleEngine.dutiesOn(config,date)[period])}
+    val noteKey="${date.dayOfWeek.name}#$period"
+    var note by remember {mutableStateOf(config.notes[noteKey].orEmpty())}
+    val options=listOf<Duty?>(null,Duty.Standby)+config.sections.map{Duty.Teach(it)}
+    AlertDialog(onDismissRequest=onDismiss,title={Text("الحصة $period · $date")},text={Column(Modifier.verticalScroll(rememberScrollState())) {
+        Row {androidx.compose.material3.FilterChip(!weekly,{weekly=false},label={Text("لهذا اليوم")});androidx.compose.material3.FilterChip(weekly,{weekly=true},label={Text("كل أسبوع")})}
+        Text(if(weekly)"سيُعدّل جدول ${date.dayOfWeek.getDisplayName(JavaTextStyle.FULL,Locale("ar"))} المتكرر" else "التغيير لهذه الحصة في هذا التاريخ فقط")
+        options.forEach {duty->Row(Modifier.fillMaxWidth().clickable{selected=duty},verticalAlignment=Alignment.CenterVertically){RadioButton(selected==duty,{selected=duty});Text(when(duty){null->"بدون حصة";Duty.Standby->"انتظار";is Duty.Teach->"الفصل ${duty.section}"})}}
+        OutlinedTextField(note,{note=it},label={Text("ملاحظة تتكرر لهذا الموعد أسبوعيًا")})
+        Text("سيُحفظ: "+when(val duty=selected){null->"إلغاء الحصة";Duty.Standby->"حصة انتظار";is Duty.Teach->"الفصل ${duty.section}"},fontWeight=FontWeight.Bold)
+        if(config.overrides.containsKey("$date#$period"))TextButton(onClick={onApply(config.copy(overrides=config.overrides-"$date#$period"))}){Text("إلغاء تعديل هذا اليوم")}
+    }},confirmButton={Button(onClick={
+        val next=if(weekly){val duties=config.templateOn(date.dayOfWeek).toMutableMap();if(selected==null)duties.remove(period) else duties[period]=selected!!;config.copy(week=config.week+(date.dayOfWeek to duties))} else config.copy(overrides=config.overrides+("$date#$period" to selected))
+        onApply(next.copy(notes=next.notes+(noteKey to note.trim())))
+    }){Text("حفظ التعديل")}},dismissButton={TextButton(onClick=onDismiss){Text("إلغاء")}})
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -452,6 +413,14 @@ internal fun ScheduleScreen(config: Config, commit: (Config) -> Unit, settingsOn
                     androidx.compose.material3.FilterChip(selected=category==i,onClick={category=i},label={Text(label)})
                 }
             }
+        }
+        if(!settingsOnly) item {
+            Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                listOf("week" to "نسخ وتبديل الحصص","calendar" to "التقويم","profiles" to "أوقات خاصة").forEach {(page,label)->
+                    OutlinedButton(enabled=draft==config,onClick={com.mrabah.oneuischedule.ui.openStudio(context,page)}){Text(label)}
+                }
+            }
+            if(draft!=config)Text("احفظ تعديلاتك لاستخدام الأدوات",style=MaterialTheme.typography.bodySmall)
         }
         if(settingsOnly) item { UpdatePanel() }
         if(!settingsOnly && category==1) {
@@ -902,12 +871,12 @@ private fun DayCard(day: DayOfWeek, config: Config, onCell: (Int, Duty?) -> Unit
                 fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(10.dp))
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 for (period in 1..7) {
                     val duty = duties[period]
-                    Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(Modifier.width(66.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("$period", fontSize = 10.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Box(
@@ -931,7 +900,7 @@ private fun DayCard(day: DayOfWeek, config: Config, onCell: (Int, Duty?) -> Unit
                                     Duty.Standby -> "انتظار"
                                     null -> "—"
                                 },
-                                fontSize = if (duty is Duty.Standby) 9.sp else 12.sp,
+                                fontSize = 12.sp,
                                 fontWeight = if (duty != null) FontWeight.Bold else FontWeight.Normal,
                             )
                         }
@@ -1098,7 +1067,7 @@ private fun validate(config: Config): String? {
  * plainly whether the system is even letting them through.
  */
 @Composable
-private fun NotificationTestCard() {
+internal fun NotificationTestCard() {
     val context = LocalContext.current
     var diagnostics by remember { mutableStateOf(PeriodNotifier.diagnostics(context)) }
 
@@ -1177,7 +1146,7 @@ private fun DiagnosticRow(label: String, ok: Boolean) {
  * quality cannot be judged from a name.
  */
 @Composable
-private fun VoicePicker(selected: String, onSelect: (String) -> Unit) {
+internal fun VoicePicker(selected: String, onSelect: (String) -> Unit) {
     val context = LocalContext.current
     var voices by remember { mutableStateOf<List<Speaker.VoiceOption>?>(null) }
 

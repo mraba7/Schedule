@@ -23,13 +23,16 @@ internal class DesignRenderer(context: Context) {
     private lateinit var d: DesignDay
     private var prepared = false
     private var preparation = ""
+    private var options=WidgetOptions()
+    private fun classColor(section:String?)=com.mrabah.oneuischedule.data.SchoolTools.color(d.ui.config,section)
     private fun col(hex: String) = Color.parseColor(hex)
     private val ink = "#141A1A"
 
     fun render(design: Design, day: DesignDay, width: Int = 720, height: Int = 720,
                task: String = "تحديد التجهيز", done: Boolean = false,
-               layoutWidth:Float=width/2f, layoutHeight:Float=height/2f, peekPeriod:Int?=null): Bitmap {
-        d = day; preparation = task; prepared = done
+               layoutWidth:Float=width/2f, layoutHeight:Float=height/2f, peekPeriod:Int?=null, options:WidgetOptions=WidgetOptions()): Bitmap {
+        this.options=options
+        d = day; preparation = if(options.showNote)task else ""; prepared = done
         val bitmap = Bitmap.createBitmap(width.coerceAtLeast(1), height.coerceAtLeast(1), Bitmap.Config.ARGB_8888)
         c = Canvas(bitmap)
         if(design==Design.PATH) {
@@ -67,6 +70,7 @@ internal class DesignRenderer(context: Context) {
 
     private fun rect(x: Float, y: Float, w: Float, h: Float, fill: String, r: Float = 14f, stroke: String? = null) {
         p.style = Paint.Style.FILL; p.color = col(fill)
+        if(w>=160f && h>=170f)p.alpha=(Color.alpha(p.color)*options.opacity).toInt()
         c.drawRoundRect(RectF(x,y,x+w,y+h),r,r,p)
         if (stroke != null) {
             p.style = Paint.Style.STROKE; p.strokeWidth = .7f; p.color = col(stroke)
@@ -85,10 +89,10 @@ internal class DesignRenderer(context: Context) {
      * fitted to its allocated box, so long lesson names never collide. */
     private fun text(value: String,x: Float,y: Float,w: Float,h: Float,size: Float,color: String=ink,
                      strong: Boolean=false,align: String="right",minSize: Float=size) {
-        var fs=size
+        var fs=minOf(size*options.fontScale,h*.85f)
         val tp=TextPaint(Paint.ANTI_ALIAS_FLAG).apply { this.color=col(color); typeface=if(strong) bold else regular }
         tp.textSize=fs
-        while (tp.measureText(value)>w && fs>minSize) { fs-=.5f; tp.textSize=fs }
+        while (tp.measureText(value)>w && fs>minOf(minSize,8f)) { fs-=.5f; tp.textSize=fs }
         val alignment=when(align) { "center"->Layout.Alignment.ALIGN_CENTER; "left"->Layout.Alignment.ALIGN_NORMAL; else->Layout.Alignment.ALIGN_OPPOSITE }
         // Fixed paragraph LTR gives ALIGN_OPPOSITE a physical right edge, while
         // Unicode's bidi algorithm still shapes each Arabic run correctly.
@@ -369,7 +373,7 @@ internal class DesignRenderer(context: Context) {
         line(353f,103f,353f,172f,if(live)gold else border,1.8f)
         rect(303f,100f,42f,16f,"#203039",8f,if(live)gold else muted)
         text(if(live)"الآن" else "القادمة",306f,100f,36f,16f,10f,if(live)gold else muted,true,"center")
-        section(d.section,240f,116f,102f,38f,37f,GlassAgenda.color(d.focus?.section))
+        section(d.section,240f,116f,102f,38f,37f,classColor(d.focus?.section))
         text(d.subject,226f,155f,116f,14f,12f,fg,true,minSize=10f)
         val range=d.focus!!.let { "${DesignDay.clock(it.bell.start)} → ${DesignDay.clock(it.bell.end)}" }
         clock(range,15f,110f,208f,31f,23f,fg)
@@ -386,7 +390,7 @@ internal class DesignRenderer(context: Context) {
         val rows=GlassAgenda.rows(d)
         val step=minOf(23f,91f/rows.size.coerceAtLeast(1))
         rows.forEachIndexed { i,row ->
-            val y=238f+i*step;val rh=step-2f;val tint=GlassAgenda.color(row.section)
+            val y=238f+i*step;val rh=step-2f;val tint=classColor(row.section)
             rect(6f,y,348f,rh,"#172736",4f,"#304353")
             fade(7f,y+1,346f,rh-2,tint,if(row.section!=null)32 else 9,4f)
             line(352f,y+3f,352f,y+rh-3f,tint,1.7f)
@@ -423,7 +427,7 @@ internal class DesignRenderer(context: Context) {
             val expanded=lesson.period==selected
             val active=lesson.state==com.mrabah.oneuischedule.data.SlotState.LIVE
             val past=lesson.state==com.mrabah.oneuischedule.data.SlotState.DONE
-            val tint=if(past) "#71818E" else GlassAgenda.color(lesson.displaySection)
+            val tint=if(past) "#71818E" else classColor(lesson.displaySection)
             rect(x,y,tileW,tile.height(),if(active)"#293134" else "#192A38",7f,if(active)gold else "#344A5C")
             if(active)circle(x+tileW-6f,y+6f,1.6f,gold)
             text(periodName(lesson.period).removePrefix("الحصة "),x+4f,y+1f,tileW-8f,if(rows>1)12f else 20f,
@@ -451,9 +455,9 @@ internal class DesignRenderer(context: Context) {
         rect(15f,142f,48f,23f,"#CFB47D",10f)
         text(if(live)"الآن" else "القادمة",18f,142f,42f,23f,12f,"#152230",true,"center")
         text(periodName(slot.period),70f,141f,272f,36f,29f,fg,true,minSize=22f)
-        rect(246f,180f,96f,22f,"#203D41",11f,GlassAgenda.color(slot.displaySection))
-        text("الفصل ${d.section}",251f,180f,86f,22f,13f,GlassAgenda.color(slot.displaySection),true,"center",10f)
-        val note=ClassNotes.get(appContext,slot.section)?.text
+        rect(246f,180f,96f,22f,"#203D41",11f,classColor(slot.displaySection))
+        text("الفصل ${d.section}",251f,180f,86f,22f,13f,classColor(slot.displaySection),true,"center",10f)
+        val note=if(options.showNote)ClassNotes.get(appContext,slot.section)?.text else null
         rect(15f,210f,330f,25f,"#1D3040",8f)
         icon("note",323f,215f,muted,15f)
         text(note ?: "أضف آخر نقطة لهذا الفصل",22f,211f,292f,23f,12f,if(note==null)muted else fg,minSize=10f)
@@ -470,7 +474,7 @@ internal class DesignRenderer(context: Context) {
         if(live)rect(17f+326f*(1-d.ui.progress),302f,326f*d.ui.progress,4f,gold,2f)
         if(live)clock("${(d.ui.progress*100).toInt()}%",137f,310f,86f,14f,10f,muted,false)
         val next=d.upcoming.firstOrNull()
-        if(next!=null) {
+        if(next!=null && options.showNext) {
             text("التالي: ${periodName(next.period)} · ${DesignDay.section(next)}",94f,338f,249f,18f,12f,muted,true,minSize=9f)
             clock(DesignDay.clock(next.bell.start),17f,338f,67f,18f,13f,muted)
         } else text("آخر حصة اليوم · الانصراف ${d.finish}",17f,338f,326f,18f,12f,muted,true,"center")
@@ -508,7 +512,7 @@ internal class DesignRenderer(context: Context) {
                     text(periodName(s.period).removePrefix("الحصة "),x-cell/2+4f,y-58f,cell-8f,18f,if(cell<60)9f else 12f,
                         if(past)"#738795" else fg,true,"center",8f)
                     section(DesignDay.section(s),x-cell/2+4f,y-38f,cell-8f,19f,if(cell<60)12f else 15f,
-                        if(past)"#738795" else GlassAgenda.color(s.displaySection))
+                        if(past)"#738795" else classColor(s.displaySection))
                 }
                 circle(x,y,radius+1,"#152230")
                 circle(x,y,radius,if(past)doneColor else if(active)gold else muted,!past && !active,1f)
@@ -520,7 +524,7 @@ internal class DesignRenderer(context: Context) {
         fun footer(y:Float) {
             val next=if(waiting)slot else d.upcoming.firstOrNull()
             rect(12f,y,w-24f,25f,"#1D3040",8f)
-            if(next!=null) {
+            if(next!=null && options.showNext) {
                 text("التالي: ${periodName(next.period)} · ${DesignDay.section(next)}",86f,y+2,w-111f,21f,12f,fg,true,minSize=9f)
                 clock(DesignDay.clock(next.bell.start),18f,y+2,64f,21f,12f,fg)
             } else text(if(finished)"يوم موفق · ✓" else "نهاية الدوام ${d.finish}",18f,y+2,w-36f,21f,12f,muted,align="center")
@@ -557,7 +561,7 @@ internal class DesignRenderer(context: Context) {
             text("النهاية",140f,184f,tw,14f,10f,muted,align="center")
             clock(DesignDay.clock(slot.bell.end),140f,200f,tw,20f,16f,fg)
         }
-        val note=ClassNotes.get(appContext,slot?.section)?.text ?: if(finished)"أحسنت · انتهت حصصك اليوم" else "اضغط لإضافة آخر نقطة للفصل"
+        val note=(if(options.showNote)ClassNotes.get(appContext,slot?.section)?.text else "") ?: if(finished)"أحسنت · انتهت حصصك اليوم" else "اضغط لإضافة آخر نقطة للفصل"
         val tall=mode==TimelineLayout.TALL
         rect(12f,231f,w-24f,if(tall)48f else 36f,"#1D3040",9f)
         icon("note",w-34f,240f,muted,15f)

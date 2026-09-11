@@ -57,6 +57,7 @@ internal fun TodayDashboard(config:Config, fixedNow:LocalDateTime?=null,onEdit:(
     val ui=remember(config,at){ScheduleEngine.today(config,at)}
     val fg=MaterialTheme.colorScheme.onSurfaceVariant
     val clock=DateTimeFormatter.ofPattern("HH:mm",Locale.ENGLISH)
+    var expanded by rememberSaveable {mutableStateOf(true)}
     val focus=ui.focus
     val done=ui.slots.count {it.state==SlotState.DONE}
     LazyColumn(contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(14.dp)) {
@@ -80,12 +81,20 @@ internal fun TodayDashboard(config:Config, fixedNow:LocalDateTime?=null,onEdit:(
                 Metric("${ui.slots.count{it.isStandby}}","انتظار",Modifier.weight(1f))
             }
         }}
+        item {
+            ui.slots.lastOrNull()?.let {Text("ينتهي دوامك ${it.bell.end.format(clock)}",style=MaterialTheme.typography.titleMedium)}
+            if(!tomorrow && ui.live==null && focus!=null && now.toLocalTime()>=SchoolTools.bells(config,ui.date).first().start)Text("فترة فراغ حتى ${focus.bell.start.format(clock)}")
+            if(ui.live!=null)ui.next?.let {Text("التالي: ${periodName(it.period)} · ${it.displaySection ?: "انتظار"} · ${it.bell.start.format(clock)}")}
+            config.holidays.filter{it.from>now.toLocalDate()}.minByOrNull{it.from}?.let{Text("${it.label} بعد ${java.time.temporal.ChronoUnit.DAYS.between(now.toLocalDate(),it.from)} يومًا",style=MaterialTheme.typography.bodySmall)}
+        }
         if(focus!=null) item {
             Card(colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.primaryContainer),shape=RoundedCornerShape(26.dp)) {
                 Column(Modifier.fillMaxWidth().padding(20.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
                     Text(if(ui.live!=null)"جارية الآن" else "الحصة القادمة",style=MaterialTheme.typography.labelLarge)
                     Text(periodName(focus.period),style=MaterialTheme.typography.headlineLarge,fontWeight=FontWeight.Bold)
                     Text(if(focus.isStandby)"انتظار · ${focus.displaySection ?: "لم يُحدّد الفصل"}" else "الفصل ${focus.displaySection}",style=MaterialTheme.typography.titleLarge)
+                    TextButton(onClick={expanded=!expanded}){Text(if(expanded)"طي تفاصيل الحصة" else "عرض تفاصيل الحصة")}
+                    if(expanded) {
                     Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
                         Text("البداية ${focus.bell.start.format(clock)}")
                         Text("النهاية ${focus.bell.end.format(clock)}")
@@ -98,7 +107,8 @@ internal fun TodayDashboard(config:Config, fixedNow:LocalDateTime?=null,onEdit:(
                     }
                     if(ui.live!=null)LinearProgressIndicator(progress={ui.progress},modifier=Modifier.fillMaxWidth())
                     if(focus.isStandby)OutlinedButton(onClick={context.startActivity(StandbyAssignments.intent(context,ui.date,focus.period))}) {Text(if(focus.standbySection==null)"تحديد فصل الانتظار" else "تغيير فصل الانتظار")}
-                    else TextButton(onClick={context.startActivity(ClassNotes.intent(context,focus.section!!))}){Text("آخر نقطة وملاحظة الفصل")}
+                    else TextButton(onClick={openStudio(context,"class",focus.section!!)}){Text("صفحة الفصل وآخر نقطة")}
+                    }
                 }
             }
         }
@@ -110,7 +120,7 @@ internal fun TodayDashboard(config:Config, fixedNow:LocalDateTime?=null,onEdit:(
         }
         item {Text("${if(tomorrow)"حصص الغد" else "حصص اليوم"} · ${ui.slots.size}",style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold)}
         items(ui.slots,key={it.period}) {slot ->
-            Card(onClick={onEdit(ui.date,slot.period)},colors=CardDefaults.cardColors(containerColor=if(slot.state==SlotState.LIVE)MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface),shape=RoundedCornerShape(20.dp)) {
+            Card(onClick={onEdit(ui.date,slot.period)},colors=CardDefaults.cardColors(containerColor=if(slot.state==SlotState.LIVE)MaterialTheme.colorScheme.secondaryContainer else Color(android.graphics.Color.parseColor(SchoolTools.color(config,slot.displaySection))).copy(alpha=.12f)),shape=RoundedCornerShape(20.dp)) {
                 Column(Modifier.fillMaxWidth().padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
                     Row(verticalAlignment=Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
