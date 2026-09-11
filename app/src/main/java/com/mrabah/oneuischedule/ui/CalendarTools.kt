@@ -61,14 +61,14 @@ internal fun CalendarScreen(config:Config,commit:(Config)->Unit) {
     val cells=List(month.atDay(1).dayOfWeek.value%7){0}+(1..month.lengthOfMonth()).toList()
     val next=config.holidays.filter {it.to>=LocalDate.now()}.minByOrNull {it.from}
     LazyColumn(contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-        item {
+        item {Column {
             Text("التقويم الدراسي",style=MaterialTheme.typography.headlineMedium)
             Row(horizontalArrangement=Arrangement.SpaceBetween,modifier=Modifier.fillMaxWidth()) {
                 TextButton(onClick={month=month.minusMonths(1)}) {Text("السابق")}
                 Text("${month.month.getDisplayName(TextStyle.FULL,Locale("ar"))} ${month.year}")
                 TextButton(onClick={month=month.plusMonths(1)}) {Text("التالي")}
             }
-        }
+        }}
         item {
             Row(Modifier.fillMaxWidth()) {
                 listOf("أحد","اثن","ثلا","أرب","خمي","جمع","سبت").forEach {label ->
@@ -91,12 +91,12 @@ internal fun CalendarScreen(config:Config,commit:(Config)->Unit) {
                 }
             }
         }
-        item {
+        item {Column {
             Text(selected.toString(),style=MaterialTheme.typography.titleLarge)
             Text(config.holidayOn(selected)?.label ?: "${ScheduleEngine.dutiesOn(config,selected).size} حصص في هذا اليوم")
             SchoolTools.profile(config,selected)?.let {Text("التوقيت: ${it.name}")}
             OutlinedButton(onClick={original=null;editing=Holiday(selected,selected,"إجازة")}) {Text("إضافة إجازة")}
-        }
+        }}
         if(next!=null) item {
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp)) {

@@ -28,7 +28,7 @@ internal object ClassJournal {
         com.mrabah.oneuischedule.widget.ClassNoteReminders.sync(c)
     }
     fun delivered(c:Context,e:JournalEntry){put(c,e.copy(delivered=true))}
-    fun remove(c:Context,e:JournalEntry){DataVault.checkpoint(c,"حذف من سجل الفصل");prefs(c).edit().remove(e.id).apply();androidx.core.app.NotificationManagerCompat.from(c).cancel(e.id,7402);com.mrabah.oneuischedule.widget.ClassNoteReminders.sync(c)}
+    fun remove(c:Context,e:JournalEntry){DataVault.checkpoint(c,"حذف من سجل الفصل");prefs(c).edit().remove(e.id).apply();androidx.core.app.NotificationManagerCompat.from(c).cancel(e.id,7402);c.sendBroadcast(android.content.Intent(c,com.mrabah.oneuischedule.widget.ScheduleWidgetReceiver::class.java).setAction(com.mrabah.oneuischedule.widget.ScheduleWidgetReceiver.ACTION_TICK));com.mrabah.oneuischedule.widget.ClassNoteReminders.sync(c)}
     fun attach(c:Context,uri:Uri):Triple<String,String,String> {
         var name="مرفق"
         c.contentResolver.query(uri,arrayOf(android.provider.OpenableColumns.DISPLAY_NAME),null,null,null)?.use{if(it.moveToFirst())name=it.getString(0)}

@@ -34,7 +34,7 @@ internal fun ClassHub(config:Config) {
     val entries=if(school)(config.schoolSections+config.sections).distinct() else config.sections
     val load=ScheduleEngine.weeklyLoad(config)
     LazyColumn(contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-        item{Text("الفصول والمنهج",style=MaterialTheme.typography.headlineMedium);Text("${load.teaching} تدريس · ${load.standby} انتظار أسبوعيًا")}
+        item{Column {Text("الفصول والمنهج",style=MaterialTheme.typography.headlineMedium);Text("${load.teaching} تدريس · ${load.standby} انتظار أسبوعيًا")}}
         item{OutlinedTextField(query,{query=it},label={Text("ابحث عن فصل")},modifier=Modifier.fillMaxWidth(),singleLine=true)}
         item{Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(8.dp)){FilterChip(!school,{school=false},label={Text("فصولي")});FilterChip(school,{school=true},label={Text("كل المدرسة")});TextButton(onClick={adding=true}){Text("إضافة")}}}
         entries.filter{it.contains(query.trim(),true)}.forEach {section->item {
@@ -62,10 +62,10 @@ internal fun ClassPage(config:Config,section:String,commit:(Config)->Unit) {
     val entries=remember(revision,section){ClassJournal.forClass(c,section)}
     val next=ClassNotes.next(config,ClassNote(section,"",LocalDateTime.now().minusNanos(1)),LocalDateTime.now())
     LazyColumn(contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-        item{Text("الفصل $section",style=MaterialTheme.typography.headlineMedium);Text(next?.let{"القادمة: ${it.start.toLocalDate()} · ${periodName(it.period)} · ${it.start.toLocalTime()}"} ?: "لا توجد حصة تدريس قادمة")}
-        item {Text("لون الفصل",style=MaterialTheme.typography.labelLarge);Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(8.dp)) {listOf("#D6B879","#96BFE0","#C2A0DB","#88CBBF","#E3A18F","#B8C68B").forEach {hex->OutlinedButton(onClick={commit(config.copy(classColors=config.classColors+(section to hex)))},colors=ButtonDefaults.outlinedButtonColors(containerColor=Color(android.graphics.Color.parseColor(hex)),contentColor=Color(0xFF142332))){Text(if(SchoolTools.color(config,section)==hex)"✓" else "لون")}}}}
-        item {val progress=config.progress[section] ?: SectionProgress();Text("${progress.taught} درسًا منجزًا",style=MaterialTheme.typography.titleMedium);if(progress.last.isNotBlank())Text("آخر درس: ${progress.last}");if(progress.next.isNotBlank())Text("الدرس القادم: ${progress.next}")}
-        item {TextButton(onClick={c.startActivity(ClassNotes.intent(c,section))}){Text("آخر نقطة محفوظة وتنبيه الفصل")};ClassNotes.get(c,section)?.let{Text(it.text)}}
+        item{Column {Text("الفصل $section",style=MaterialTheme.typography.headlineMedium);Text(next?.let{"القادمة: ${it.start.toLocalDate()} · ${periodName(it.period)} · ${it.start.toLocalTime()}"} ?: "لا توجد حصة تدريس قادمة")}}
+        item {Column {Text("لون الفصل",style=MaterialTheme.typography.labelLarge);Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(8.dp)) {listOf("#D6B879","#96BFE0","#C2A0DB","#88CBBF","#E3A18F","#B8C68B").forEach {hex->OutlinedButton(onClick={commit(config.copy(classColors=config.classColors+(section to hex)))},colors=ButtonDefaults.outlinedButtonColors(containerColor=Color(android.graphics.Color.parseColor(hex)),contentColor=Color(0xFF142332))){Text(if(SchoolTools.color(config,section)==hex)"✓" else "لون")}}}}}
+        item {Column {val progress=config.progress[section] ?: SectionProgress();Text("${progress.taught} درسًا منجزًا",style=MaterialTheme.typography.titleMedium);if(progress.last.isNotBlank())Text("آخر درس: ${progress.last}");if(progress.next.isNotBlank())Text("الدرس القادم: ${progress.next}")}}
+        item {Column {TextButton(onClick={c.startActivity(ClassNotes.intent(c,section))}){Text("آخر نقطة محفوظة وتنبيه الفصل")};ClassNotes.get(c,section)?.let{Text(it.text)}}}
         item {Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(8.dp)){Button(onClick={editing=JournalEntry(section=section,title="")}){Text("ملاحظة جديدة")};OutlinedButton(onClick={editing=JournalEntry(section=section,title="",lesson=true)}){Text("إضافة درس")}}}
         item {Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)){listOf("الكل","المنهج","الملاحظات","المنجز").forEachIndexed{i,label->FilterChip(filter==i,{filter=i},label={Text(label)})}}}
         val visible=entries.filter{when(filter){1->it.lesson;2->!it.lesson;3->it.done;else->true}}
