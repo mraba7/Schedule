@@ -85,7 +85,7 @@ internal object DesignWidgets {
         val selected=if(style==Design.INTERACTIVE) LessonPeek.selected(c,id,day.ui.date.toString()) else null
         val options=WidgetPreferences.get(c,id)
         val task=PreparationStore.task(c,day.key).ifBlank { "تحديد التجهيز" };val done=PreparationStore.done(c,day.key)
-        val cacheKey=listOf(style,day.ui,day.now.truncatedTo(java.time.temporal.ChronoUnit.MINUTES),width,height,selected,options,task,done,ClassNotes.all(c)).joinToString("|")
+        val cacheKey=listOf(style,day.ui,day.now.truncatedTo(java.time.temporal.ChronoUnit.MINUTES),width,height,selected,options,task,done,ClassNotes.all(c),com.mrabah.oneuischedule.data.ClassJournal.all(c)).joinToString("|")
         val bitmap=WidgetBitmapCache.get(cacheKey) {renderer.render(style,day,(width*density).toInt(),(height*density).toInt(),task,done,width,height,selected,options)}
 
         val views=RemoteViews(c.packageName,R.layout.design_widget)

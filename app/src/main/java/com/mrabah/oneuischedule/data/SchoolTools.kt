@@ -19,15 +19,44 @@ internal object SchoolTools {
         if(first==null)right.remove(q) else right[q]=first
         return c.copy(week=week)
     }
-    fun encode(profiles:List<TimetableProfile>)=JSONArray().apply {profiles.forEach{profile->put(JSONObject()
-        .put("id",profile.id).put("name",profile.name).put("from",profile.from).put("to",profile.to)
-        .put("bells",JSONArray().apply{profile.bells.forEach{put(JSONObject().put("p",it.period).put("s",it.start).put("e",it.end))}})
-        .put("week",profile.week?.let{week->JSONObject().apply{week.forEach{(day,duties)->put(day.name,JSONObject().apply{duties.forEach{(p,d)->put(p.toString(),if(d is Duty.Teach)d.section else "WAIT")}})}}))}}
-    fun decode(array:JSONArray?):List<TimetableProfile> = if(array==null)emptyList() else (0 until array.length()).map {i->
-        val j=array.getJSONObject(i);val bells=j.getJSONArray("bells");val week=j.optJSONObject("week")
-        TimetableProfile(j.getString("id"),j.getString("name"),LocalDate.parse(j.getString("from")),LocalDate.parse(j.getString("to")),
-            (0 until bells.length()).map{val b=bells.getJSONObject(it);Bell(b.getInt("p"),LocalTime.parse(b.getString("s")),LocalTime.parse(b.getString("e")))},
-            week?.keys()?.asSequence()?.associate {key->DayOfWeek.valueOf(key) to week.getJSONObject(key).let{d->d.keys().asSequence().associate{p->p.toInt() to if(d.getString(p)=="WAIT") Duty.Standby else Duty.Teach(d.getString(p))}}})
+    fun encode(profiles:List<TimetableProfile>):JSONArray = JSONArray().apply {
+        profiles.forEach { profile ->
+            val bells=JSONArray()
+            profile.bells.forEach { bell -> bells.put(JSONObject().put("p",bell.period).put("s",bell.start.toString()).put("e",bell.end.toString())) }
+            val item=JSONObject().put("id",profile.id).put("name",profile.name)
+                .put("from",profile.from.toString()).put("to",profile.to.toString()).put("bells",bells)
+            profile.week?.let { week ->
+                val days=JSONObject()
+                week.forEach { (day,duties) ->
+                    val values=JSONObject()
+                    duties.forEach { (period,duty) -> values.put(period.toString(),if(duty is Duty.Teach)duty.section else "WAIT") }
+                    days.put(day.name,values)
+                }
+                item.put("week",days)
+            }
+            put(item)
+        }
+    }
+    fun decode(array:JSONArray?):List<TimetableProfile> {
+        if(array==null)return emptyList()
+        return (0 until array.length()).map { index ->
+            val item=array.getJSONObject(index)
+            val rawBells=item.getJSONArray("bells")
+            val bells=(0 until rawBells.length()).map { i ->
+                val bell=rawBells.getJSONObject(i)
+                Bell(bell.getInt("p"),LocalTime.parse(bell.getString("s")),LocalTime.parse(bell.getString("e")))
+            }
+            val days=item.optJSONObject("week")
+            val week=days?.keys()?.asSequence()?.associate { key ->
+                val values=days.getJSONObject(key)
+                val duties=values.keys().asSequence().associate { p ->
+                    val value=values.getString(p)
+                    p.toInt() to if(value=="WAIT") Duty.Standby else Duty.Teach(value)
+                }
+                DayOfWeek.valueOf(key) to duties
+            }
+            TimetableProfile(item.getString("id"),item.getString("name"),LocalDate.parse(item.getString("from")),LocalDate.parse(item.getString("to")),bells,week)
+        }
     }
     fun color(c:Config,section:String?):String=c.classColors[section] ?: com.mrabah.oneuischedule.widget.GlassAgenda.color(section)
 }

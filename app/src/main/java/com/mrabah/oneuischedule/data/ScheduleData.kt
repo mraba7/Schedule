@@ -419,7 +419,7 @@ object ScheduleEngine {
     fun build(config: Config, now: LocalDateTime): ScheduleUi {
         val today = now.toLocalDate()
         val lastEnd = dutiesOn(config, today).keys
-            .mapNotNull { p -> SchoolTools.bells(config,date).firstOrNull { it.period == p }?.end }
+            .mapNotNull { p -> SchoolTools.bells(config,today).firstOrNull { it.period == p }?.end }
             .maxOrNull()
 
         val showToday = lastEnd != null && now.toLocalTime() < lastEnd

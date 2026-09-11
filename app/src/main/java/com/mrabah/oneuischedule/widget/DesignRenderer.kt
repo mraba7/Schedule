@@ -24,6 +24,10 @@ internal class DesignRenderer(context: Context) {
     private var prepared = false
     private var preparation = ""
     private var options=WidgetOptions()
+    private fun noteFor(section:String?):String? {
+        if(!options.showNote)return null
+        return ClassNotes.get(appContext,section)?.text ?: com.mrabah.oneuischedule.data.ClassJournal.all(appContext).firstOrNull{it.section==section && !it.done && !it.lesson}?.let{it.text.ifBlank{it.title}}
+    }
     private fun classColor(section:String?)=com.mrabah.oneuischedule.data.SchoolTools.color(d.ui.config,section)
     private fun col(hex: String) = Color.parseColor(hex)
     private val ink = "#141A1A"
@@ -205,9 +209,11 @@ internal class DesignRenderer(context: Context) {
         rect(16f,211f,328f,51f,"#18283D",14f,"#294056")
         icon("clock",29f,224f,blue,22f)
         val next=d.upcoming.firstOrNull()
+        if(options.showNext) {
         text(if(next==null) "آخر حصة" else "التالي",265f,214f,64f,18f,12f,muted)
         section(next?.let(DesignDay::section) ?: "—",196f,233f,132f,23f,23f,fg)
         clock(next?.let { DesignDay.clock(it.bell.start) } ?: d.finish,68f,225f,117f,27f,21f,fg)
+        }
         rect(16f,269f,159f,51f,"#18283D",13f);rect(183f,269f,161f,51f,"#18283D",13f)
         text(d.freeLabel,26f,273f,137f,18f,12f,muted);clock(d.freeValue,30f,291f,126f,26f,19f,fg)
         text("نهاية الدوام",193f,273f,139f,18f,12f,muted);clock(d.finish,201f,291f,126f,26f,19f,fg)
@@ -299,9 +305,11 @@ internal class DesignRenderer(context: Context) {
         clock(d.range,25f,221f,146f,22f,17f,"#0E1407")
         text(d.period,28f,243f,135f,15f,10f,"#384321")
         val next=d.upcoming.firstOrNull()
+        if(options.showNext) {
         text("التالي",220f,265f,109f,18f,12f,muted)
         section(next?.let(DesignDay::section) ?: "—",209f,283f,127f,25f,27f,fg)
         clock(next?.let { DesignDay.clock(it.bell.start) } ?: "—",212f,309f,118f,16f,12f,muted,false)
+        }
         line(180f,270f,180f,321f,"#44464B")
         text("نهاية الدوام",29f,265f,126f,20f,12f,muted)
         clock(d.finish,27f,285f,132f,35f,31f,fg)
@@ -457,7 +465,7 @@ internal class DesignRenderer(context: Context) {
         text(periodName(slot.period),70f,141f,272f,36f,29f,fg,true,minSize=22f)
         rect(246f,180f,96f,22f,"#203D41",11f,classColor(slot.displaySection))
         text("الفصل ${d.section}",251f,180f,86f,22f,13f,classColor(slot.displaySection),true,"center",10f)
-        val note=if(options.showNote)ClassNotes.get(appContext,slot.section)?.text else null
+        val note=noteFor(slot.section)
         rect(15f,210f,330f,25f,"#1D3040",8f)
         icon("note",323f,215f,muted,15f)
         text(note ?: "أضف آخر نقطة لهذا الفصل",22f,211f,292f,23f,12f,if(note==null)muted else fg,minSize=10f)
@@ -477,7 +485,7 @@ internal class DesignRenderer(context: Context) {
         if(next!=null && options.showNext) {
             text("التالي: ${periodName(next.period)} · ${DesignDay.section(next)}",94f,338f,249f,18f,12f,muted,true,minSize=9f)
             clock(DesignDay.clock(next.bell.start),17f,338f,67f,18f,13f,muted)
-        } else text("آخر حصة اليوم · الانصراف ${d.finish}",17f,338f,326f,18f,12f,muted,true,"center")
+        } else text(if(next==null)"آخر حصة اليوم · الانصراف ${d.finish}" else "نهاية الدوام ${d.finish}",17f,338f,326f,18f,12f,muted,true,"center")
         c.restore()
     }
     private fun path(w:Float,h:Float,mode:TimelineLayout) {
@@ -561,7 +569,7 @@ internal class DesignRenderer(context: Context) {
             text("النهاية",140f,184f,tw,14f,10f,muted,align="center")
             clock(DesignDay.clock(slot.bell.end),140f,200f,tw,20f,16f,fg)
         }
-        val note=(if(options.showNote)ClassNotes.get(appContext,slot?.section)?.text else "") ?: if(finished)"أحسنت · انتهت حصصك اليوم" else "اضغط لإضافة آخر نقطة للفصل"
+        val note=(if(options.showNote)noteFor(slot?.section) else "") ?: if(finished)"أحسنت · انتهت حصصك اليوم" else "اضغط لإضافة آخر نقطة للفصل"
         val tall=mode==TimelineLayout.TALL
         rect(12f,231f,w-24f,if(tall)48f else 36f,"#1D3040",9f)
         icon("note",w-34f,240f,muted,15f)

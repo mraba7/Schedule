@@ -42,6 +42,7 @@ internal fun WeekTools(config:Config,commit:(Config)->Unit) {
         item{Column(Modifier.horizontalScroll(rememberScrollState())){
             Row{Text("اليوم",Modifier.width(85.dp));(1..7).forEach{Text("الحصة $it",Modifier.width(85.dp))}}
             ScheduleStore.DAYS.forEach{day->Row(Modifier.padding(vertical=8.dp)){Text(dayName(day),Modifier.width(85.dp));(1..7).forEach{period->val duty=config.templateOn(day)[period];Text(when(duty){is Duty.Teach->duty.section;Duty.Standby->"انتظار";null->"—"},Modifier.width(85.dp))}}}}
+        }
         item{Choice("من",source,ScheduleStore.DAYS,::dayName){source=it};Choice("إلى",target,ScheduleStore.DAYS,::dayName){target=it}}
         item{Button(enabled=source!=target,onClick={pending="نسخ حصص ${dayName(source)} إلى ${dayName(target)} واستبدال حصص اليوم المستهدف" to SchoolTools.copyDay(config,source,target)}){Text("معاينة نسخ اليوم")}}
         item{Text("تبديل حصتين",style=MaterialTheme.typography.titleLarge);Choice("حصة اليوم الأول",p,(1..7).toList(),{it.toString()}){p=it};Choice("حصة اليوم الثاني",q,(1..7).toList(),{it.toString()}){q=it}}

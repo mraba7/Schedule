@@ -67,7 +67,7 @@ class SchoolToolsTest {
         assertEquals(1,LessonPeek.selected(c,101,"2026-09-13",11000))
         assertNull(LessonPeek.selected(c,101,"2026-09-13",13000))
         assertEquals(3,WidgetPreferences.get(c,102).peekSeconds)
-        assertEquals(1.2f,WidgetPreferences.get(c,101).fontScale)
+        assertEquals(1.2f,WidgetPreferences.get(c,101).fontScale,.001f)
     }
     @Test fun completingALessonUpdatesProgressOnce() {
         val lesson=JournalEntry(section="2/1",title="الخلايا",unit="الوحدة الأولى",lesson=true)

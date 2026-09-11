@@ -24,6 +24,7 @@ internal object ClassJournal {
             val config=ScheduleStore.load(c);val progress=config.progress[e.section] ?: SectionProgress()
             ScheduleStore.save(c,config.copy(progress=config.progress+(e.section to progress.copy(taught=(progress.taught+if(e.done)1 else -1).coerceAtLeast(0),last=if(e.done)e.title else progress.last))))
         }
+        c.sendBroadcast(android.content.Intent(c,com.mrabah.oneuischedule.widget.ScheduleWidgetReceiver::class.java).setAction(com.mrabah.oneuischedule.widget.ScheduleWidgetReceiver.ACTION_TICK))
         com.mrabah.oneuischedule.widget.ClassNoteReminders.sync(c)
     }
     fun delivered(c:Context,e:JournalEntry){put(c,e.copy(delivered=true))}
