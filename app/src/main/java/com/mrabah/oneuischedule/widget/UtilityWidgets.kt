@@ -41,16 +41,16 @@ internal object UtilityRenderer {
         text("${day.day} · ${day.ui.slots.size} حصص",w-18,51f,12f,muted)
         val end=h-58;val ui=day.ui
         if(kind==UtilityKind.TWO_FACE && back && ui.slots.isNotEmpty()) {
-            val columns=if(w>=340)2 else 1
+            val columns=if(w>=340 && h<340)2 else 1
             val rows=(ui.slots.size+columns-1)/columns
             val rowH=((end-65)/rows).coerceAtMost(65f)
             val cellW=(w-36-8*(columns-1))/columns
             ui.slots.forEachIndexed {index,slot->
                 val right=w-18-(index%columns)*(cellW+8);val left=right-cellW;val top=65+(index/columns)*rowH
                 val done=slot.state==SlotState.DONE;val live=slot.state==SlotState.LIVE
-                box(left,top,right,top+rowH-5,if(live)Color.rgb(56,61,59) else Color.rgb(28,47,62),9f)
+                if(rowH>=30)box(left,top,right,top+rowH-5,if(live)Color.rgb(56,61,59) else Color.rgb(28,47,62),9f)
                 val color=if(done)muted else Color.parseColor(SchoolTools.color(ui.config,slot.displaySection ?: ""))
-                box(right-5,top+5,right-2,top+rowH-10,if(live)gold else color,2f)
+                box(right-5,top+3,right-2,top+rowH-5,if(live)gold else color,2f)
                 val label="${if(done)"✓ " else if(live)"● " else ""}${periodName(slot.period)} · ${DesignDay.section(slot)}"
                 if(rowH>=40) {
                     text(label,right-10,top+18,12f,if(done)muted else ink,cellW-18,bold=live)
@@ -62,27 +62,30 @@ internal object UtilityRenderer {
             val title=when(available.state){Availability.HOLIDAY->"اليوم إجازة";Availability.EMPTY->"يوم بلا حصص";Availability.FINISHED->"انتهت حصص اليوم";Availability.BUSY->if(kind==UtilityKind.AVAILABLE)"أنت في حصة الآن" else periodName(ui.live!!.period);Availability.FREE->if(kind==UtilityKind.AVAILABLE)"وقتك المتاح الآن" else "القادمة · ${periodName(ui.next!!.period)}"}
             box(14f,66f,w-14,end-4,Color.rgb(26,45,60),18f)
             val center=w/2;val roomy=h>=340
-            text(title,center,if(roomy)101f else 91f,if(w>=340)22f else 17f,ink,w-50,true,Paint.Align.CENTER)
+            text(title,center,if(roomy)101f else if(h<260)83f else 91f,if(w>=340)22f else 17f,ink,w-50,true,Paint.Align.CENTER)
             if(available.minutes!=null) {
-                text("${available.minutes}",center,if(roomy)163f else 129f,if(roomy)52f else 34f,gold,w-48,true,Paint.Align.CENTER)
-                text(if(available.state==Availability.BUSY)"دقيقة حتى نهاية الحصة" else "دقيقة حتى بداية الحصة",center,if(roomy)187f else 149f,12f,muted,w-48,align=Paint.Align.CENTER)
+                text("${available.minutes}",center,if(roomy)163f else if(h<260)115f else 129f,if(roomy)52f else if(h<260)28f else 34f,gold,w-48,true,Paint.Align.CENTER)
+                text(if(available.state==Availability.BUSY)"دقيقة حتى نهاية الحصة" else "دقيقة حتى بداية الحصة",center,if(roomy)187f else if(h<260)135f else 149f,12f,muted,w-48,align=Paint.Align.CENTER)
                 val focus=ui.focus!!
                 if(roomy) {
-                    text("${if(focus.isStandby)"انتظار · " else ""}الفصل ${DesignDay.section(focus)}",center,221f,20f,Color.parseColor(SchoolTools.color(ui.config,focus.displaySection ?: "")),w-48,true,Paint.Align.CENTER)
-                    text("${focus.period} · ${DesignDay.clock(focus.bell.start)} – ${DesignDay.clock(focus.bell.end)}",center,247f,17f,ink,w-48,align=Paint.Align.CENTER)
+                    text("${if(kind==UtilityKind.AVAILABLE)"الحصة ${focus.period} · " else ""}${if(focus.isStandby && focus.displaySection==null)"انتظار" else "الفصل ${DesignDay.section(focus)}"}",center,221f,20f,Color.parseColor(SchoolTools.color(ui.config,focus.displaySection ?: "")),w-48,true,Paint.Align.CENTER)
+                    text("${DesignDay.clock(focus.bell.start)} – ${DesignDay.clock(focus.bell.end)}",center,247f,17f,ink,w-48,align=Paint.Align.CENTER)
                     val next=if(ui.live!=null)ui.next else null
                     if(next!=null && h>=390 && options.showNext)text("التالي: ${periodName(next.period)} · ${DesignDay.section(next)} · ${DesignDay.clock(next.bell.start)}",center,280f,13f,muted,w-48,align=Paint.Align.CENTER)
                     val fraction=if(ui.live!=null)ui.progress else 0f
                     box(30f,end-23,w-30,end-19,Color.rgb(51,70,86),2f)
                     if(fraction>0)box(w-30-(w-60)*fraction,end-23,w-30,end-19,gold,2f)
-                } else text("${focus.period} · ${DesignDay.section(focus)} · ${DesignDay.clock(focus.bell.start)} – ${DesignDay.clock(focus.bell.end)}",center,end-17,12f,ink,w-44,align=Paint.Align.CENTER)
+                } else {
+                    text("${periodName(focus.period)} · ${DesignDay.section(focus)}",center,end-31,12f,ink,w-44,align=Paint.Align.CENTER)
+                    text("${DesignDay.clock(focus.bell.start)} – ${DesignDay.clock(focus.bell.end)}",center,end-13,12f,muted,w-44,align=Paint.Align.CENTER)
+                }
             } else {
                 text(ui.holiday?.label ?: if(available.state==Availability.FINISHED)"أنجزت ${ui.slots.size} حصص · وقتك لك" else "لا توجد التزامات في الجدول اليوم",center,if(roomy)154f else 125f,14f,muted,w-48,align=Paint.Align.CENTER)
                 text(if(available.state==Availability.FINISHED)"✓" else "—",center,if(roomy)218f else 165f,36f,gold,w-48,align=Paint.Align.CENTER)
             }
         }
         box(12f,h-48,w/2-4,h-8,Color.rgb(34,53,69),12f);box(w/2+4,h-48,w-12,h-8,Color.rgb(34,53,69),12f)
-        text(if(kind==UtilityKind.TWO_FACE)if(back)"الحصة الآن ↶" else "جدول اليوم ↶" else "فتح الجدول",w/4,h-23,12f,ink,w/2-28,align=Paint.Align.CENTER)
+        text(if(kind==UtilityKind.TWO_FACE)if(back)"الحصة الآن" else "جدول اليوم" else "فتح الجدول",w/4,h-23,12f,ink,w/2-28,align=Paint.Align.CENTER)
         text(if(ui.focus?.displaySection!=null)"اختصارات الفصل" else "الفصول",w*3/4,h-23,12f,gold,w/2-28,align=Paint.Align.CENTER)
         return bitmap
     }

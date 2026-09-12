@@ -83,6 +83,10 @@ class UtilityWidgetsTest {
             val day=DesignDay(ScheduleEngine.today(seven,now),now)
             UtilityRenderer.render(day,UtilityKind.TWO_FACE,true,size.first,size.second).let{bitmap->File(folder,"utility-seven-${size.first}.png").outputStream().use{bitmap.compress(Bitmap.CompressFormat.PNG,100,it)};bitmap.recycle()}
         }
+        for(kind in UtilityKind.entries)for(back in listOf(false,true)) {
+            val bitmap=UtilityRenderer.render(sample(PreviewState.LIVE),kind,back,220,240,WidgetOptions(fontScale=1.25f))
+            File(folder,"utility-large-font-${kind.name.lowercase()}-$back.png").outputStream().use{bitmap.compress(Bitmap.CompressFormat.PNG,100,it)};bitmap.recycle()
+        }
     }
     @Test fun newProvidersRegisterAndAcceptResponsiveLayouts() {
         val manager=android.appwidget.AppWidgetManager.getInstance(c)
@@ -94,7 +98,8 @@ class UtilityWidgetsTest {
             org.robolectric.Shadows.shadowOf(manager).bindAppWidgetId(id,component)
             manager.updateAppWidgetOptions(id,android.os.Bundle().apply{putParcelableArrayList(android.appwidget.AppWidgetManager.OPTION_APPWIDGET_SIZES,arrayListOf(android.util.SizeF(240f,260f),android.util.SizeF(380f,420f)))})
             UtilityWidgets.update(c,manager,id,kind)
-            assertTrue(DesignWidgets.anyInstalled(c))
+            // Robolectric binds IDs but does not populate the launcher's provider catalogue.
+            assertArrayEquals(intArrayOf(id),manager.getAppWidgetIds(component))
         }
     }
 }

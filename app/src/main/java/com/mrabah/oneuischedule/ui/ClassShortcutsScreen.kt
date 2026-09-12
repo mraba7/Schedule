@@ -4,6 +4,8 @@ import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -48,7 +50,7 @@ internal fun ClassShortcutsScreen(section:String) {
             if(entries.isEmpty())item{Text("أضف مثلًا: عرض الدرس، مجلد أوراق العمل، أو رابط منصة الفصل.")}
             entries.forEach {s->item(key=s.id) {Card(Modifier.fillMaxWidth()){Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
                 Text(s.title,style=MaterialTheme.typography.titleMedium)
-                Text(when(s.kind){"file"->"ملف محفوظ داخل التطبيق";"folder"->"مجلد على هذا الجهاز";else->s.target},style=MaterialTheme.typography.bodySmall)
+                Text(when(s.kind){"file"->"ملف محفوظ داخل التطبيق";"folder"->"مجلد على هذا الجهاز";else->s.target},style=MaterialTheme.typography.bodySmall,maxLines=2,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 Row(horizontalArrangement=Arrangement.spacedBy(4.dp)) {
                     TextButton(onClick={runCatching{c.startActivity(ClassShortcuts.intent(c,s))}.onFailure{message=if(it is android.content.ActivityNotFoundException)"لا يوجد تطبيق لفتح هذا النوع" else it.message ?: "تعذر فتح الاختصار"}}){Text("فتح")}
                     TextButton(onClick={editing=s;title=s.title;link=s.target}){Text("تعديل")}
@@ -57,9 +59,9 @@ internal fun ClassShortcutsScreen(section:String) {
             }}}}
         }
     }
-    if(addingLink || editing!=null)EditorPage(onDismissRequest={addingLink=false;editing=null},title={Text(if(editing==null)"إضافة رابط" else "تعديل الاختصار")},text={Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
-        OutlinedTextField(title,{title=it.take(80)},label={Text("اسم الاختصار")},modifier=Modifier.fillMaxWidth())
-        if(addingLink || editing?.kind=="link")OutlinedTextField(link,{link=it.take(2048)},label={Text("الرابط https://")},modifier=Modifier.fillMaxWidth(),isError=link.isNotBlank() && !ClassShortcuts.validLink(link))
+    if(addingLink || editing!=null)EditorPage(onDismissRequest={addingLink=false;editing=null},title={Text(if(editing==null)"إضافة رابط" else "تعديل الاختصار")},text={Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+        OutlinedTextField(title,{title=it.take(80)},label={Text("اسم الاختصار")},modifier=Modifier.fillMaxWidth(),singleLine=true)
+        if(addingLink || editing?.kind=="link")OutlinedTextField(link,{link=it.take(2048)},label={Text("الرابط https://")},modifier=Modifier.fillMaxWidth(),singleLine=true,keyboardOptions=androidx.compose.foundation.text.KeyboardOptions(keyboardType=androidx.compose.ui.text.input.KeyboardType.Uri),isError=link.isNotBlank() && !ClassShortcuts.validLink(link))
     }},confirmButton={Button(enabled=title.isNotBlank() && (!(addingLink || editing?.kind=="link") || ClassShortcuts.validLink(link)),onClick={val old=editing;ClassShortcuts.save(c,old?.copy(title=title.trim(),target=if(old.kind=="link")link.trim() else old.target) ?: ClassShortcut(section=section,title=title.trim(),kind="link",target=link.trim()));addingLink=false;editing=null}){Text("حفظ")}},dismissButton={TextButton(onClick={addingLink=false;editing=null}){Text("إلغاء")}})
     deleting?.let{s->AlertDialog(onDismissRequest={deleting=null},title={Text("حذف الاختصار؟")},text={Text(s.title)},confirmButton={TextButton(onClick={ClassShortcuts.remove(c,s);deleting=null}){Text("حذف")}},dismissButton={TextButton(onClick={deleting=null}){Text("إلغاء")}})}
 }
