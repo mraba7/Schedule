@@ -40,14 +40,40 @@ class WorkspaceScreensTest {
         org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
         capture("initial-${testName.methodName}")
     }
-    private fun capture(name:String){compose.runOnUiThread{val view=host.get().window.decorView;val image=Bitmap.createBitmap(view.width,view.height,Bitmap.Config.ARGB_8888);view.draw(android.graphics.Canvas(image));val dir=File("build/design-previews").apply{mkdirs()};File(dir,"workspace-$name-live.png").outputStream().use{image.compress(Bitmap.CompressFormat.PNG,100,it)};image.recycle()}}
+    private fun windows():List<android.view.View> {
+        val type=Class.forName("android.view.WindowManagerGlobal")
+        val instance=type.getDeclaredMethod("getInstance").invoke(null)
+        val field=type.getDeclaredField("mViews").apply{isAccessible=true}
+        @Suppress("UNCHECKED_CAST")
+        return (field.get(instance) as List<android.view.View>).toList()
+    }
+    // Robolectric has no automatic draw pass, including for separate dialog windows.
+    private fun drawWindows() {
+        org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(32))
+        compose.mainClock.advanceTimeBy(32)
+        compose.runOnUiThread {windows().filter{it.width>0 && it.height>0}.forEach {view->
+            val bitmap=Bitmap.createBitmap(view.width,view.height,Bitmap.Config.ARGB_8888)
+            view.draw(android.graphics.Canvas(bitmap));bitmap.recycle()
+        }}
+    }
+    private fun capture(name:String){compose.runOnUiThread{
+        val view=windows().lastOrNull() ?: host.get().window.decorView
+        val image=Bitmap.createBitmap(view.width,view.height,Bitmap.Config.ARGB_8888)
+        view.draw(android.graphics.Canvas(image))
+        val dir=File("build/design-previews").apply{mkdirs()}
+        File(dir,"workspace-$name-live.png").outputStream().use{image.compress(Bitmap.CompressFormat.PNG,100,it)};image.recycle()
+    }}
     @Test fun classPageCanCreateAndFindANoteAtLargeFont() {
         host.get().getSharedPreferences("app_preferences",0).edit().putFloat("font",1.3f).commit()
         content{ClassPage(Defaults.config,"2/1",{})}
         compose.onNodeWithText("ملاحظة جديدة").performClick()
+        drawWindows()
         compose.onNodeWithText("العنوان").performTextInput("تجربة الخلايا")
+        drawWindows()
         compose.onNodeWithText("التفاصيل أو الصفحة").performTextInput("صفحة ٣٠")
+        drawWindows()
         compose.onNodeWithText("حفظ").performClick()
+        drawWindows()
         compose.onNodeWithText("تجربة الخلايا").performScrollTo().assertExists()
         capture("class-large-font")
     }
@@ -55,6 +81,7 @@ class WorkspaceScreensTest {
         var saved=false
         content{CalendarScreen(Defaults.config,{saved=true})}
         compose.onNodeWithText("إضافة إجازة").performClick()
+        drawWindows()
         compose.onNodeWithText("تفاصيل الإجازة").assertExists()
         capture("holiday-editor")
         compose.onNodeWithText("إلغاء").performClick()
@@ -68,6 +95,7 @@ class WorkspaceScreensTest {
         Assert.assertFalse(saved)
         capture("week-review")
         compose.onNodeWithText("حفظ").performClick()
+        drawWindows()
         Assert.assertTrue(saved)
     }
 }

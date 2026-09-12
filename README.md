@@ -63,8 +63,8 @@ prereleases; successful main builds become the official in-app update.
   to four sections, so the section is the answer to "where am I going".
 - **حصة انتظار is labelled Standby**, styled as a dashed outline: assigned, but
   not teaching. A filled card would read as a lesson.
-- **No bundled font.** The device's system font *is* One UI Sans — inheriting it
-  is both correct and licence-clean.
+- **Arabic reading.** App screens use bundled Plex Arabic; appearance settings
+  allow an additional text scale on top of the device accessibility scale.
 - Refresh fires on **bell boundaries**, not a fixed cycle, so the card flips
   exactly when the bell rings. One-minute ticks only while a period is running.
 
