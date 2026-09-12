@@ -137,6 +137,16 @@ internal fun LessonFocusScreen(config:Config,fixedNow:LocalDateTime?=null) {
         item{Row(verticalAlignment=Alignment.CenterVertically){Text("إبقاء الشاشة مضاءة",Modifier.weight(1f));Switch(keepAwake,{keepAwake=it})}}
         if(slot==null)item{Text(ui.holiday?.label ?: "لا توجد حصة متبقية اليوم",style=MaterialTheme.typography.headlineMedium)}
         else item{Card(Modifier.fillMaxWidth()){Column(Modifier.padding(24.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){Text(periodName(slot.period),style=MaterialTheme.typography.headlineLarge);Text("الفصل ${slot.displaySection ?: "انتظار"}",style=MaterialTheme.typography.titleLarge);val seconds=Duration.between(now,ui.date.atTime(if(ui.live!=null)slot.bell.end else slot.bell.start)).seconds.coerceAtLeast(0);Text(String.format(Locale.ENGLISH,"%02d:%02d",seconds/60,seconds%60),style=MaterialTheme.typography.displayLarge);Text(if(ui.live!=null)"حتى نهاية الحصة" else "حتى البداية");Text("${slot.bell.start} – ${slot.bell.end}");if(ui.live!=null)LinearProgressIndicator(progress={ui.progress},modifier=Modifier.fillMaxWidth());slot.displaySection?.let{section->ClassNotes.get(c,section)?.let{Text("آخر نقطة: ${it.text}")};Button(onClick={openStudio(c,"shortcuts",section)}){Text("ملفات الفصل")};TextButton(onClick={c.startActivity(ClassNotes.intent(c,section))}){Text("تسجيل أين توقفت")}}}}}
-        item{Text("مؤقت النشاط",style=MaterialTheme.typography.titleLarge);Text(if(deadline>0 && remaining==0L)"انتهى وقت النشاط ✓" else String.format(Locale.ENGLISH,"%02d:%02d",remaining/60,remaining%60),style=MaterialTheme.typography.headlineLarge);Row(Modifier.horizontalScroll(rememberScrollState())){listOf(1,3,5,10).forEach{minutes->TextButton(onClick={deadline=android.os.SystemClock.elapsedRealtime()+minutes*60_000L}){Text("$minutes د")}};if(deadline>0)TextButton(onClick={deadline=0;remaining=0}){Text("إيقاف المؤقت")};Text("مؤقت مرئي أثناء استخدام هذه الشاشة.",style=MaterialTheme.typography.bodySmall)}
+        item {
+            Text("مؤقت النشاط",style=MaterialTheme.typography.titleLarge)
+            Text(if(deadline>0 && remaining==0L)"انتهى وقت النشاط ✓" else String.format(Locale.ENGLISH,"%02d:%02d",remaining/60,remaining%60),style=MaterialTheme.typography.headlineLarge)
+            Row(Modifier.horizontalScroll(rememberScrollState())) {
+                listOf(1,3,5,10).forEach{minutes->
+                    TextButton(onClick={deadline=android.os.SystemClock.elapsedRealtime()+minutes*60_000L}){Text("$minutes د")}
+                }
+            }
+            if(deadline>0)TextButton(onClick={deadline=0;remaining=0}){Text("إيقاف المؤقت")}
+            Text("مؤقت مرئي أثناء استخدام هذه الشاشة.",style=MaterialTheme.typography.bodySmall)
+        }
     }
 }
