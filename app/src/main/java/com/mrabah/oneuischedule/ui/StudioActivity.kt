@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.unit.dp
 import com.mrabah.oneuischedule.data.*
 import com.mrabah.oneuischedule.widget.*
@@ -53,5 +54,27 @@ internal fun SettingsHome() {
         listOf("appearance" to ("المظهر والقراءة" to "الوضع الليلي وحجم النص"),"alerts" to ("التنبيهات" to "أنواع الحصص والأوقات والأصوات"),"widgets" to ("تخصيص الودجت" to "إعدادات مستقلة لكل نسخة"),"data" to ("البيانات والاسترجاع" to "نسخة شاملة، نسخ محلية تلقائية وسجل التعديلات"),"profiles" to ("الأوقات الخاصة" to "الصيف والشتاء ورمضان والاختبارات")).forEach {(page,labels)->item {
             Card(onClick={openStudio(c,page)},modifier=Modifier.fillMaxWidth()){Column(Modifier.padding(20.dp)){Text(labels.first,style=MaterialTheme.typography.titleMedium);Text(labels.second,color=MaterialTheme.colorScheme.onSurfaceVariant)}}
         }}
+    }
+}
+
+/** Full-page forms keep their actions visible when text is enlarged or the keyboard opens. */
+@Composable
+internal fun EditorPage(
+    onDismissRequest:()->Unit,
+    title:@Composable ()->Unit,
+    text:@Composable ()->Unit,
+    confirmButton:@Composable ()->Unit,
+    dismissButton:@Composable ()->Unit
+) {
+    androidx.activity.compose.BackHandler(onBack=onDismissRequest)
+    Surface(Modifier.fillMaxSize().then(Modifier.zIndex(1f)),color=MaterialTheme.colorScheme.background) {
+        Column(Modifier.fillMaxSize().padding(20.dp),verticalArrangement=Arrangement.spacedBy(18.dp)) {
+            ProvideTextStyle(MaterialTheme.typography.headlineSmall) {title()}
+            Box(Modifier.weight(1f).fillMaxWidth()) {text()}
+            HorizontalDivider()
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
+                confirmButton();dismissButton()
+            }
+        }
     }
 }

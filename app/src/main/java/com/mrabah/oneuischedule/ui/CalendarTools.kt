@@ -129,7 +129,7 @@ internal fun CalendarScreen(config:Config,commit:(Config)->Unit) {
 @Composable
 private fun HolidayEditor(initial:Holiday,onDismiss:()->Unit,onDelete:(()->Unit)?,onSave:(Holiday)->Unit) {
     var name by remember{mutableStateOf(initial.label)};var from by remember{mutableStateOf(initial.from)};var to by remember{mutableStateOf(initial.to)}
-    AlertDialog(onDismissRequest=onDismiss,title={Text("تفاصيل الإجازة")},text={Column{OutlinedTextField(name,{name=it},label={Text("الاسم")});DateField("من",from){from=it};DateField("إلى",to){to=it};if(to<from)Text("النهاية يجب ألا تسبق البداية",color=MaterialTheme.colorScheme.error);if(onDelete!=null)TextButton(onClick=onDelete){Text("حذف الإجازة · يمكن التراجع من السجل")}}},confirmButton={Button(enabled=name.isNotBlank() && to>=from,onClick={onSave(Holiday(from,to,name.trim()))}){Text("حفظ")}},dismissButton={TextButton(onClick=onDismiss){Text("إلغاء")}})
+    EditorPage(onDismissRequest=onDismiss,title={Text("تفاصيل الإجازة")},text={Column(Modifier.verticalScroll(rememberScrollState())){OutlinedTextField(name,{name=it},label={Text("الاسم")});DateField("من",from){from=it};DateField("إلى",to){to=it};if(to<from)Text("النهاية يجب ألا تسبق البداية",color=MaterialTheme.colorScheme.error);if(onDelete!=null)TextButton(onClick=onDelete){Text("حذف الإجازة · يمكن التراجع من السجل")}}},confirmButton={Button(enabled=name.isNotBlank() && to>=from,onClick={onSave(Holiday(from,to,name.trim()))}){Text("حفظ")}},dismissButton={TextButton(onClick=onDismiss){Text("إلغاء")}})
 }
 
 @Composable
@@ -148,7 +148,7 @@ private fun ProfileEditor(initial:TimetableProfile,config:Config,onDismiss:()->U
     var bells by remember{mutableStateOf(initial.bells)};var independent by remember{mutableStateOf(initial.week!=null)};var week by remember{mutableStateOf(initial.week ?: config.week)};var day by remember{mutableStateOf(DayOfWeek.SUNDAY)}
     val issue=ScheduleValidation.problem(config.copy(bells=bells))
     val overlaps=config.profiles.any{it.id!=initial.id && from<=it.to && to>=it.from}
-    AlertDialog(onDismissRequest=onDismiss,title={Text("توقيت ${initial.name}")},text={Column(Modifier.verticalScroll(rememberScrollState())){
+    EditorPage(onDismissRequest=onDismiss,title={Text("توقيت ${initial.name}")},text={Column(Modifier.verticalScroll(rememberScrollState())){
         OutlinedTextField(name,{name=it},label={Text("اسم التوقيت")});DateField("من",from){from=it};DateField("إلى",to){to=it}
         bells.forEach {bell->Text("الحصة ${bell.period}");Row{TimeField(bell.start){time->bells=bells.map{if(it.period==bell.period)it.copy(start=time) else it}};TimeField(bell.end){time->bells=bells.map{if(it.period==bell.period)it.copy(end=time) else it}}}}
         Row{Checkbox(independent,{independent=it});Text("جدول حصص مستقل")}
