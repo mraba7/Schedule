@@ -86,7 +86,7 @@ internal object UtilityRenderer {
         }
         box(12f,h-48,w/2-4,h-8,Color.rgb(34,53,69),12f);box(w/2+4,h-48,w-12,h-8,Color.rgb(34,53,69),12f)
         text(if(kind==UtilityKind.TWO_FACE)if(back)"الحصة الآن" else "جدول اليوم" else "فتح الجدول",w/4,h-23,12f,ink,w/2-28,align=Paint.Align.CENTER)
-        text(if(ui.focus?.displaySection!=null)"اختصارات الفصل" else "الفصول",w*3/4,h-23,12f,gold,w/2-28,align=Paint.Align.CENTER)
+        text(if(ui.focus?.displaySection!=null)if(w<300)"اختصارات" else "اختصارات الفصل" else "الفصول",w*3/4,h-23,12f,gold,w/2-28,align=Paint.Align.CENTER)
         return bitmap
     }
 }
