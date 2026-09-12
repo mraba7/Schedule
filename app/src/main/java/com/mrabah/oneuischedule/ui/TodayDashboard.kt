@@ -121,7 +121,14 @@ internal fun TodayDashboard(config:Config, fixedNow:LocalDateTime?=null,onEdit:(
                 Text(if(ui.slots.isNotEmpty())"أنجزت حصص اليوم. يمكنك مراجعتها أدناه أو الاطلاع على الغد." else "استعرض اليوم الآخر أو أضف حصصك من تبويب الجدول.",color=fg)
             }}
         }
-        item {Text("وصول سريع",style=MaterialTheme.typography.titleMedium);Row(Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(8.dp)){listOf("focus" to "وضع الحصة","search" to "بحث","inbox" to "المتابعات","tomorrow" to "تجهيز بكرة","emergency" to "اليوم الطارئ").forEach{(page,label)->OutlinedButton(onClick={openStudio(context,page)}){Text(label)}}}
+        item {
+            Text("وصول سريع",style=MaterialTheme.typography.titleMedium)
+            Row(Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                listOf("focus" to "وضع الحصة","search" to "بحث","inbox" to "المتابعات","tomorrow" to "تجهيز بكرة","emergency" to "اليوم الطارئ").forEach{(page,label)->
+                    OutlinedButton(onClick={openStudio(context,page)}){Text(label)}
+                }
+            }
+        }
         item {Text("${if(tomorrow)"حصص الغد" else "حصص اليوم"} · ${ui.slots.size}",style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold)}
         items(ui.slots,key={it.period}) {slot ->
             Card(onClick={onEdit(ui.date,slot.period)},colors=CardDefaults.cardColors(containerColor=if(slot.state==SlotState.LIVE)MaterialTheme.colorScheme.secondaryContainer else Color(android.graphics.Color.parseColor(SchoolTools.color(config,slot.displaySection))).copy(alpha=.12f)),shape=RoundedCornerShape(20.dp)) {

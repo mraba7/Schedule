@@ -85,7 +85,17 @@ internal fun AgendaWorkspace(config:Config,commit:(Config)->Unit,onDirty:(Boolea
             item{Row(Modifier.horizontalScroll(rememberScrollState())){OutlinedButton(onClick={editingSchedule=true}){Text("تحرير الجدول الأساسي")};TextButton(onClick={openStudio(c,"calendar")}){Text("التقويم")};TextButton(onClick={c.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT,buildString{append("جدولي $date\n");if(ui.slots.isEmpty())append(ui.holiday?.label ?: "لا توجد حصص");ui.slots.forEach{append("${periodName(it.period)} · ${it.displaySection ?: "انتظار"} · ${it.bell.start}–${it.bell.end}\n")}}),"مشاركة اليوم"))}){Text("مشاركة")}}}
             item{Text("${ui.slots.size} حصص · ${ui.slots.count{it.isStandby}} انتظار",style=MaterialTheme.typography.titleMedium)}
             if(ui.slots.isEmpty())item{Card(Modifier.fillMaxWidth()){Text(ui.holiday?.label ?: "يوم بلا حصص؛ يمكنك تعديل الجدول الأساسي أو اختيار يوم آخر.",Modifier.padding(22.dp))}}
-            items(ui.slots,key={it.period}){slot->Card(onClick={lesson=date to slot.period},modifier=Modifier.fillMaxWidth(),colors=CardDefaults.cardColors(containerColor=if(slot.state==SlotState.LIVE)MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)){Column(Modifier.padding(18.dp),verticalArrangement=Arrangement.spacedBy(8.dp)){Text("${periodName(slot.period)} · ${slot.displaySection ?: "انتظار"}",style=MaterialTheme.typography.titleLarge);Text("${slot.bell.start} – ${slot.bell.end}");if(slot.note.isNotBlank())Text(slot.note);if(offset==0L)Text(when(slot.state){SlotState.LIVE->"جارية الآن";SlotState.DONE->"✓ انتهت";else->"قادمة"},color=MaterialTheme.colorScheme.primary);slot.displaySection?.let{section->TextButton(onClick={openStudio(c,"class",section)}){Text("صفحة الفصل")}}}}
+            items(ui.slots,key={it.period}){slot->
+                Card(onClick={lesson=date to slot.period},modifier=Modifier.fillMaxWidth(),colors=CardDefaults.cardColors(containerColor=if(slot.state==SlotState.LIVE)MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)) {
+                    Column(Modifier.padding(18.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                        Text("${periodName(slot.period)} · ${slot.displaySection ?: "انتظار"}",style=MaterialTheme.typography.titleLarge)
+                        Text("${slot.bell.start} – ${slot.bell.end}")
+                        if(slot.note.isNotBlank())Text(slot.note)
+                        if(offset==0L)Text(when(slot.state){SlotState.LIVE->"جارية الآن";SlotState.DONE->"✓ انتهت";else->"قادمة"},color=MaterialTheme.colorScheme.primary)
+                        slot.displaySection?.let{section->TextButton(onClick={openStudio(c,"class",section)}){Text("صفحة الفصل")}}
+                    }
+                }
+            }
         }
     }
     lesson?.let{(date,period)->com.mrabah.oneuischedule.DayEditDialog(config,date,period,{lesson=null}){commit(it);lesson=null}}
