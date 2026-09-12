@@ -1,6 +1,7 @@
 package com.mrabah.oneuischedule.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -75,7 +76,7 @@ internal fun TodayDashboard(config:Config, fixedNow:LocalDateTime?=null,onEdit:(
             FilterChip(selected=!tomorrow,onClick={tomorrow=false},label={Text("اليوم")})
             FilterChip(selected=tomorrow,onClick={tomorrow=true},label={Text("غدًا")})
         }}
-        item {OutlinedButton(onClick={openStudio(context,"tomorrow")},modifier=Modifier.fillMaxWidth()){Text("تجهيز بكرة بنقرة")};TextButton(onClick={openStudio(context,"emergency")}){Text("اليوم الطارئ")};if(EmergencyDay.active(config,ui.date))Text(SchoolTools.profile(config,ui.date)!!.name,color=MaterialTheme.colorScheme.primary)}
+        if(EmergencyDay.active(config,ui.date))item{Text(SchoolTools.profile(config,ui.date)!!.name,color=MaterialTheme.colorScheme.primary)}
         item {Card(colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.surface),shape=RoundedCornerShape(22.dp)) {
             Row(Modifier.fillMaxWidth().padding(vertical=18.dp)) {
                 Metric("$done","انتهت",Modifier.weight(1f))
@@ -120,6 +121,7 @@ internal fun TodayDashboard(config:Config, fixedNow:LocalDateTime?=null,onEdit:(
                 Text(if(ui.slots.isNotEmpty())"أنجزت حصص اليوم. يمكنك مراجعتها أدناه أو الاطلاع على الغد." else "استعرض اليوم الآخر أو أضف حصصك من تبويب الجدول.",color=fg)
             }}
         }
+        item {Text("وصول سريع",style=MaterialTheme.typography.titleMedium);Row(Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(8.dp)){listOf("focus" to "وضع الحصة","search" to "بحث","inbox" to "المتابعات","tomorrow" to "تجهيز بكرة","emergency" to "اليوم الطارئ").forEach{(page,label)->OutlinedButton(onClick={openStudio(context,page)}){Text(label)}}}
         item {Text("${if(tomorrow)"حصص الغد" else "حصص اليوم"} · ${ui.slots.size}",style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold)}
         items(ui.slots,key={it.period}) {slot ->
             Card(onClick={onEdit(ui.date,slot.period)},colors=CardDefaults.cardColors(containerColor=if(slot.state==SlotState.LIVE)MaterialTheme.colorScheme.secondaryContainer else Color(android.graphics.Color.parseColor(SchoolTools.color(config,slot.displaySection))).copy(alpha=.12f)),shape=RoundedCornerShape(20.dp)) {

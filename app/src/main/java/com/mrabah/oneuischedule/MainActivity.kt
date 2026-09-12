@@ -91,7 +91,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             com.mrabah.oneuischedule.ui.ScheduleTheme {
-                AppShell(intent.getIntExtra("open_tab", 0))
+                AppShell(intent.getIntExtra("open_tab", intent.getIntExtra("tab",0)))
             }
         }
     }
@@ -139,12 +139,12 @@ private fun AppShell(initialTab: Int = 0) {
     Scaffold(
         bottomBar = {
             NavigationBar {
-                listOf("اليوم", "الجدول", "الفصول", "الودجت", "الإعدادات").forEachIndexed { index, label ->
+                listOf("اليوم", "الأجندة", "الفصول", "الأدوات", "الإعدادات").forEachIndexed { index, label ->
                     NavigationBarItem(
                         selected = tab == index,
                         onClick = { if(dirty && index!=tab) pendingTab=index else tab=index },
                         icon = { com.mrabah.oneuischedule.ui.NavSymbol(index) },
-                        label = { Text(label, fontSize = 10.sp, maxLines=1) },
+                        label = { Text(label, fontSize = 11.sp, maxLines=1) },
                     )
                 }
             }
@@ -153,10 +153,10 @@ private fun AppShell(initialTab: Int = 0) {
         Box(Modifier.padding(padding)) {
             when (tab) {
                 0 -> TodayScreen(config, ::commit)
-                1 -> ScheduleScreen(config, ::commit, onDirty={dirty=it})
+                1 -> com.mrabah.oneuischedule.ui.AgendaWorkspace(config, ::commit, onDirty={dirty=it})
                 4 -> com.mrabah.oneuischedule.ui.SettingsHome()
                 2 -> com.mrabah.oneuischedule.ui.ClassHub(config)
-                3 -> com.mrabah.oneuischedule.widget.DesignGallery(config)
+                3 -> com.mrabah.oneuischedule.ui.ToolsHub()
             }
         }
     }
@@ -313,7 +313,7 @@ internal fun UpdatePanel() {
 
 /** One-day change plus a recurring note, in a single sheet. */
 @Composable
-private fun DayEditDialog(config:Config,date:LocalDate,period:Int,onDismiss:()->Unit,onApply:(Config)->Unit) {
+internal fun DayEditDialog(config:Config,date:LocalDate,period:Int,onDismiss:()->Unit,onApply:(Config)->Unit) {
     var weekly by remember {mutableStateOf(false)}
     var selected by remember {mutableStateOf(ScheduleEngine.dutiesOn(config,date)[period])}
     val noteKey="${date.dayOfWeek.name}#$period"

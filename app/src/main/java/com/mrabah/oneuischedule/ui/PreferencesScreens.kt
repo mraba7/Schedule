@@ -23,11 +23,14 @@ import java.time.LocalDate
 internal fun AppearanceScreen() {
     val c=LocalContext.current;val prefs=remember{c.getSharedPreferences("app_preferences",0)}
     var mode by remember{mutableStateOf(prefs.getString("theme","system")!!)};var scale by remember{mutableStateOf(prefs.getFloat("font",1f))}
+    var accent by remember{mutableStateOf(prefs.getString("accent","gold")!!)}
     LazyColumn(contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(14.dp)) {
         item{Text("المظهر والقراءة",style=MaterialTheme.typography.headlineMedium)}
+        item{WorkspaceBanner("مساحتك، بذوقك","معاينة مباشرة للألوان والخط")}
+        item{Choice("اللون الرئيسي",accent,listOf("gold","blue","violet"),{when(it){"blue"->"أزرق هادئ";"violet"->"بنفسجي";else->"ذهبي"}}){accent=it;DataVault.checkpoint(c,"تغيير ألوان التطبيق");prefs.edit().putString("accent",it).apply()}}
         item{Choice("الوضع",mode,listOf("system","light","dark"),{when(it){"light"->"فاتح";"dark"->"داكن";else->"حسب الجهاز"}}){mode=it;DataVault.checkpoint(c,"تغيير المظهر");prefs.edit().putString("theme",mode).apply()}}
         item{Text("حجم النص ${(scale*100).toInt()}٪");Slider(scale,{scale=it},valueRange=.85f..1.4f,onValueChangeFinished={DataVault.checkpoint(c,"تغيير حجم النص");prefs.edit().putFloat("font",scale).apply()});Text("يتكامل هذا الحجم مع حجم الخط في إعدادات جهازك.")}
-        item{OutlinedButton(onClick={scale=1f;mode="system";DataVault.checkpoint(c,"إعادة المظهر الافتراضي");prefs.edit().clear().apply()}){Text("المظهر الافتراضي")}}
+        item{OutlinedButton(onClick={scale=1f;mode="system";accent="gold";AppearancePreferences.reset(c)}){Text("المظهر الافتراضي")}}
     }
 }
 @Composable

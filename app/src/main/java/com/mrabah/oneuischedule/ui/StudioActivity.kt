@@ -20,6 +20,10 @@ class StudioActivity:ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {ScheduleTheme {
             var config by remember {mutableStateOf(ScheduleStore.load(this))}
+            var hasChanges by remember{mutableStateOf(false)}
+            var leaving by remember{mutableStateOf(false)}
+            androidx.activity.compose.BackHandler(enabled=hasChanges){leaving=true}
+            if(leaving)AlertDialog(onDismissRequest={leaving=false},title={Text("تعديلات لم تُحفظ")},text={Text("العودة للتعديل أو الخروج وتجاهل التعديلات؟")},confirmButton={TextButton(onClick={finish()}){Text("تجاهل واخرج")}},dismissButton={TextButton(onClick={leaving=false}){Text("متابعة التعديل")}})
             DisposableEffect(Unit) {
                 val prefs=getSharedPreferences("schedule_config",0)
                 val listener=android.content.SharedPreferences.OnSharedPreferenceChangeListener {_,_->config=ScheduleStore.load(this@StudioActivity)}
@@ -28,9 +32,15 @@ class StudioActivity:ComponentActivity() {
             }
             fun commit(next:Config) {ScheduleStore.save(this,next);config=ScheduleStore.load(this);com.mrabah.oneuischedule.notify.PeriodNotifier.sync(this);sendBroadcast(Intent(this,ScheduleWidgetReceiver::class.java).setAction(ScheduleWidgetReceiver.ACTION_TICK))}
             Surface(Modifier.fillMaxSize().safeDrawingPadding().imePadding()) {Column {
-                TextButton(onClick={finish()}) {Text("رجوع")}
+                TextButton(onClick={if(hasChanges)leaving=true else finish()}) {Text("رجوع")}
                 Box(Modifier.weight(1f)) {when(intent.getStringExtra("page")) {
                     "data"->DataScreen()
+                    "agenda"->AgendaWorkspace(config,::commit){hasChanges=it}
+                    "focus"->LessonFocusScreen(config)
+                    "search"->SearchScreen(config)
+                    "inbox"->FollowupsScreen(config)
+                    "gallery"->DesignGallery(config)
+                    "tools"->ToolsHub()
                     "tomorrow"->TomorrowScreen(config)
                     "emergency"->EmergencyScreen(config,::commit)
                     "class"->ClassPage(config,intent.getStringExtra("section").orEmpty(),::commit)

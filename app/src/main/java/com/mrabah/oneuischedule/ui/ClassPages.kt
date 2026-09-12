@@ -29,6 +29,9 @@ internal fun ClassHub(config:Config) {
     val c=LocalContext.current
     var query by rememberSaveable{mutableStateOf("")}
     var school by rememberSaveable{mutableStateOf(false)}
+    var pinnedOnly by rememberSaveable{mutableStateOf(false)}
+    val revision=workspaceRevision()
+    val pinned=remember(revision){c.getSharedPreferences("app_preferences",0).getStringSet("pinned_classes",emptySet()).orEmpty().toSet()}
     var adding by remember{mutableStateOf(false)}
     var name by rememberSaveable{mutableStateOf("")}
     val entries=if(school)(config.schoolSections+config.sections).distinct() else config.sections
@@ -37,12 +40,14 @@ internal fun ClassHub(config:Config) {
         item{Column {Text("الفصول والمنهج",style=MaterialTheme.typography.headlineMedium);Text("${load.teaching} تدريس · ${load.standby} انتظار أسبوعيًا")}}
         item{OutlinedTextField(query,{query=it},label={Text("ابحث عن فصل")},modifier=Modifier.fillMaxWidth(),singleLine=true)}
         item{Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(8.dp)){FilterChip(!school,{school=false},label={Text("فصولي")});FilterChip(school,{school=true},label={Text("كل المدرسة")});TextButton(onClick={adding=true}){Text("إضافة")}}}
-        entries.filter{it.contains(query.trim(),true)}.forEach {section->item {
+        item{FilterChip(pinnedOnly,{pinnedOnly=!pinnedOnly},label={Text("الفصول المثبتة · ${pinned.size}")})}
+        entries.filter{it.contains(query.trim(),true) && (!pinnedOnly || it in pinned)}.sortedBy{if(it in pinned)0 else 1}.forEach {section->item {
             val progress=config.progress[section] ?: SectionProgress()
             val color=Color(android.graphics.Color.parseColor(SchoolTools.color(config,section)))
             Card(onClick={openStudio(c,"class",section)},modifier=Modifier.fillMaxWidth()) {Row(Modifier.padding(18.dp),verticalAlignment=Alignment.CenterVertically){Box(Modifier.width(5.dp).height(60.dp).background(color));Spacer(Modifier.width(14.dp));Column(Modifier.weight(1f)){Text("الفصل $section",style=MaterialTheme.typography.titleLarge);Text("${load.perSection[section] ?: 0} حصص أسبوعية · ${progress.taught} درسًا");if(progress.last.isNotBlank())Text("آخر درس: ${progress.last}",style=MaterialTheme.typography.bodySmall)}}}
+            TextButton(onClick={DataVault.checkpoint(c,"تثبيت فصل");c.getSharedPreferences("app_preferences",0).edit().putStringSet("pinned_classes",if(section in pinned)pinned-section else pinned+section).apply()}){Text(if(section in pinned)"★ إلغاء تثبيت $section" else "تثبيت $section")}
         }}
-        if(entries.none{it.contains(query.trim(),true)})item{Text("لا يوجد فصل مطابق")}
+        if(entries.none{it.contains(query.trim(),true) && (!pinnedOnly || it in pinned)})item{Text(if(pinnedOnly)"لا توجد فصول مثبتة مطابقة. ألغِ الفلتر لتثبيت فصل." else "لا يوجد فصل مطابق")}
         item{Text("مقارنة التقدم",style=MaterialTheme.typography.titleLarge)}
         val lead=config.progress.values.maxOfOrNull{it.taught} ?: 0
         config.sections.forEach {section->item{val taught=config.progress[section]?.taught ?: 0;Text("$section · $taught درسًا${if(lead>taught) " · الفارق ${lead-taught}" else ""}");LinearProgressIndicator(progress={if(lead==0)0f else taught.toFloat()/lead},modifier=Modifier.fillMaxWidth())}}

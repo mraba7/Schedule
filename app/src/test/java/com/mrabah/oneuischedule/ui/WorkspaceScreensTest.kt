@@ -117,4 +117,35 @@ class WorkspaceScreensTest {
         drawWindows()
         Assert.assertTrue(saved)
     }
+    @Test fun globalSearchFindsArabicDigitsInClassNotes() {
+        com.mrabah.oneuischedule.widget.ClassNotes.save(host.get(),"2/1","صفحة 35",false)
+        content{SearchScreen(Defaults.config)}
+        compose.onNodeWithText("فصل، درس، صفحة أو ملف").performTextInput("صفحة ٣٥")
+        drawWindows()
+        compose.onNodeWithText("آخر نقطة · 2/1").assertExists()
+    }
+    @Test fun followupsCanCompleteAndUndoWithoutLosingText() {
+        val entry=JournalEntry(section="2/1",title="تجهيز المختبر",text="عدسات")
+        ClassJournal.save(host.get(),entry)
+        content{FollowupsScreen(Defaults.config)}
+        compose.onNodeWithText("تم الإنجاز").performScrollTo().performClick()
+        drawWindows()
+        Assert.assertTrue(ClassJournal.all(host.get()).single().done)
+        compose.onNodeWithText("تراجع عن آخر تغيير").performScrollTo().performClick()
+        drawWindows()
+        Assert.assertFalse(ClassJournal.all(host.get()).single().done)
+        compose.onNodeWithText("عدسات").assertExists()
+    }
+    @Test fun agendaExposesEditingAndSharing() {
+        content{AgendaWorkspace(Defaults.config,{})}
+        compose.onNodeWithText("تحرير الجدول الأساسي").assertExists()
+        compose.onNodeWithText("مشاركة").assertExists()
+        capture("agenda")
+    }
+    @Test fun lessonFocusShowsCurrentPeriodAndReadableCountdown() {
+        content{LessonFocusScreen(Defaults.config,java.time.LocalDateTime.of(2026,9,7,8,30))}
+        compose.onNodeWithText("25:00").assertExists()
+        compose.onNodeWithText("إبقاء الشاشة مضاءة").assertExists()
+        capture("lesson-focus")
+    }
 }
