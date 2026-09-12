@@ -41,43 +41,91 @@ Daemon will be stopped at the end of the build
 > Task :app:preReleaseUnitTestBuild UP-TO-DATE
 > Task :app:javaPreCompileReleaseUnitTest FROM-CACHE
 > Task :app:mergeReleaseShaders
+> Task :app:processReleaseManifestForPackage
 > Task :app:compileReleaseShaders NO-SOURCE
 > Task :app:generateReleaseAssets UP-TO-DATE
-> Task :app:mergeReleaseAssets
-> Task :app:processReleaseManifestForPackage
 > Task :app:processDebugResources
+> Task :app:mergeReleaseAssets
 > Task :app:packageDebugUnitTestForUnitTest
 > Task :app:generateDebugUnitTestConfig
 > Task :app:processReleaseResources
 > Task :app:packageReleaseUnitTestForUnitTest
 > Task :app:generateReleaseUnitTestConfig
-> Task :app:compileDebugKotlin
-> Task :app:compileReleaseKotlin
-w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/MainActivity.kt:392:38 'fun <T : Parcelable!> getParcelableExtra(p0: String!): T?' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/widget/ScheduleWidget.kt:669:20 'static field ACTION_WALLPAPER_CHANGED: String' is deprecated. Deprecated in Java.
 
-> Task :app:compileDebugKotlin
-w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/MainActivity.kt:392:38 'fun <T : Parcelable!> getParcelableExtra(p0: String!): T?' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/widget/ScheduleWidget.kt:669:20 'static field ACTION_WALLPAPER_CHANGED: String' is deprecated. Deprecated in Java.
+> Task :app:compileDebugKotlin FAILED
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/StudioActivity.kt:39:30 Unresolved reference 'LessonFocusScreen'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/StudioActivity.kt:41:30 Unresolved reference 'FollowupsScreen'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:82:17 Unresolved reference 'Metric'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:83:17 Unresolved reference 'Metric'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:84:17 Unresolved reference 'Metric'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:125:9 'fun item(key: Any? = ..., contentType: Any? = ..., content: @Composable() ComposableFunction1<LazyItemScope, Unit>): Unit' cannot be called in this context with an implicit receiver. Use an explicit receiver if necessary.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:125:15 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:125:104 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:126:9 'fun <T> LazyListScope.items(items: List<T>, noinline key: ((@ParameterName(...) T) -> Any)? = ..., noinline contentType: (@ParameterName(...) T) -> Any? = ..., crossinline itemContent: @Composable() ComposableFunction2<LazyItemScope, @ParameterName(...) T, Unit>): Unit' cannot be called in this context with an implicit receiver. Use an explicit receiver if necessary.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:127:13 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:127:76 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:127:146 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:143:34 'fun item(key: Any? = ..., contentType: Any? = ..., content: @Composable() ComposableFunction1<LazyItemScope, Unit>): Unit' cannot be called in this context with an implicit receiver. Use an explicit receiver if necessary.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:143:40 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:143:124 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:148:1 Modifier 'private' is not applicable to 'local function'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:148:319 Syntax error: Expecting '}'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/WorkspaceScreens.kt:95:1 Modifier 'internal' is not applicable to 'local function'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/WorkspaceScreens.kt:115:1 Modifier 'internal' is not applicable to 'local function'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/WorkspaceScreens.kt:132:2 Syntax error: Expecting '}'.
 
-> Task :app:compileDebugJavaWithJavac
-> Task :app:processDebugJavaRes
-> Task :app:bundleDebugClassesToRuntimeJar
-> Task :app:bundleDebugClassesToCompileJar
-> Task :app:compileReleaseJavaWithJavac
-> Task :app:processReleaseJavaRes
-> Task :app:bundleReleaseClassesToRuntimeJar
-> Task :app:bundleReleaseClassesToCompileJar
-> Task :app:compileDebugUnitTestKotlin
-> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
-> Task :app:compileReleaseUnitTestKotlin
-> Task :app:processDebugUnitTestJavaRes
-> Task :app:testDebugUnitTest
-> Task :app:compileReleaseUnitTestJavaWithJavac NO-SOURCE
-> Task :app:processReleaseUnitTestJavaRes
-> Task :app:testReleaseUnitTest
-> Task :app:test
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/tests-1789240593456.json
+> Task :app:compileReleaseKotlin FAILED
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/StudioActivity.kt:39:30 Unresolved reference 'LessonFocusScreen'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/StudioActivity.kt:41:30 Unresolved reference 'FollowupsScreen'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:82:17 Unresolved reference 'Metric'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:83:17 Unresolved reference 'Metric'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:84:17 Unresolved reference 'Metric'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:125:9 'fun item(key: Any? = ..., contentType: Any? = ..., content: @Composable() ComposableFunction1<LazyItemScope, Unit>): Unit' cannot be called in this context with an implicit receiver. Use an explicit receiver if necessary.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:125:15 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:125:104 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:126:9 'fun <T> LazyListScope.items(items: List<T>, noinline key: ((@ParameterName(...) T) -> Any)? = ..., noinline contentType: (@ParameterName(...) T) -> Any? = ..., crossinline itemContent: @Composable() ComposableFunction2<LazyItemScope, @ParameterName(...) T, Unit>): Unit' cannot be called in this context with an implicit receiver. Use an explicit receiver if necessary.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:127:13 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:127:76 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:127:146 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:143:34 'fun item(key: Any? = ..., contentType: Any? = ..., content: @Composable() ComposableFunction1<LazyItemScope, Unit>): Unit' cannot be called in this context with an implicit receiver. Use an explicit receiver if necessary.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:143:40 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:143:124 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:148:1 Modifier 'private' is not applicable to 'local function'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/TodayDashboard.kt:148:319 Syntax error: Expecting '}'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/WorkspaceScreens.kt:95:1 Modifier 'internal' is not applicable to 'local function'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/WorkspaceScreens.kt:115:1 Modifier 'internal' is not applicable to 'local function'.
+e: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/ui/WorkspaceScreens.kt:132:2 Syntax error: Expecting '}'.
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/tests-1789241430178.json
 
-BUILD SUCCESSFUL in 1m 51s
-57 actionable tasks: 41 executed, 16 from cache
+FAILURE: Build completed with 2 failures.
+
+1: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+2: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':app:compileReleaseKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+BUILD FAILED in 26s
+43 actionable tasks: 27 executed, 16 from cache
