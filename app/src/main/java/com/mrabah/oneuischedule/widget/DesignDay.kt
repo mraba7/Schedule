@@ -18,7 +18,7 @@ internal data class DesignDay(val ui: com.mrabah.oneuischedule.data.ScheduleUi, 
     val section get() = focus?.displaySection ?: if (focus == null) "—" else "انتظار"
     val subject get() = if (focus==null) "لا توجد حصص" else if (focus?.section != null) ui.config.subject else "حصة انتظار"
     val day: String get() {
-        val name = ui.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, Locale("ar"))
+        val name = ui.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, Locale("ar")) + if(com.mrabah.oneuischedule.data.EmergencyDay.active(ui.config,ui.date))" · معدّل" else ""
         return when {
             ui.isToday -> name
             ui.date == now.toLocalDate().plusDays(1) -> "غدًا · $name"

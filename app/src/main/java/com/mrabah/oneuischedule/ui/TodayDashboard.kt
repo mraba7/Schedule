@@ -75,6 +75,7 @@ internal fun TodayDashboard(config:Config, fixedNow:LocalDateTime?=null,onEdit:(
             FilterChip(selected=!tomorrow,onClick={tomorrow=false},label={Text("اليوم")})
             FilterChip(selected=tomorrow,onClick={tomorrow=true},label={Text("غدًا")})
         }}
+        item {OutlinedButton(onClick={openStudio(context,"tomorrow")},modifier=Modifier.fillMaxWidth()){Text("تجهيز بكرة بنقرة")};TextButton(onClick={openStudio(context,"emergency")}){Text("اليوم الطارئ")};if(EmergencyDay.active(config,ui.date))Text(SchoolTools.profile(config,ui.date)!!.name,color=MaterialTheme.colorScheme.primary)}
         item {Card(colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.surface),shape=RoundedCornerShape(22.dp)) {
             Row(Modifier.fillMaxWidth().padding(vertical=18.dp)) {
                 Metric("$done","انتهت",Modifier.weight(1f))
