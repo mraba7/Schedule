@@ -19,7 +19,7 @@ internal object EmergencyDay {
         val label=if(activity.isBlank())"يوم طارئ · تأخير $minutes دقيقة" else "يوم طارئ · ${activity.trim().take(60)} · ${selected.start}–${selected.start.plusMinutes(minutes.toLong())}"
         val profile=TimetableProfile(id(date),label,date,date,shifted,SchoolTools.week(c,date))
         val next=c.copy(profiles=c.profiles.filterNot{it.id==id(date)}+profile)
-        require(DataVault.problem(next)==null){DataVault.problem(next).orEmpty()}
+        require(ScheduleValidation.problem(next)==null){ScheduleValidation.problem(next).orEmpty()}
         return next
     }
     fun undo(c:Config,date:LocalDate)=c.copy(profiles=c.profiles.filterNot{it.id==id(date)})
