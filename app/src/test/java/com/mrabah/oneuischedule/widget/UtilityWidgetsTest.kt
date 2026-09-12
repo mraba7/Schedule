@@ -73,7 +73,8 @@ class UtilityWidgetsTest {
         for(kind in UtilityKind.entries)for(state in PreviewState.entries.filter{it!=PreviewState.ACTUAL})for(size in listOf(240 to 260,380 to 260,380 to 420))for(back in listOf(false,true)) {
             if(kind==UtilityKind.AVAILABLE && back)continue
             val bitmap=UtilityRenderer.render(sample(state),kind,back,size.first,size.second)
-            assertEquals(size.first,bitmap.width);assertEquals(size.second,bitmap.height)
+            assertEquals(size.first.toDouble()/size.second,bitmap.width.toDouble()/bitmap.height,0.01)
+            assertTrue(bitmap.width<=720 && bitmap.height<=720)
             File(folder,"utility-${kind.name.lowercase()}-${state.name.lowercase()}-${size.first}x${size.second}-${if(back)"back" else "front"}.png").outputStream().use{bitmap.compress(Bitmap.CompressFormat.PNG,100,it)}
             bitmap.recycle()
         }
@@ -81,6 +82,19 @@ class UtilityWidgetsTest {
         for(size in listOf(220 to 240,380 to 420)) {
             val day=DesignDay(ScheduleEngine.today(seven,now),now)
             UtilityRenderer.render(day,UtilityKind.TWO_FACE,true,size.first,size.second).let{bitmap->File(folder,"utility-seven-${size.first}.png").outputStream().use{bitmap.compress(Bitmap.CompressFormat.PNG,100,it)};bitmap.recycle()}
+        }
+    }
+    @Test fun newProvidersRegisterAndAcceptResponsiveLayouts() {
+        val manager=android.appwidget.AppWidgetManager.getInstance(c)
+        UtilityWidgets.receivers.forEach{(kind,receiver)->
+            val component=android.content.ComponentName(c,receiver)
+            val info=c.packageManager.getReceiverInfo(component,android.content.pm.PackageManager.GET_META_DATA)
+            assertTrue(info.metaData.containsKey("android.appwidget.provider"))
+            val id=800+kind.ordinal
+            org.robolectric.Shadows.shadowOf(manager).bindAppWidgetId(id,component)
+            manager.updateAppWidgetOptions(id,android.os.Bundle().apply{putParcelableArrayList(android.appwidget.AppWidgetManager.OPTION_APPWIDGET_SIZES,arrayListOf(android.util.SizeF(240f,260f),android.util.SizeF(380f,420f)))})
+            UtilityWidgets.update(c,manager,id,kind)
+            assertTrue(DesignWidgets.anyInstalled(c))
         }
     }
 }

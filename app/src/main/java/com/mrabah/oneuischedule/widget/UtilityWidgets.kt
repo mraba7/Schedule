@@ -29,12 +29,13 @@ internal object UtilityRenderer {
     private val ink=Color.rgb(239,244,250)
     private val muted=Color.rgb(165,184,201)
     private val gold=Color.rgb(226,199,143)
-    fun render(day:DesignDay,kind:UtilityKind,back:Boolean,width:Int=380,height:Int=420):Bitmap {
+    fun render(day:DesignDay,kind:UtilityKind,back:Boolean,width:Int=380,height:Int=420,options:WidgetOptions=WidgetOptions()):Bitmap {
         val w=width.coerceIn(220,900).toFloat();val h=height.coerceIn(240,900).toFloat()
-        val bitmap=Bitmap.createBitmap(w.toInt(),h.toInt(),Bitmap.Config.ARGB_8888)
-        val canvas=Canvas(bitmap);val p=TextPaint(Paint.ANTI_ALIAS_FLAG)
-        fun box(x:Float,y:Float,r:Float,b:Float,color:Int,radius:Float=16f){p.color=color;canvas.drawRoundRect(x,y,r,b,radius,radius,p)}
-        fun text(value:String,x:Float,y:Float,size:Float=14f,color:Int=ink,max:Float=w-32,bold:Boolean=false,align:Paint.Align=Paint.Align.RIGHT){p.color=color;p.textSize=size;p.typeface=Typeface.create("sans-serif",if(bold)Typeface.BOLD else Typeface.NORMAL);p.textAlign=align;canvas.drawText(TextUtils.ellipsize(value,p,max,TextUtils.TruncateAt.END).toString(),x,y,p)}
+        val density=minOf(2f,720f/maxOf(w,h))
+        val bitmap=Bitmap.createBitmap((w*density).toInt(),(h*density).toInt(),Bitmap.Config.ARGB_8888)
+        val canvas=Canvas(bitmap).apply{scale(density,density)};val p=TextPaint(Paint.ANTI_ALIAS_FLAG)
+        fun box(x:Float,y:Float,r:Float,b:Float,color:Int,radius:Float=16f){p.color=androidx.core.graphics.ColorUtils.setAlphaComponent(color,(255*options.opacity).toInt().coerceIn(0,255));canvas.drawRoundRect(x,y,r,b,radius,radius,p)}
+        fun text(value:String,x:Float,y:Float,size:Float=14f,color:Int=ink,max:Float=w-32,bold:Boolean=false,align:Paint.Align=Paint.Align.RIGHT){p.color=color;p.textSize=size*options.fontScale;p.typeface=Typeface.create("sans-serif",if(bold)Typeface.BOLD else Typeface.NORMAL);p.textAlign=align;canvas.drawText(TextUtils.ellipsize(value,p,max,TextUtils.TruncateAt.END).toString(),x,y,p)}
         box(0f,0f,w,h,Color.rgb(18,34,48),24f)
         text(kind.title,w-18,29f,17f,gold,bold=true)
         text("${day.day} · ${day.ui.slots.size} حصص",w-18,51f,12f,muted)
@@ -68,13 +69,13 @@ internal object UtilityRenderer {
                 val focus=ui.focus!!
                 if(roomy) {
                     text("${if(focus.isStandby)"انتظار · " else ""}الفصل ${DesignDay.section(focus)}",center,221f,20f,Color.parseColor(SchoolTools.color(ui.config,focus.displaySection ?: "")),w-48,true,Paint.Align.CENTER)
-                    text("${DesignDay.clock(focus.bell.start)} – ${DesignDay.clock(focus.bell.end)}",center,247f,17f,ink,w-48,align=Paint.Align.CENTER)
+                    text("${focus.period} · ${DesignDay.clock(focus.bell.start)} – ${DesignDay.clock(focus.bell.end)}",center,247f,17f,ink,w-48,align=Paint.Align.CENTER)
                     val next=if(ui.live!=null)ui.next else null
-                    if(next!=null && h>=390)text("التالي: ${periodName(next.period)} · ${DesignDay.section(next)} · ${DesignDay.clock(next.bell.start)}",center,280f,13f,muted,w-48,align=Paint.Align.CENTER)
+                    if(next!=null && h>=390 && options.showNext)text("التالي: ${periodName(next.period)} · ${DesignDay.section(next)} · ${DesignDay.clock(next.bell.start)}",center,280f,13f,muted,w-48,align=Paint.Align.CENTER)
                     val fraction=if(ui.live!=null)ui.progress else 0f
                     box(30f,end-23,w-30,end-19,Color.rgb(51,70,86),2f)
                     if(fraction>0)box(w-30-(w-60)*fraction,end-23,w-30,end-19,gold,2f)
-                } else text("${DesignDay.section(focus)} · ${DesignDay.clock(focus.bell.start)} – ${DesignDay.clock(focus.bell.end)}",center,end-17,12f,ink,w-44,align=Paint.Align.CENTER)
+                } else text("${focus.period} · ${DesignDay.section(focus)} · ${DesignDay.clock(focus.bell.start)} – ${DesignDay.clock(focus.bell.end)}",center,end-17,12f,ink,w-44,align=Paint.Align.CENTER)
             } else {
                 text(ui.holiday?.label ?: if(available.state==Availability.FINISHED)"أنجزت ${ui.slots.size} حصص · وقتك لك" else "لا توجد التزامات في الجدول اليوم",center,if(roomy)154f else 125f,14f,muted,w-48,align=Paint.Align.CENTER)
                 text(if(available.state==Availability.FINISHED)"✓" else "—",center,if(roomy)218f else 165f,36f,gold,w-48,align=Paint.Align.CENTER)
@@ -90,7 +91,7 @@ internal object UtilityRenderer {
 internal object UtilityWidgets {
     val receivers=mapOf(UtilityKind.TWO_FACE to TwoFaceWidgetReceiver::class.java,UtilityKind.AVAILABLE to AvailableTimeWidgetReceiver::class.java)
     fun updateAll(c:Context){val m=AppWidgetManager.getInstance(c);receivers.forEach{(kind,receiver)->m.getAppWidgetIds(ComponentName(c,receiver)).forEach{update(c,m,it,kind)}}}
-    fun update(c:Context,m:AppWidgetManager,id:Int,kind:UtilityKind) {
+    @Synchronized fun update(c:Context,m:AppWidgetManager,id:Int,kind:UtilityKind) {
         val options=m.getAppWidgetOptions(id)
         @Suppress("DEPRECATION")
         val sizes=options.getParcelableArrayList<SizeF>(AppWidgetManager.OPTION_APPWIDGET_SIZES)?.filter{it.width>0 && it.height>0}?.distinct()?.take(4)
@@ -99,8 +100,10 @@ internal object UtilityWidgets {
         val back=WidgetFaces.isBack(c,id)
         val layouts=(sizes?.takeIf{it.isNotEmpty()} ?: fallback).associateWith {size->
             RemoteViews(c.packageName,R.layout.utility_widget).apply {
-                setImageViewBitmap(R.id.utility_image,UtilityRenderer.render(day,kind,back,size.width.toInt(),size.height.toInt()))
-                setContentDescription(R.id.utility_image,if(back && kind==UtilityKind.TWO_FACE)day.ui.slots.joinToString("، "){"${periodName(it.period)}، ${DesignDay.section(it)}، ${DesignDay.clock(it.bell.start)} إلى ${DesignDay.clock(it.bell.end)}"} else day.summary)
+                setImageViewBitmap(R.id.utility_image,UtilityRenderer.render(day,kind,back,size.width.toInt(),size.height.toInt(),WidgetPreferences.get(c,id)))
+                val availability=AvailableTime.from(day)
+                val summary=when(availability.state){Availability.HOLIDAY->"اليوم إجازة، ${day.ui.holiday?.label}";Availability.EMPTY->"لا توجد حصص اليوم";Availability.FINISHED->"انتهت حصص اليوم، ${day.ui.slots.size} حصص";Availability.FREE->"وقت متاح، ${availability.minutes} دقيقة، ${day.summary}";Availability.BUSY->day.summary}
+                setContentDescription(R.id.utility_image,if(back && kind==UtilityKind.TWO_FACE && day.ui.slots.isNotEmpty())day.ui.slots.joinToString("، "){"${periodName(it.period)}، ${DesignDay.section(it)}، ${DesignDay.clock(it.bell.start)} إلى ${DesignDay.clock(it.bell.end)}"} else summary)
                 val open=Intent(c,com.mrabah.oneuischedule.MainActivity::class.java).putExtra("tab",1).setData(Uri.parse("schedule://utility/$id/open"))
                 val flags=PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 setOnClickPendingIntent(R.id.utility_image,PendingIntent.getActivity(c,0,open,flags))
@@ -131,7 +134,7 @@ abstract class UtilityWidgetReceiver:AppWidgetProvider() {
         if(intent.action==FLIP && kind==UtilityKind.TWO_FACE) {
             val id=intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,-1);val m=AppWidgetManager.getInstance(c)
             if(id !in m.getAppWidgetIds(ComponentName(c,TwoFaceWidgetReceiver::class.java)))return
-            refresh(c){WidgetFaces.toggle(c,id);UtilityWidgets.update(c,m,id,kind)}
+            refresh(c){synchronized(UtilityWidgets){WidgetFaces.toggle(c,id);UtilityWidgets.update(c,m,id,kind)}}
         }
     }
     private fun refresh(c:Context,block:()->Unit){val pending=goAsync();CoroutineScope(Dispatchers.Default).launch{try{block();ScheduleUpdater.schedule(c)}finally{pending.finish()}}}

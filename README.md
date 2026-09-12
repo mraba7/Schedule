@@ -159,3 +159,21 @@ and displayed date. Accessible native RemoteViews hit targets track the painted
 tiles, including a second row. The lower note area retains classroom note editing.
 Tests cover switching/expiry races, isolation, actual RemoteViews inflation and
 expanded first/last tiles in four- and seven-lesson days.
+
+### معاينة الحالات والودجت بوجهين والوقت المتاح
+
+The gallery now previews actual data or isolated before-school, live, free,
+holiday and finished-day fixtures at small, wide and large sizes. Pinning always
+uses real schedule data. `يومي بوجهين` switches between the focused lesson and
+today's agenda, retaining the face independently for each widget instance.
+`الوقت المتاح` counts down to the next assigned lesson, distinguishes an active
+lesson from free time, and keeps the finished day visible. Both providers share
+the schedule refresh alarm and support launcher-provided responsive sizes.
+
+Class pages expose `اختصارات الفصل`: named web links, private file copies and
+persistently granted document folders. The new widgets open shortcuts for the
+current/upcoming class; existing focused widgets also expose them from the class
+note page. Link metadata and private files are included in comprehensive backups.
+Folder access is device-local and asks for reselection when permission is absent.
+Native renderer previews and tests cover time boundaries, standby assignments,
+per-instance faces, class isolation, backup restoration and link editing.

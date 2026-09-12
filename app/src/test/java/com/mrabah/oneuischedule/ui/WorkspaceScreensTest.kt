@@ -66,7 +66,7 @@ class WorkspaceScreensTest {
     @Test fun classPageCanCreateAndFindANoteAtLargeFont() {
         host.get().getSharedPreferences("app_preferences",0).edit().putFloat("font",1.3f).commit()
         content{ClassPage(Defaults.config,"2/1",{})}
-        compose.onNodeWithText("ملاحظة جديدة").performClick()
+        compose.onNodeWithText("ملاحظة جديدة").performScrollTo().performClick()
         drawWindows()
         compose.onNodeWithText("العنوان").performTextInput("تجربة الخلايا")
         drawWindows()
@@ -86,6 +86,25 @@ class WorkspaceScreensTest {
         capture("holiday-editor")
         compose.onNodeWithText("إلغاء").performClick()
         Assert.assertFalse(saved)
+    }
+    @Test fun classShortcutsCanAddAndEditALink() {
+        content{ClassShortcutsScreen("2/1")}
+        compose.onNodeWithText("إضافة رابط").performClick()
+        drawWindows()
+        compose.onNodeWithText("اسم الاختصار").performTextInput("عرض الخلايا")
+        compose.onNodeWithText("الرابط https://").performTextInput("https://example.com/cells")
+        drawWindows()
+        compose.onNodeWithText("حفظ").performClick()
+        drawWindows()
+        Assert.assertEquals("عرض الخلايا",ClassShortcuts.forClass(host.get(),"2/1").single().title)
+        compose.onNodeWithText("تعديل").performScrollTo().performClick()
+        drawWindows()
+        compose.onNodeWithText("اسم الاختصار").performTextReplacement("عرض الدرس")
+        drawWindows()
+        compose.onNodeWithText("حفظ").performClick()
+        drawWindows()
+        compose.onNodeWithText("عرض الدرس").performScrollTo().assertExists()
+        Assert.assertTrue(ClassShortcuts.forClass(host.get(),"2/2").isEmpty())
     }
     @Test fun copyDayRequiresReviewBeforeSaving() {
         var saved=false

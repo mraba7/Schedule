@@ -54,7 +54,8 @@ internal fun AlertsScreen(config:Config,commit:(Config)->Unit) {
 internal fun WidgetSettingsScreen() {
     val c=LocalContext.current
     val manager=AppWidgetManager.getInstance(c)
-    val installed=remember{DesignWidgets.receivers.flatMap{(design,receiver)->manager.getAppWidgetIds(ComponentName(c,receiver)).map{Triple(it,design.title,design)}}}
+    val utilityIds=remember{UtilityWidgets.receivers.flatMap{(kind,receiver)->manager.getAppWidgetIds(ComponentName(c,receiver)).map{it to kind.title}}}
+    val installed=remember{DesignWidgets.receivers.flatMap{(design,receiver)->manager.getAppWidgetIds(ComponentName(c,receiver)).map{it to design.title}}+utilityIds}
     val labels=mapOf(0 to "الإعدادات الافتراضية للنسخ الجديدة")+installed.associate{it.first to "${it.second} · ${it.first}"}
     var id by remember{mutableStateOf(0)};var options by remember(id){mutableStateOf(WidgetPreferences.get(c,id))};var saved by remember{mutableStateOf(false)}
     LazyColumn(contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
@@ -62,8 +63,8 @@ internal fun WidgetSettingsScreen() {
         if(installed.isEmpty())item{Text("أضف أحد تصاميم الودجت إلى الشاشة الرئيسية لتظهر نسخته هنا.")}
         item{Text("حجم النص ${(options.fontScale*100).toInt()}٪");Slider(options.fontScale,{options=options.copy(fontScale=it);saved=false},valueRange=.85f..1.25f);Text("يُضبط النص داخل المساحة المتاحة حتى لا يتداخل.")}
         item{Text("وضوح الخلفية ${(options.opacity*100).toInt()}٪");Slider(options.opacity,{options=options.copy(opacity=it);saved=false},valueRange=.25f..1f)}
-        item{Toggle("إظهار الملاحظة والتجهيز",options.showNote){options=options.copy(showNote=it);saved=false};Toggle("إظهار ملخص الحصة التالية",options.showNext){options=options.copy(showNext=it);saved=false}}
-        item{Text("ظهور الوقت بعد الضغط: ${options.peekSeconds} ثوانٍ");Slider(options.peekSeconds.toFloat(),{options=options.copy(peekSeconds=it.toInt());saved=false},valueRange=3f..15f,steps=11)}
+        item{if(utilityIds.none{it.first==id})Toggle("إظهار الملاحظة والتجهيز",options.showNote){options=options.copy(showNote=it);saved=false};Toggle("إظهار ملخص الحصة التالية",options.showNext){options=options.copy(showNext=it);saved=false}}
+        if(utilityIds.none{it.first==id})item{Text("ظهور الوقت بعد الضغط: ${options.peekSeconds} ثوانٍ");Slider(options.peekSeconds.toFloat(),{options=options.copy(peekSeconds=it.toInt());saved=false},valueRange=3f..15f,steps=11)}
         item{Text("مدة الضغط تخص الودجت التفاعلي. يتكيف إظهار التفاصيل مع نوع التصميم ومساحته.")}
         item{Button(onClick={WidgetPreferences.save(c,id,options);c.sendBroadcast(Intent(c,ScheduleWidgetReceiver::class.java).setAction(ScheduleWidgetReceiver.ACTION_TICK));saved=true},modifier=Modifier.fillMaxWidth()){Text(if(saved)"تم الحفظ ✓" else "حفظ تخصيص النسخة")}}
     }
