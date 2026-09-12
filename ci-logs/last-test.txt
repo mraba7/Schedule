@@ -19,15 +19,15 @@ Daemon will be stopped at the end of the build
 > Task :app:preDebugUnitTestBuild UP-TO-DATE
 > Task :app:javaPreCompileDebugUnitTest FROM-CACHE
 > Task :app:mergeDebugShaders
+> Task :app:processDebugManifestForPackage
 > Task :app:compileDebugShaders NO-SOURCE
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
-> Task :app:processDebugManifestForPackage
 > Task :app:buildKotlinToolingMetadata
 > Task :app:preReleaseBuild UP-TO-DATE
 > Task :app:generateReleaseBuildConfig
-> Task :app:generateReleaseResValues FROM-CACHE
 > Task :app:checkReleaseAarMetadata
+> Task :app:generateReleaseResValues FROM-CACHE
 > Task :app:mapReleaseSourceSetPaths
 > Task :app:generateReleaseResources
 > Task :app:processDebugResources
@@ -39,10 +39,10 @@ Daemon will be stopped at the end of the build
 > Task :app:extractDeepLinksRelease FROM-CACHE
 > Task :app:processReleaseMainManifest
 > Task :app:processReleaseManifest
+> Task :app:processReleaseManifestForPackage
 > Task :app:javaPreCompileRelease FROM-CACHE
 > Task :app:preReleaseUnitTestBuild UP-TO-DATE
 > Task :app:javaPreCompileReleaseUnitTest FROM-CACHE
-> Task :app:processReleaseManifestForPackage
 > Task :app:mergeReleaseShaders
 > Task :app:compileReleaseShaders NO-SOURCE
 > Task :app:generateReleaseAssets UP-TO-DATE
@@ -52,40 +52,37 @@ Daemon will be stopped at the end of the build
 > Task :app:packageReleaseUnitTestForUnitTest
 > Task :app:generateReleaseUnitTestConfig
 > Task :app:compileDebugKotlin
-> Task :app:compileReleaseKotlin
 w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/MainActivity.kt:392:38 'fun <T : Parcelable!> getParcelableExtra(p0: String!): T?' is deprecated. Deprecated in Java.
 w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/widget/ScheduleWidget.kt:669:20 'static field ACTION_WALLPAPER_CHANGED: String' is deprecated. Deprecated in Java.
 
-> Task :app:compileDebugKotlin
+> Task :app:compileReleaseKotlin
 w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/MainActivity.kt:392:38 'fun <T : Parcelable!> getParcelableExtra(p0: String!): T?' is deprecated. Deprecated in Java.
 w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/widget/ScheduleWidget.kt:669:20 'static field ACTION_WALLPAPER_CHANGED: String' is deprecated. Deprecated in Java.
 
 > Task :app:compileReleaseJavaWithJavac
 > Task :app:compileDebugJavaWithJavac
 > Task :app:processDebugJavaRes
-> Task :app:bundleDebugClassesToCompileJar
 > Task :app:bundleDebugClassesToRuntimeJar
-> Task :app:bundleReleaseClassesToCompileJar
-> Task :app:bundleReleaseClassesToRuntimeJar
+> Task :app:bundleDebugClassesToCompileJar
 > Task :app:processReleaseJavaRes
-> Task :app:compileReleaseUnitTestKotlin
-> Task :app:compileReleaseUnitTestJavaWithJavac NO-SOURCE
+> Task :app:bundleReleaseClassesToRuntimeJar
+> Task :app:bundleReleaseClassesToCompileJar
 > Task :app:compileDebugUnitTestKotlin
-> Task :app:processReleaseUnitTestJavaRes
 > Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
 > Task :app:processDebugUnitTestJavaRes
+> Task :app:compileReleaseUnitTestKotlin
 > Task :app:testDebugUnitTest
 
 WorkspaceScreensTest > classPageCanCreateAndFindANoteAtLargeFont FAILED
-    androidx.test.espresso.AppNotIdleException at WorkspaceScreensTest.kt:48
+    androidx.test.espresso.AppNotIdleException at WorkspaceScreensTest.kt:71
 
 WorkspaceScreensTest > monthlyCalendarShowsHolidayEditorAndCancelsSafely FAILED
-    androidx.test.espresso.AppNotIdleException at WorkspaceScreensTest.kt:58
+    androidx.test.espresso.AppNotIdleException at WorkspaceScreensTest.kt:85
 
 62 tests completed, 2 failed
 
 > Task :app:testDebugUnitTest FAILED
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/tests-1789163627609.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/tests-1789171835389.json
 
 FAILURE: Build failed with an exception.
 
@@ -96,5 +93,5 @@ Execution failed for task ':app:testDebugUnitTest'.
 * Try:
 > Run with --scan to get full insights.
 
-BUILD FAILED in 3m 29s
-56 actionable tasks: 47 executed, 9 from cache
+BUILD FAILED in 3m 14s
+55 actionable tasks: 46 executed, 9 from cache
