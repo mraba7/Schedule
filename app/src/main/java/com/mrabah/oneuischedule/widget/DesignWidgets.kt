@@ -49,6 +49,7 @@ internal object DesignWidgets {
         Design.INTERACTIVE to InteractiveWidgetReceiver::class.java,
     )
     fun updateAll(context: Context) {
+        UtilityWidgets.updateAll(context)
         val manager=AppWidgetManager.getInstance(context)
         val day=DesignDay.build(ScheduleStore.load(context))
         val renderer=DesignRenderer(context)

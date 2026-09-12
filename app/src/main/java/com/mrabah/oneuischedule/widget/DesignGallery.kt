@@ -7,6 +7,8 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -28,7 +30,11 @@ internal fun DesignGallery(config:Config) {
     val c=LocalContext.current
     var now by remember { mutableStateOf(LocalDateTime.now()) }
     LaunchedEffect(Unit){while(true){delay(60_000);now=LocalDateTime.now()}}
-    val day=remember(config,now){DesignDay.build(config,now)}
+    var preview by androidx.compose.runtime.saveable.rememberSaveable {mutableStateOf(PreviewState.ACTUAL)}
+    var size by androidx.compose.runtime.saveable.rememberSaveable {mutableStateOf(2)}
+    var back by androidx.compose.runtime.saveable.rememberSaveable {mutableStateOf(false)}
+    val dimensions=listOf(240 to 260,380 to 260,380 to 420)[size]
+    val day=remember(config,now,preview){WidgetScenarios.day(config,preview,now)}
     var group by androidx.compose.runtime.saveable.rememberSaveable {mutableStateOf(0)}
     val ordered=listOf(Design.INTERACTIVE,Design.PATH,Design.FOCUS,Design.GLASS)+Design.entries.filter {it !in listOf(Design.INTERACTIVE,Design.PATH,Design.FOCUS,Design.GLASS)}
     val visible=when(group){1->listOf(Design.INTERACTIVE,Design.PATH);2->ordered.filter {it !in listOf(Design.INTERACTIVE,Design.PATH)};else->ordered}
@@ -36,14 +42,32 @@ internal fun DesignGallery(config:Config) {
         item {
             Text("تصاميم الودجت",style=MaterialTheme.typography.headlineMedium)
             Text("اختر ما يناسب يومك وأضفه إلى الشاشة الرئيسية.",color=MaterialTheme.colorScheme.onSurfaceVariant)
-            Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+            Text("جرّب الحالات قبل الإضافة",style=MaterialTheme.typography.titleMedium)
+            Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                PreviewState.entries.forEach {state->FilterChip(selected=preview==state,onClick={preview=state},label={Text(state.title)})}
+            }
+            Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                listOf("صغير","عريض","كبير").forEachIndexed{i,label->FilterChip(selected=size==i,onClick={size=i},label={Text(label)})}
+            }
+            if(preview!=PreviewState.ACTUAL)Text("معاينة تجريبية فقط؛ الودجت المضاف يستخدم جدولك ووقتك الفعليين.",style=MaterialTheme.typography.bodySmall)
+            Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
                 listOf("الكل","تفاعلي ومرن","بقية التصاميم").forEachIndexed { i,label ->
                     FilterChip(selected=group==i,onClick={group=i},label={Text(label)})
                 }
             }
         }
+        if(group!=2)items(UtilityKind.entries,key={"utility-${it.name}"}) {kind->
+            val bitmap=remember(day,kind,back,dimensions){UtilityRenderer.render(day,kind,back,dimensions.first,dimensions.second)}
+            Card {Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
+                Text(kind.title,style=MaterialTheme.typography.titleLarge)
+                Text(if(kind==UtilityKind.TWO_FACE)"وجه للحصة الحالية ووجه لجدول اليوم؛ زر التبديل يحفظ اختيار كل نسخة." else "يعرض وقت فراغك حتى الحصة القادمة، ويعلن انتهاء حصص اليوم.")
+                Image(bitmap.asImageBitmap(),contentDescription=kind.title+" · "+preview.title,modifier=Modifier.fillMaxWidth().aspectRatio(dimensions.first.toFloat()/dimensions.second))
+                if(kind==UtilityKind.TWO_FACE)OutlinedButton(onClick={back=!back},modifier=Modifier.fillMaxWidth()){Text(if(back)"جرّب وجه الحصة" else "جرّب وجه جدول اليوم")}
+                Button(onClick={val manager=AppWidgetManager.getInstance(c);if(manager.isRequestPinAppWidgetSupported) {if(!manager.requestPinAppWidget(ComponentName(c,UtilityWidgets.receivers.getValue(kind)),null,null))Toast.makeText(c,"أضف الودجت من أدوات الشاشة الرئيسية",Toast.LENGTH_LONG).show()} else Toast.makeText(c,"اضغط مطولًا على الشاشة الرئيسية ثم الأدوات ← جدول الحصص",Toast.LENGTH_LONG).show()},modifier=Modifier.fillMaxWidth()){Text("إضافة إلى الشاشة الرئيسية")}
+            }}
+        }
         items(visible,key={it.name}){design ->
-            val bitmap=remember(design,day){DesignRenderer(c).render(design,day,
+            val bitmap=remember(design,day,dimensions){DesignRenderer(c).render(design,day,width=dimensions.first*2,height=dimensions.second*2,layoutWidth=dimensions.first.toFloat(),layoutHeight=dimensions.second.toFloat(),
                 task=PreparationStore.task(c,day.key).ifBlank{"تحديد التجهيز"},done=PreparationStore.done(c,day.key))}
             Card(shape=androidx.compose.foundation.shape.RoundedCornerShape(24.dp),colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.surface)) {
             Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
@@ -51,7 +75,7 @@ internal fun DesignGallery(config:Config) {
                 if(design==Design.INTERACTIVE) Text("اضغط الحصة لعرض وقتها. ولحصص الانتظار يظهر زر مستقل لاختيار الفصل.")
                 if(design==Design.PATH) Text("اسحب حواف الودجت لتغيير حجمه: مختصر، أفقي، متوازن أو مفصّل حسب المساحة.")
                 Image(bitmap.asImageBitmap(),contentDescription=day.summary,
-                    modifier=Modifier.fillMaxWidth().aspectRatio(1f))
+                    modifier=Modifier.fillMaxWidth().aspectRatio(dimensions.first.toFloat()/dimensions.second))
                 Button(onClick={
                     val manager=AppWidgetManager.getInstance(c)
                     if(manager.isRequestPinAppWidgetSupported) {

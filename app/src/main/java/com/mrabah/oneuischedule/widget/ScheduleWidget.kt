@@ -707,7 +707,11 @@ object ScheduleUpdater {
 
     fun schedule(context: Context) {
         val alarms = context.getSystemService(AlarmManager::class.java) ?: return
-        val at = ScheduleEngine.nextRefresh(context, LocalDateTime.now(ZoneId.systemDefault()))
+        val now = LocalDateTime.now(ZoneId.systemDefault())
+        val manager = android.appwidget.AppWidgetManager.getInstance(context)
+        val utilityInstalled = UtilityWidgets.receivers.values.any { manager.getAppWidgetIds(android.content.ComponentName(context,it)).isNotEmpty() }
+        val today = if(utilityInstalled) ScheduleEngine.today(com.mrabah.oneuischedule.data.ScheduleStore.load(context),now) else null
+        val at = if(today?.focus!=null) now.truncatedTo(java.time.temporal.ChronoUnit.MINUTES).plusMinutes(1) else ScheduleEngine.nextRefresh(context, now)
         val triggerAt = at.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
         try {

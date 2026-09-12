@@ -29,6 +29,14 @@
             <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/design_path_info" />
         </receiver>
+        <receiver android:name=".widget.TwoFaceWidgetReceiver" android:exported="false" android:label="يومي بوجهين">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/two_face_info" />
+        </receiver>
+        <receiver android:name=".widget.AvailableTimeWidgetReceiver" android:exported="false" android:label="الوقت المتاح">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/available_time_info" />
+        </receiver>
         <activity android:name=".ui.StudioActivity" android:exported="false" />
         <activity android:name=".widget.StandbyClassActivity" android:exported="false" />
         <activity android:name=".widget.ClassNoteActivity" android:exported="false" />

@@ -40,6 +40,7 @@ class ClassNoteActivity:ComponentActivity() {
             Surface(Modifier.fillMaxSize().safeDrawingPadding().imePadding()) {
                 LazyColumn(contentPadding=PaddingValues(24.dp),verticalArrangement=Arrangement.spacedBy(18.dp)) {
                     item { Text("آخر نقطة للفصل $section",style=MaterialTheme.typography.headlineSmall) }
+                    item { OutlinedButton(onClick={com.mrabah.oneuischedule.ui.openStudio(this@ClassNoteActivity,"shortcuts",section)},modifier=Modifier.fillMaxWidth()){Text("اختصارات الفصل · ملفات وروابط")}}
                     item { Text("اكتب أين توقفت. تظهر الملاحظة لهذا الفصل في حصصه القادمة حتى تحديثها أو إنهائها.") }
                     item { OutlinedTextField(value=note,onValueChange={note=it.take(1000)},label={Text("ملاحظة الفصل")},
                         placeholder={Text("توقفنا عند صفحة ٣٥، السؤال ٤")},minLines=3,modifier=Modifier.fillMaxWidth()) }

@@ -32,11 +32,13 @@ class StudioActivity:ComponentActivity() {
                 Box(Modifier.weight(1f)) {when(intent.getStringExtra("page")) {
                     "data"->DataScreen()
                     "class"->ClassPage(config,intent.getStringExtra("section").orEmpty(),::commit)
+                    "shortcuts"->ClassShortcutsScreen(intent.getStringExtra("section").orEmpty())
                     "week"->WeekTools(config,::commit)
                     "calendar"->CalendarScreen(config,::commit)
                     "profiles"->ProfilesScreen(config,::commit)
                     "alerts"->AlertsScreen(config,::commit)
                     "widgets"->WidgetSettingsScreen()
+                    "summary"->WeeklySummary(config)
                     "appearance"->AppearanceScreen()
                     else->ClassHub(config)
                 }}
@@ -51,7 +53,7 @@ internal fun SettingsHome() {
     LazyColumn(contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(14.dp)) {
         item {Text("الإعدادات",style=MaterialTheme.typography.headlineMedium)}
         item {com.mrabah.oneuischedule.UpdatePanel()}
-        listOf("appearance" to ("المظهر والقراءة" to "الوضع الليلي وحجم النص"),"alerts" to ("التنبيهات" to "أنواع الحصص والأوقات والأصوات"),"widgets" to ("تخصيص الودجت" to "إعدادات مستقلة لكل نسخة"),"data" to ("البيانات والاسترجاع" to "نسخة شاملة، نسخ محلية تلقائية وسجل التعديلات"),"profiles" to ("الأوقات الخاصة" to "الصيف والشتاء ورمضان والاختبارات")).forEach {(page,labels)->item {
+        listOf("summary" to ("ملخص الأسبوع" to "التقدم والملاحظات والانتظار ومشاركة جاهزة"),"appearance" to ("المظهر والقراءة" to "الوضع الليلي وحجم النص"),"alerts" to ("التنبيهات" to "أنواع الحصص والأوقات والأصوات"),"widgets" to ("تخصيص الودجت" to "إعدادات مستقلة لكل نسخة"),"data" to ("البيانات والاسترجاع" to "نسخة شاملة، نسخ محلية تلقائية وسجل التعديلات"),"profiles" to ("الأوقات الخاصة" to "الصيف والشتاء ورمضان والاختبارات")).forEach {(page,labels)->item {
             Card(onClick={openStudio(c,page)},modifier=Modifier.fillMaxWidth()){Column(Modifier.padding(20.dp)){Text(labels.first,style=MaterialTheme.typography.titleMedium);Text(labels.second,color=MaterialTheme.colorScheme.onSurfaceVariant)}}
         }}
     }
