@@ -13,6 +13,27 @@ import com.mrabah.oneuischedule.widget.*
 import java.time.*
 
 @Composable
+internal fun AbsenceScreen(config:Config,commit:(Config)->Unit) {
+    val c=LocalContext.current
+    var reason by rememberSaveable{mutableStateOf("غائب")}
+    var custom by rememberSaveable{mutableStateOf("")}
+    val date=LocalDate.now()
+    val active=config.absenceDate==date.toString()
+    LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(14.dp)) {
+        item{WorkspaceBanner("غياب أو إجازة اليوم","$date · لهذا اليوم فقط")}
+        item{Text("تُلغى حصص اليوم وتُوقف تنبيهاتها وتذكيرات الفصول، وتظهر الحالة في الودجت. يعود جدولك تلقائيًا في اليوم التالي دون تغيير الجدول الأسبوعي.")}
+        if(active)item{Text("الحالة الحالية: ${config.absenceLabel}",style=MaterialTheme.typography.titleLarge)}
+        item{Choice("السبب",reason,listOf("غائب","إجازة مرضية","إجازة","سبب آخر"),{it}){reason=it}}
+        if(reason=="سبب آخر")item{OutlinedTextField(custom,{custom=it.take(60)},label={Text("اكتب الحالة التي تظهر في الودجت")},modifier=Modifier.fillMaxWidth())}
+        item{Button(enabled=reason!="سبب آخر" || custom.isNotBlank(),onClick={
+            val latest=ScheduleStore.load(c)
+            commit(latest.copy(absenceDate=LocalDate.now().toString(),absenceLabel=if(reason=="سبب آخر")custom.trim() else reason))
+        },modifier=Modifier.fillMaxWidth()){Text(if(active)"تحديث سبب الغياب" else "اعتماد وإيقاف حصص اليوم")}}
+        if(active)item{OutlinedButton(onClick={val latest=ScheduleStore.load(c);commit(latest.copy(absenceDate="",absenceLabel=""))},modifier=Modifier.fillMaxWidth()){Text("التراجع وإعادة حصص اليوم")}}
+    }
+}
+
+@Composable
 internal fun TomorrowScreen(config:Config) {
     val c=LocalContext.current
     var revision by remember{mutableStateOf(0)}

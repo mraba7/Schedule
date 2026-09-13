@@ -60,6 +60,8 @@ data class Config(
     val preMinutes:Int = 5,
     val endMinutes:Int = 5,
     val mutedDate:String = "",
+    val absenceDate:String = "",
+    val absenceLabel:String = "",
 
 ) {
     fun bell(period: Int): Bell = bells.first { it.period == period }
@@ -70,7 +72,7 @@ data class Config(
 
     fun noteFor(day: DayOfWeek, period: Int): String = notes["${day.name}#$period"].orEmpty()
 
-    fun holidayOn(date: LocalDate): Holiday? = holidays.firstOrNull { it.covers(date) }
+    fun holidayOn(date: LocalDate): Holiday? = if(absenceDate==date.toString()) Holiday(date,date,absenceLabel.ifBlank{"غائب"}) else holidays.firstOrNull { it.covers(date) }
 }
 
 object Defaults {
@@ -272,6 +274,7 @@ object ScheduleStore {
             .put("profiles",SchoolTools.encode(c.profiles)).put("classColors",JSONObject(c.classColors))
             .put("notifyTeaching",c.notifyTeaching).put("notifyStandby",c.notifyStandby)
             .put("preMinutes",c.preMinutes).put("endMinutes",c.endMinutes).put("mutedDate",c.mutedDate)
+            .put("absenceDate",c.absenceDate).put("absenceLabel",c.absenceLabel)
 
     }
 
@@ -348,6 +351,7 @@ object ScheduleStore {
             classColors=json.optJSONObject("classColors")?.let{o->o.keys().asSequence().associateWith{o.getString(it)}.filterValues{Regex("#[0-9A-Fa-f]{6}").matches(it)}} ?: emptyMap(),
             notifyTeaching=json.optBoolean("notifyTeaching",true),notifyStandby=json.optBoolean("notifyStandby",true),
             preMinutes=json.optInt("preMinutes",5).coerceIn(1,30),endMinutes=json.optInt("endMinutes",5).coerceIn(1,30),mutedDate=json.optString("mutedDate",""),
+            absenceDate=json.optString("absenceDate",""),absenceLabel=json.optString("absenceLabel",""),
 
         )
     }
@@ -418,6 +422,7 @@ object ScheduleEngine {
 
     fun build(config: Config, now: LocalDateTime): ScheduleUi {
         val today = now.toLocalDate()
+        if(config.absenceDate==today.toString()) return forDay(config,today,now)
         val lastEnd = dutiesOn(config, today).keys
             .mapNotNull { p -> SchoolTools.bells(config,today).firstOrNull { it.period == p }?.end }
             .maxOrNull()

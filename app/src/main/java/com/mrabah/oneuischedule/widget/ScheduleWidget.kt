@@ -284,7 +284,7 @@ private object Vms {
             remaining = if (ui.remaining > 0) "${ui.remaining} حصص متبقية" else "",
             segments = segments,
             hasFocus = slot != null,
-            emptyLabel = if (ui.isToday) "انتهى نصابك اليوم" else "إجازة",
+            emptyLabel = ui.holiday?.label ?: if (ui.isToday) "انتهى نصابك اليوم" else "إجازة",
             status = when {
                 slot == null -> ""
                 live -> "جارية الآن"

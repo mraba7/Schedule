@@ -47,6 +47,12 @@ object PeriodNotifier {
     fun sync(context: Context) {
         com.mrabah.oneuischedule.widget.ClassNoteReminders.sync(context)
         val config = ScheduleStore.load(context)
+        if(config.absenceDate==java.time.LocalDate.now().toString()) {
+            NotificationManagerCompat.from(context).cancel(ID_BELL)
+            NotificationManagerCompat.from(context).cancel(ID_LIVE)
+            com.mrabah.oneuischedule.widget.ClassNotes.all(context).forEach { NotificationManagerCompat.from(context).cancel(it.section,7401) }
+            com.mrabah.oneuischedule.data.ClassJournal.all(context).forEach { NotificationManagerCompat.from(context).cancel(it.id,7402) }
+        }
         if (!config.notify) {
             cancel(context)
             NotificationManagerCompat.from(context).cancel(ID_LIVE)

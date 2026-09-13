@@ -44,6 +44,7 @@ class StudioActivity:ComponentActivity() {
                     "classroom"->ClassroomScreen(config,intent.getStringExtra("section").orEmpty(),intent.getStringExtra("classroom_mode") ?: "student")
                     "tomorrow"->TomorrowScreen(config)
                     "emergency"->EmergencyScreen(config,::commit)
+                    "absence"->AbsenceScreen(config,::commit)
                     "class"->ClassPage(config,intent.getStringExtra("section").orEmpty(),::commit)
                     "shortcuts"->ClassShortcutsScreen(intent.getStringExtra("section").orEmpty())
                     "week"->WeekTools(config,::commit)

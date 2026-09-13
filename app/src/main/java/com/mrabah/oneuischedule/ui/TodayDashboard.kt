@@ -76,6 +76,7 @@ internal fun TodayDashboard(config:Config, fixedNow:LocalDateTime?=null,onEdit:(
             FilterChip(selected=!tomorrow,onClick={tomorrow=false},label={Text("اليوم")})
             FilterChip(selected=tomorrow,onClick={tomorrow=true},label={Text("غدًا")})
         }}
+        if(!tomorrow)item{OutlinedButton(onClick={openStudio(context,"absence")},modifier=Modifier.fillMaxWidth()){Text(if(config.absenceDate==now.toLocalDate().toString())"${config.absenceLabel} · إدارة غياب اليوم" else "غياب أو إجازة اليوم")}}
         if(EmergencyDay.active(config,ui.date))item{Text(SchoolTools.profile(config,ui.date)!!.name,color=MaterialTheme.colorScheme.primary)}
         item {Card(colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.surface),shape=RoundedCornerShape(22.dp)) {
             Row(Modifier.fillMaxWidth().padding(vertical=18.dp)) {

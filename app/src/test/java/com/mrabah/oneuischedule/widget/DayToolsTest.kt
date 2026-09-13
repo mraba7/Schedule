@@ -13,6 +13,23 @@ import java.time.*
 @Config(sdk=[34])
 class DayToolsTest {
     private val now=LocalDateTime.of(2026,9,14,6,0)
+    @Test fun absenceCancelsTodayAndRestoresNextDayWithoutChangingTemplate() {
+        val date=now.toLocalDate()
+        val base=Defaults.config
+        val absent=base.copy(absenceDate=date.toString(),absenceLabel="غائب")
+        assertTrue(ScheduleEngine.dutiesOn(absent,date).isEmpty())
+        val ui=ScheduleEngine.build(absent,now.plusHours(3))
+        assertEquals(date,ui.date)
+        assertTrue(ui.slots.isEmpty())
+        assertNull(ui.live)
+        assertEquals("غائب",ui.holiday?.label)
+        assertEquals(ScheduleEngine.dutiesOn(base,date.plusDays(1)),ScheduleEngine.dutiesOn(absent,date.plusDays(1)))
+        assertEquals(base,absent.copy(absenceDate="",absenceLabel=""))
+        assertEquals(absent,ScheduleStore.importJson(ScheduleStore.exportJson(absent)))
+        assertTrue(com.mrabah.oneuischedule.notify.PeriodNotifier.nextEvent(absent,now)!!.toLocalDate()>date)
+        val section=(ScheduleEngine.dutiesOn(base,date).values.filterIsInstance<Duty.Teach>().first()).section
+        assertTrue(ClassNotes.next(absent,ClassNote(section,"صفحة 20",now.minusDays(1)),now)!!.start.toLocalDate()>date)
+    }
     @Test fun delayOnlyChangesTodayAndUndoRestoresExistingProfile() {
         val date=now.toLocalDate()
         val base=Defaults.config.copy(profiles=listOf(TimetableProfile("winter","شتاء",date,date.plusDays(10),Defaults.config.bells,Defaults.config.week)))
