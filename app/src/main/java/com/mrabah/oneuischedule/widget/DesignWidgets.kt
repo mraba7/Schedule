@@ -99,7 +99,8 @@ internal object DesignWidgets {
             .setData(Uri.parse("schedule-design://lesson/${day.key ?: "empty"}"))
             .putExtra("key",day.key).putExtra("title","${day.day} · ${day.period} · ${day.section}")
         val target=if(day.focus?.isStandby==true) StandbyAssignments.intent(c,day.ui.date,day.focus!!.period) else if((style==Design.FOCUS || style==Design.PATH || style==Design.INTERACTIVE) && day.focus?.section!=null) ClassNotes.intent(c,day.focus!!.section!!) else if(style==Design.PATH) Intent(c,com.mrabah.oneuischedule.MainActivity::class.java).putExtra("open_tab",1) else intent
-        val open=PendingIntent.getActivity(c,0,target,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val destination=if(day.focus==null) Intent(c,com.mrabah.oneuischedule.MainActivity::class.java).putExtra("open_tab",0) else target
+        val open=PendingIntent.getActivity(c,0,destination,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         views.setOnClickPendingIntent(R.id.design_image,open)
         views.setViewVisibility(R.id.design_schedule,if((style==Design.TICKET || style==Design.GLASS) && day.key!=null) View.VISIBLE else View.GONE)
         if((style==Design.TICKET || style==Design.GLASS) && day.key!=null) {

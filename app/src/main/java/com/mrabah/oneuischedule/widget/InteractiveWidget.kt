@@ -86,7 +86,10 @@ class InteractiveWidgetReceiver:DesignWidgetReceiver() {
             if(day.key!=key)return
             val prefs=context.getSharedPreferences("widget_lesson_peek",0)
             prefs.edit().putString("note:$id",if(prefs.getString("note:$id",null)==key)"" else key).apply()
-            DesignWidgets.update(context,m,id,design)
+            val pending=goAsync()
+            CoroutineScope(Dispatchers.Default).launch {
+                try {DesignWidgets.update(context,m,id,design)} finally {pending.finish()}
+            }
             return
         }
         if(intent.action!=LessonPeek.ACTION && intent.action!=PeekCollapseScheduler.ACTION)return

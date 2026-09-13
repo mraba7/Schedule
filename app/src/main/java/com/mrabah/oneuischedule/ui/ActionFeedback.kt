@@ -18,15 +18,38 @@ import kotlinx.coroutines.delay
 import org.json.JSONObject
 
 internal object RecentAction {
+    private fun comparable(store:String,key:String,value:Any?):String? {
+        if(store=="widget_preferences" && key.startsWith("question:"))return null
+        if(value==null)return null
+        val copy=JSONObject(value.toString())
+        if(store=="class_journal" || store=="class_progress_notes") {
+            val record=JSONObject(copy.getString("value"));record.remove("delivered")
+            copy.put("value",record.toString())
+        }
+        return copy.toString()
+    }
+    fun hasUserChange(before:JSONObject,after:JSONObject):Boolean {
+        val a=before.getJSONObject("stores");val b=after.getJSONObject("stores")
+        return DataVault.stores.any{name->val old=a.getJSONObject(name);val next=b.getJSONObject(name)
+            (old.keys().asSequence().toSet()+next.keys().asSequence().toSet()).any{key->comparable(name,key,old.opt(key))!=comparable(name,key,next.opt(key))}}
+    }
     fun mergeUndo(before:JSONObject,after:JSONObject,current:JSONObject):JSONObject {
         val merged=JSONObject(current.toString())
         val a=before.getJSONObject("stores");val b=after.getJSONObject("stores");val result=merged.getJSONObject("stores")
         DataVault.stores.forEach {name->
             val old=a.getJSONObject(name);val next=b.getJSONObject(name);val live=result.getJSONObject(name)
             (old.keys().asSequence().toSet()+next.keys().asSequence().toSet()).forEach {key->
-                if(old.opt(key)?.toString()!=next.opt(key)?.toString()) {
-                    require(live.opt(key)?.toString()==next.opt(key)?.toString()){"تغيّرت البيانات؛ استخدم سجل الاسترجاع"}
-                    if(old.has(key))live.put(key,old.get(key)) else live.remove(key)
+                if(comparable(name,key,old.opt(key))!=comparable(name,key,next.opt(key))) {
+                    require(comparable(name,key,live.opt(key))==comparable(name,key,next.opt(key))){"تغيّرت البيانات؛ استخدم سجل الاسترجاع"}
+                    if(old.has(key)) {
+                        val restored=JSONObject(old.getJSONObject(key).toString())
+                        if((name=="class_journal" || name=="class_progress_notes") && live.has(key)) {
+                            val record=JSONObject(restored.getString("value"))
+                            record.put("delivered",JSONObject(live.getJSONObject(key).getString("value")).optBoolean("delivered"))
+                            restored.put("value",record.toString())
+                        }
+                        live.put(key,restored)
+                    } else live.remove(key)
                 }
             }
         }
@@ -46,7 +69,7 @@ internal fun ActionFeedback() {
         var baseline=DataVault.snapshot(c)
         val task=Runnable {
             val next=DataVault.snapshot(c)
-            if(baseline.getJSONObject("stores").toString()!=next.getJSONObject("stores").toString() && !suppress) {
+            if(RecentAction.hasUserChange(baseline,next) && !suppress) {
                 action=baseline to next;message="تم الحفظ ✓";serial++
                 view.performHapticFeedback(android.view.HapticFeedbackConstants.CONFIRM)
             }
