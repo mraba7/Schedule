@@ -29,8 +29,22 @@ class AppScreensTest {
     @get:Rule val compose=createEmptyComposeRule()
     private lateinit var controller:org.robolectric.android.controller.ActivityController<androidx.activity.ComponentActivity>
     @org.junit.Before fun createHost() {controller=org.robolectric.Robolectric.buildActivity(androidx.activity.ComponentActivity::class.java);controller.get().setTheme(com.mrabah.oneuischedule.R.style.Theme_OneUISchedule);controller.setup()}
-    @org.junit.After fun closeHost() {controller.pause().stop().destroy()}
-    private fun content(body:@Composable ()->Unit) {compose.runOnUiThread {controller.get().setContent(content=body)}}
+    @org.junit.After fun closeHost() {
+        compose.runOnUiThread{val root=controller.get().findViewById<android.view.ViewGroup>(android.R.id.content);(root.getChildAt(0) as? androidx.compose.ui.platform.ComposeView)?.disposeComposition()}
+        controller.pause().stop().destroy()
+    }
+    private fun drawWindows() {
+        org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(32))
+        compose.mainClock.advanceTimeBy(32)
+        compose.runOnUiThread {
+            val type=Class.forName("android.view.WindowManagerGlobal")
+            val instance=type.getDeclaredMethod("getInstance").invoke(null)
+            val field=type.getDeclaredField("mViews").apply{isAccessible=true}
+            @Suppress("UNCHECKED_CAST") val views=(field.get(instance) as List<android.view.View>).toList()
+            views.filter{it.width>0 && it.height>0}.forEach{view->val b=Bitmap.createBitmap(view.width,view.height,Bitmap.Config.ARGB_8888);view.draw(android.graphics.Canvas(b));b.recycle()}
+        }
+    }
+    private fun content(body:@Composable ()->Unit) {compose.runOnUiThread {controller.get().setContent(content=body)};drawWindows()}
     private fun capture(name:String) {
         val folder=File("build/design-previews").apply{mkdirs()}
         compose.runOnIdle {
@@ -59,6 +73,7 @@ class AppScreensTest {
         var saved=com.mrabah.oneuischedule.data.Defaults.config
         content {ScheduleTheme(dark=false){Surface(Modifier.fillMaxSize()){ScheduleScreen(Defaults.config,{saved=it})}}}
         compose.onNodeWithContentDescription("SUNDAY الحصة 1").performClick()
+        drawWindows()
         compose.onNodeWithText("حصة انتظار").performClick()
         assertEquals(Defaults.config,saved)
         compose.onNodeWithText("حفظ التعديلات").performClick()

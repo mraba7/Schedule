@@ -66,7 +66,7 @@ class LessonPeekTest {
         val views=DesignWidgets.makeViews(c,Design.INTERACTIVE,day,DesignRenderer(c),320f,320f,45)
         val root=views.apply(c,FrameLayout(c))
         val hits=root.findViewById<FrameLayout>(R.id.design_peeks)
-        assertEquals(day.ui.slots.size,hits.childCount)
+        assertEquals(LessonPeek.lessons(day).size+1,hits.childCount)
         assertTrue(hits.getChildAt(0).isClickable)
         assertTrue(hits.getChildAt(0).contentDescription.toString().contains("08:05"))
     }
