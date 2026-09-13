@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:layoutDirection="rtl" android:background="@drawable/question_background" android:padding="16dp">
+    <TextView android:id="@+id/question_title" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="سؤال اليوم" android:textColor="#E3C890" android:textSize="16sp" android:maxLines="1" android:ellipsize="end" />
+    <TextView android:id="@+id/question_body" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:gravity="center_vertical" android:textColor="#F0F2F5" android:textSize="18sp" android:maxLines="5" android:ellipsize="end" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:orientation="horizontal">
+        <Button android:id="@+id/question_reveal" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="الإجابة" android:textSize="12sp" />
+        <Button android:id="@+id/question_next" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="التالي" android:textSize="12sp" />
+        <Button android:id="@+id/question_open" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="الأسئلة" android:textSize="12sp" />
+    </LinearLayout>
+</LinearLayout>

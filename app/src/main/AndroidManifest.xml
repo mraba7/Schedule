@@ -37,6 +37,11 @@
             <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/available_time_info" />
         </receiver>
+        <activity android:name=".ui.ClassroomDisplayActivity" android:exported="false" />
+        <receiver android:name=".widget.QuestionWidgetReceiver" android:exported="false" android:label="سؤال اليوم">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/question_widget_info" />
+        </receiver>
         <activity android:name=".ui.StudioActivity" android:exported="false" />
         <activity android:name=".widget.StandbyClassActivity" android:exported="false" />
         <activity android:name=".widget.ClassNoteActivity" android:exported="false" />

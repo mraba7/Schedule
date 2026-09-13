@@ -41,6 +41,7 @@ class StudioActivity:ComponentActivity() {
                     "inbox"->FollowupsScreen(config)
                     "gallery"->DesignGallery(config)
                     "tools"->ToolsHub()
+                    "classroom"->ClassroomScreen(config,intent.getStringExtra("section").orEmpty(),intent.getStringExtra("classroom_mode") ?: "student")
                     "tomorrow"->TomorrowScreen(config)
                     "emergency"->EmergencyScreen(config,::commit)
                     "class"->ClassPage(config,intent.getStringExtra("section").orEmpty(),::commit)

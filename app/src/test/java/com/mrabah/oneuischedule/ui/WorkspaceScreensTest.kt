@@ -148,4 +148,18 @@ class WorkspaceScreensTest {
         compose.onNodeWithText("إبقاء الشاشة مضاءة").assertExists()
         capture("lesson-focus")
     }
+    @Test fun classroomCanSaveStudentAndShowSeat() {
+        content{ClassroomScreen(Defaults.config,"2/1")}
+        compose.onNodeWithText("إضافة طالب ومقعد").performClick()
+        drawWindows()
+        compose.onNodeWithText("اسم الطالب").performTextInput("علي")
+        drawWindows()
+        compose.onNodeWithText("حفظ").performClick()
+        drawWindows()
+        Assert.assertEquals("علي",ClassroomStore.all(host.get()).single().title)
+        compose.onNodeWithTag("classroom-list").performScrollToNode(hasText("علي"))
+        drawWindows()
+        compose.onNodeWithText("علي").assertExists()
+        capture("classroom-seats")
+    }
 }
