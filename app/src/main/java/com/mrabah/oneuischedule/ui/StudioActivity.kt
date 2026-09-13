@@ -38,13 +38,14 @@ class StudioActivity:ComponentActivity() {
                     "agenda"->AgendaWorkspace(config,::commit){hasChanges=it}
                     "focus"->LessonFocusScreen(config)
                     "search"->SearchScreen(config)
-                    "inbox"->FollowupsScreen(config)
+                    "inbox"->FollowupsScreen(config,intent.getBooleanExtra("add",false))
                     "gallery"->DesignGallery(config)
                     "tools"->ToolsHub()
-                    "classroom"->ClassroomScreen(config,intent.getStringExtra("section").orEmpty(),intent.getStringExtra("classroom_mode") ?: "student")
+                    "classroom"->ClassroomScreen(config,intent.getStringExtra("section").orEmpty(),intent.getStringExtra("classroom_mode") ?: "student",intent.getBooleanExtra("add",false))
                     "tomorrow"->TomorrowScreen(config)
                     "emergency"->EmergencyScreen(config,::commit)
                     "absence"->AbsenceScreen(config,::commit)
+                    "quick_lesson"->QuickLessonScreen(config,::commit)
                     "class"->ClassPage(config,intent.getStringExtra("section").orEmpty(),::commit)
                     "shortcuts"->ClassShortcutsScreen(intent.getStringExtra("section").orEmpty())
                     "week"->WeekTools(config,::commit)
@@ -55,7 +56,7 @@ class StudioActivity:ComponentActivity() {
                     "summary"->WeeklySummary(config)
                     "appearance"->AppearanceScreen()
                     else->ClassHub(config)
-                }}
+                };ActionFeedback()}
             }}
         }}
     }

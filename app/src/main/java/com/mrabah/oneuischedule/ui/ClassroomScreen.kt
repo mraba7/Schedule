@@ -17,7 +17,7 @@ import com.mrabah.oneuischedule.data.*
 import java.util.UUID
 
 @Composable
-internal fun ClassroomScreen(config:Config,initialSection:String="",initialMode:String="student") {
+internal fun ClassroomScreen(config:Config,initialSection:String="",initialMode:String="student",startAdding:Boolean=false) {
     val c=LocalContext.current;val revision=workspaceRevision()
     val sections=(config.sections+config.schoolSections).distinct()
     var section by rememberSaveable{mutableStateOf(initialSection.ifBlank{sections.firstOrNull().orEmpty()})}
@@ -29,6 +29,7 @@ internal fun ClassroomScreen(config:Config,initialSection:String="",initialMode:
     var columns by rememberSaveable{mutableStateOf(2)}
     var showGroups by rememberSaveable{mutableStateOf(false)}
     var message by remember{mutableStateOf("")}
+    LaunchedEffect(Unit){if(startAdding && section.isNotBlank())editing=ClassroomRecord(kind=mode,section=section,title="",extra=if(mode=="student")((1..60).firstOrNull{n->ClassroomStore.all(c).none{it.kind=="student" && it.section==section && it.extra.toIntOrNull()==n}} ?: 60).toString() else "")}
     val records=remember(revision,section,mode){ClassroomStore.all(c).filter{it.section==section && it.kind==mode}.sortedByDescending{it.created}}
     val titles=linkedMapOf("student" to "المقاعد والمشاركة","exit" to "بطاقة الخروج","difficulty" to "صعوبات التعلم","lab" to "التجارب","plan" to "المخطط والمنفذ","question" to "بنك الأسئلة")
     LazyColumn(Modifier.fillMaxSize().testTag("classroom-list"),contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {

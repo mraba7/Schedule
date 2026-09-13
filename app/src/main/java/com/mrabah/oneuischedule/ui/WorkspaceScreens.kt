@@ -103,10 +103,10 @@ internal fun AgendaWorkspace(config:Config,commit:(Config)->Unit,onDirty:(Boolea
 }
 
 @Composable
-internal fun FollowupsScreen(config:Config) {
+internal fun FollowupsScreen(config:Config,startAdding:Boolean=false) {
     val c=LocalContext.current;val revision=workspaceRevision()
     var completed by rememberSaveable{mutableStateOf(false)}
-    var adding by rememberSaveable{mutableStateOf(false)}
+    var adding by rememberSaveable{mutableStateOf(startAdding)}
     var title by rememberSaveable{mutableStateOf("")}
     var section by rememberSaveable{mutableStateOf(config.sections.firstOrNull().orEmpty())}
     var undo by remember{mutableStateOf<JournalEntry?>(null)}

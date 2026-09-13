@@ -76,7 +76,8 @@ internal object DesignWidgets {
             android.util.SizeF(opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH,320).coerceAtLeast(120).toFloat(),opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT,320).coerceAtLeast(120).toFloat())
         ).distinct() else listOf(fallback)
         val layouts=(sizes?.takeIf { it.isNotEmpty() } ?: fallbackSizes).associateWith { size ->
-            makeViews(context,style,if(style==Design.PATH) DesignDay(com.mrabah.oneuischedule.data.ScheduleEngine.today(day.ui.config,day.now),day.now) else day,renderer,size.width,size.height,id)
+            val today=com.mrabah.oneuischedule.data.ScheduleEngine.today(day.ui.config,day.now)
+            makeViews(context,style,if(style==Design.PATH || ((style==Design.FOCUS || style==Design.INTERACTIVE) && today.slots.isNotEmpty())) DesignDay(today,day.now) else day,renderer,size.width,size.height,id)
         }
         manager.updateAppWidget(id,if(layouts.size==1) layouts.values.first() else RemoteViews(layouts))
     }
@@ -86,9 +87,10 @@ internal object DesignWidgets {
         val density=minOf(2f,640f/maxOf(width,height))
         val selected=if(style==Design.INTERACTIVE) LessonPeek.selected(c,id,day.ui.date.toString()) else null
         val options=WidgetPreferences.get(c,id)
+        val noteOpen=c.getSharedPreferences("widget_lesson_peek",0).getString("note:$id",null)==day.key && day.key!=null
         val task=PreparationStore.task(c,day.key).ifBlank { "تحديد التجهيز" };val done=PreparationStore.done(c,day.key)
-        val cacheKey=listOf(style,day.ui,day.now.truncatedTo(java.time.temporal.ChronoUnit.MINUTES),width,height,selected,options,task,done,ClassNotes.all(c),com.mrabah.oneuischedule.data.ClassJournal.all(c)).joinToString("|")
-        val bitmap=WidgetBitmapCache.get(cacheKey) {renderer.render(style,day,(width*density).toInt(),(height*density).toInt(),task,done,width,height,selected,options)}
+        val cacheKey=listOf(style,day.ui,day.now.truncatedTo(java.time.temporal.ChronoUnit.MINUTES),width,height,selected,options,noteOpen,task,done,ClassNotes.all(c),com.mrabah.oneuischedule.data.ClassJournal.all(c)).joinToString("|")
+        val bitmap=WidgetBitmapCache.get(cacheKey) {renderer.render(style,day,(width*density).toInt(),(height*density).toInt(),task,done,width,height,selected,options,noteOpen)}
 
         val views=RemoteViews(c.packageName,R.layout.design_widget)
         views.setImageViewBitmap(R.id.design_image,bitmap)
@@ -133,7 +135,7 @@ internal object DesignWidgets {
         if((style==Design.INTERACTIVE || style==Design.FOCUS) && day.focus!=null) {
             val scale=minOf(width,height)/360f
             val tiles=LessonPeek.tiles(day,selected)
-            day.ui.slots.forEachIndexed { i,slot ->
+            LessonPeek.lessons(day).forEachIndexed { i,slot ->
                 if(style!=Design.INTERACTIVE && !slot.isStandby)return@forEachIndexed
                 val tile=tiles[i]
                 val hit=RemoteViews(c.packageName,R.layout.design_peek_hit)
@@ -162,6 +164,21 @@ internal object DesignWidgets {
                 }
 
             }
+        }
+        if(style==Design.INTERACTIVE && day.focus!=null && options.showNote) {
+            val scale=minOf(width,height)/360f
+            val tiles=LessonPeek.tiles(day,selected)
+            val top=maxOf(133f,(tiles.maxOfOrNull{it.bottom} ?: 125f)+8f)
+            val squeeze=(360f-top)/227f
+            val hit=RemoteViews(c.packageName,R.layout.design_peek_hit)
+            hit.setViewLayoutWidth(R.id.design_peek_hit,330f*scale,TypedValue.COMPLEX_UNIT_DIP)
+            hit.setViewLayoutHeight(R.id.design_peek_hit,32f*squeeze*scale,TypedValue.COMPLEX_UNIT_DIP)
+            hit.setViewLayoutMargin(R.id.design_peek_hit,RemoteViews.MARGIN_LEFT,(width-360f*scale)/2+15f*scale,TypedValue.COMPLEX_UNIT_DIP)
+            hit.setViewLayoutMargin(R.id.design_peek_hit,RemoteViews.MARGIN_TOP,(height-360f*scale)/2+(top+77f*squeeze)*scale,TypedValue.COMPLEX_UNIT_DIP)
+            hit.setContentDescription(R.id.design_peek_hit,if(noteOpen)"طي الملاحظة" else "عرض الملاحظة")
+            val action=Intent(c,InteractiveWidgetReceiver::class.java).setAction("com.mrabah.oneuischedule.NOTE_PEEK").setData(Uri.parse("schedule-note-peek://$id/${day.key}")).putExtra("widget",id).putExtra("key",day.key)
+            hit.setOnClickPendingIntent(R.id.design_peek_hit,PendingIntent.getBroadcast(c,0,action,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+            views.addView(R.id.design_peeks,hit)
         }
         return views
     }

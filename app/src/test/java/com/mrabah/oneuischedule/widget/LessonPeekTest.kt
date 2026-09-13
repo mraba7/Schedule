@@ -81,7 +81,7 @@ class LessonPeekTest {
         LessonPeek.toggle(c,97,day.ui.date.toString(),1)
         val expanded=DesignWidgets.makeViews(c,Design.INTERACTIVE,day,DesignRenderer(c),360f,360f,97).apply(c,FrameLayout(c))
         val hits=expanded.findViewById<FrameLayout>(R.id.design_peeks)
-        assertEquals(8,hits.childCount)
+        assertEquals(9,hits.childCount) // seven periods, standby edit, and the independent note toggle
         hits.getChildAt(1).performClick()
         val launched=shadow.nextStartedActivity
         assertEquals(StandbyClassActivity::class.java.name,launched.component!!.className)

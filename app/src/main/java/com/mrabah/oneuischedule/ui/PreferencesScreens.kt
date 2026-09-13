@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.mrabah.oneuischedule.data.*
@@ -66,6 +67,13 @@ internal fun WidgetSettingsScreen() {
         if(installed.isEmpty())item{Text("أضف أحد تصاميم الودجت إلى الشاشة الرئيسية لتظهر نسخته هنا.")}
         item{Text("حجم النص ${(options.fontScale*100).toInt()}٪");Slider(options.fontScale,{options=options.copy(fontScale=it);saved=false},valueRange=.85f..1.25f);Text("يُضبط النص داخل المساحة المتاحة حتى لا يتداخل.")}
         item{Text("وضوح الخلفية ${(options.opacity*100).toInt()}٪");Slider(options.opacity,{options=options.copy(opacity=it);saved=false},valueRange=.25f..1f)}
+        item{Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){OutlinedButton(onClick={options=options.copy(opacity=1f,fontScale=1.1f);saved=false}){Text("خلفية مزدحمة")};OutlinedButton(onClick={options=options.copy(opacity=.65f,fontScale=1f);saved=false}){Text("خلفية هادئة")}}}
+        item{
+            val config=ScheduleStore.load(c)
+            val day=DesignDay.build(config)
+            val bitmap=remember(options,day.ui){DesignRenderer(c).render(Design.INTERACTIVE,day,600,600,options=options)}
+            androidx.compose.foundation.Image(bitmap=bitmap.asImageBitmap(),contentDescription="معاينة وضوح الودجت",modifier=Modifier.fillMaxWidth().height(260.dp))
+        }
         item{if(utilityIds.none{it.first==id})Toggle("إظهار الملاحظة والتجهيز",options.showNote){options=options.copy(showNote=it);saved=false};Toggle("إظهار ملخص الحصة التالية",options.showNext){options=options.copy(showNext=it);saved=false}}
         if(utilityIds.none{it.first==id})item{Text("ظهور الوقت بعد الضغط: ${options.peekSeconds} ثوانٍ");Slider(options.peekSeconds.toFloat(),{options=options.copy(peekSeconds=it.toInt());saved=false},valueRange=3f..15f,steps=11)}
         item{Text("مدة الضغط تخص الودجت التفاعلي. يتكيف إظهار التفاصيل مع نوع التصميم ومساحته.")}

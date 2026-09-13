@@ -1,6 +1,7 @@
 package com.mrabah.oneuischedule.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -60,6 +61,7 @@ internal fun TodayDashboard(config:Config, fixedNow:LocalDateTime?=null,onEdit:(
     val fg=MaterialTheme.colorScheme.onSurfaceVariant
     val clock=DateTimeFormatter.ofPattern("HH:mm",Locale.ENGLISH)
     var expanded by rememberSaveable {mutableStateOf(true)}
+    var openedPeriod by rememberSaveable {mutableStateOf<Int?>(null)}
     val focus=ui.focus
     val done=ui.slots.count {it.state==SlotState.DONE}
     LazyColumn(contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(14.dp)) {
@@ -92,10 +94,13 @@ internal fun TodayDashboard(config:Config, fixedNow:LocalDateTime?=null,onEdit:(
             config.holidays.filter{it.from>now.toLocalDate()}.minByOrNull{it.from}?.let{Text("${it.label} بعد ${java.time.temporal.ChronoUnit.DAYS.between(now.toLocalDate(),it.from)} يومًا",style=MaterialTheme.typography.bodySmall)}
         }
         if(focus!=null) item {
-            Card(colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.primaryContainer),shape=RoundedCornerShape(26.dp)) {
+            val ending=ui.live!=null && (ui.minutesLeftInLive ?: 99)<=5
+            val tone by androidx.compose.animation.animateColorAsState(if(ending)Color(0xFFE9C992) else MaterialTheme.colorScheme.primaryContainer,label="lesson-tone")
+            Card(colors=CardDefaults.cardColors(containerColor=tone,contentColor=if(ending)Color(0xFF342B1D) else MaterialTheme.colorScheme.onPrimaryContainer),shape=RoundedCornerShape(26.dp),modifier=Modifier.animateContentSize()) {
                 Column(Modifier.fillMaxWidth().padding(20.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
+                    if(ending)Text("آخر خمس دقائق · استعد للحصة التالية",style=MaterialTheme.typography.labelLarge)
                     Text(if(ui.live!=null)"جارية الآن" else "الحصة القادمة",style=MaterialTheme.typography.labelLarge)
-                    Text(periodName(focus.period),style=MaterialTheme.typography.headlineLarge,fontWeight=FontWeight.Bold)
+                    androidx.compose.animation.Crossfade(targetState=focus.period,label="current-lesson") {period->Text(periodName(period),style=MaterialTheme.typography.headlineLarge,fontWeight=FontWeight.Bold)}
                     Text(if(focus.isStandby)"انتظار · ${focus.displaySection ?: "لم يُحدّد الفصل"}" else "الفصل ${focus.displaySection}",style=MaterialTheme.typography.titleLarge)
                     TextButton(onClick={expanded=!expanded}){Text(if(expanded)"طي تفاصيل الحصة" else "عرض تفاصيل الحصة")}
                     if(expanded) {
@@ -132,7 +137,7 @@ internal fun TodayDashboard(config:Config, fixedNow:LocalDateTime?=null,onEdit:(
         }
         item {Text("${if(tomorrow)"حصص الغد" else "حصص اليوم"} · ${ui.slots.size}",style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold)}
         items(ui.slots,key={it.period}) {slot ->
-            Card(onClick={onEdit(ui.date,slot.period)},colors=CardDefaults.cardColors(containerColor=if(slot.state==SlotState.LIVE)MaterialTheme.colorScheme.secondaryContainer else Color(android.graphics.Color.parseColor(SchoolTools.color(config,slot.displaySection))).copy(alpha=.12f)),shape=RoundedCornerShape(20.dp)) {
+            Card(onClick={openedPeriod=if(openedPeriod==slot.period)null else slot.period},modifier=Modifier.animateContentSize(),colors=CardDefaults.cardColors(containerColor=if(slot.state==SlotState.LIVE)MaterialTheme.colorScheme.secondaryContainer else Color(android.graphics.Color.parseColor(SchoolTools.color(config,slot.displaySection))).copy(alpha=.12f)),shape=RoundedCornerShape(20.dp)) {
                 Column(Modifier.fillMaxWidth().padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
                     Row(verticalAlignment=Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
@@ -142,13 +147,17 @@ internal fun TodayDashboard(config:Config, fixedNow:LocalDateTime?=null,onEdit:(
                         Text(when(slot.state){SlotState.DONE->"✓ انتهت";SlotState.LIVE->"الآن";else->"قادمة"},color=MaterialTheme.colorScheme.primary,style=MaterialTheme.typography.labelMedium)
                     }
                     Text("من ${slot.bell.start.format(clock)} إلى ${slot.bell.end.format(clock)}",color=fg)
+                    if(openedPeriod==slot.period) {
                     if(slot.note.isNotBlank())Text(slot.note,style=MaterialTheme.typography.bodySmall)
+                    ClassNotes.get(context,slot.displaySection)?.let{Text("آخر نقطة: ${it.text}")}
+                    TextButton(onClick={onEdit(ui.date,slot.period)}){Text("تعديل الحصة")}
                     if(slot.isStandby)TextButton(onClick={context.startActivity(StandbyAssignments.intent(context,ui.date,slot.period))}){Text("فصل الانتظار")}
                     if(slot.overridden)Text("تعديل لهذا اليوم فقط",style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.primary)
+                    } else if(slot.overridden)Text("◷ معدّلة لهذا اليوم",style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.primary)
                 }
             }
         }
-        if(ui.slots.isNotEmpty())item {Text("اضغط الحصة لتعديلها لهذا اليوم أو لإضافة ملاحظة أسبوعية.",style=MaterialTheme.typography.bodySmall,color=fg)}
+        if(ui.slots.isNotEmpty())item {Text("اضغط الحصة لتمديد بطاقتها وعرض ملاحظاتها وتعديلها.",style=MaterialTheme.typography.bodySmall,color=fg)}
     }
 }
 

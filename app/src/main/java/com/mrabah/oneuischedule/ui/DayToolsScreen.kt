@@ -13,6 +13,18 @@ import com.mrabah.oneuischedule.widget.*
 import java.time.*
 
 @Composable
+internal fun QuickLessonScreen(config:Config,commit:(Config)->Unit) {
+    var date by remember{mutableStateOf(LocalDate.now())}
+    var period by remember{mutableStateOf<Int?>(null)}
+    LazyColumn(contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+        item{WorkspaceBanner("إضافة أو تعديل حصة","تعديل مؤقت لليوم المختار")}
+        item{DateField("اليوم",date){date=it}}
+        SchoolTools.bells(config,date).forEach{bell->item{OutlinedButton(onClick={period=bell.period},modifier=Modifier.fillMaxWidth()){Text("${periodName(bell.period)} · ${bell.start}–${bell.end}")}}}
+    }
+    period?.let{p->com.mrabah.oneuischedule.DayEditDialog(config,date,p,{period=null}){commit(it);period=null}}
+}
+
+@Composable
 internal fun AbsenceScreen(config:Config,commit:(Config)->Unit) {
     val c=LocalContext.current
     var reason by rememberSaveable{mutableStateOf("غائب")}

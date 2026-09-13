@@ -11,6 +11,7 @@ import android.os.SystemClock
 import kotlinx.coroutines.*
 
 internal object LessonPeek {
+    fun lessons(day:DesignDay)=day.ui.slots.filter{it.state!=com.mrabah.oneuischedule.data.SlotState.DONE}
     const val ACTION="com.mrabah.oneuischedule.PEEK"
     private fun prefs(c:Context)=c.getSharedPreferences("widget_lesson_peek",Context.MODE_PRIVATE)
     fun selected(c:Context,id:Int,date:String,now:Long=SystemClock.elapsedRealtime()):Int? {
@@ -27,12 +28,13 @@ internal object LessonPeek {
         prefs(c).edit().remove("until:$id").apply();return true
     }
     fun tiles(day:DesignDay,selected:Int?):List<android.graphics.RectF> {
-        val count=day.ui.slots.size;val columns=minOf(4,count.coerceAtLeast(1))
+        val visible=lessons(day)
+        val count=visible.size;val columns=minOf(4,count.coerceAtLeast(1))
         val rows=(count+columns-1)/columns;val h=if(rows>1)25f else 43f
         val width=(336f-5f*(columns-1))/columns
-        val selectedIndex=day.ui.slots.indexOfFirst{it.period==selected}
-        val expansion=if(day.ui.slots.getOrNull(selectedIndex)?.isStandby==true)54f else 28f
-        return day.ui.slots.mapIndexed { i,slot ->
+        val selectedIndex=visible.indexOfFirst{it.period==selected}
+        val expansion=if(visible.getOrNull(selectedIndex)?.isStandby==true)54f else 28f
+        return visible.mapIndexed { i,slot ->
             val x=12f+(columns-1-i%columns)*(width+5f)
             val y=57f+(i/columns)*(h+4f)+if(selectedIndex>=0 && selectedIndex/columns<i/columns)expansion else 0f
             android.graphics.RectF(x,y,x+width,y+h+if(slot.period==selected)expansion else 0f)
@@ -76,6 +78,17 @@ class InteractiveWidgetReceiver:DesignWidgetReceiver() {
     override val design=Design.INTERACTIVE
     override fun onReceive(context:Context,intent:Intent) {
         super.onReceive(context,intent)
+        if(intent.action=="com.mrabah.oneuischedule.NOTE_PEEK") {
+            val id=intent.getIntExtra("widget",-1);val m=AppWidgetManager.getInstance(context)
+            if(m.getAppWidgetInfo(id)?.provider!=ComponentName(context,InteractiveWidgetReceiver::class.java))return
+            val key=intent.getStringExtra("key") ?: return
+            val day=DesignDay.build(com.mrabah.oneuischedule.data.ScheduleStore.load(context))
+            if(day.key!=key)return
+            val prefs=context.getSharedPreferences("widget_lesson_peek",0)
+            prefs.edit().putString("note:$id",if(prefs.getString("note:$id",null)==key)"" else key).apply()
+            DesignWidgets.update(context,m,id,design)
+            return
+        }
         if(intent.action!=LessonPeek.ACTION && intent.action!=PeekCollapseScheduler.ACTION)return
         val id=intent.getIntExtra("widget",-1)
         val manager=AppWidgetManager.getInstance(context)

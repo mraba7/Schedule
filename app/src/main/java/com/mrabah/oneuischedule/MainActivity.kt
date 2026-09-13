@@ -91,7 +91,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             com.mrabah.oneuischedule.ui.ScheduleTheme {
-                AppShell(intent.getIntExtra("open_tab", intent.getIntExtra("tab",0)))
+                val at=java.time.LocalDateTime.now()
+                val today=ScheduleEngine.today(ScheduleStore.load(this),at)
+                val during=today.slots.firstOrNull()?.bell?.start?.let{at.toLocalTime()>=it && today.slots.last().bell.end>at.toLocalTime()}==true
+                AppShell(intent.getIntExtra("open_tab", intent.getIntExtra("tab",if(during)0 else getSharedPreferences("navigation_state",0).getInt("tab",0))))
             }
         }
     }
@@ -106,6 +109,7 @@ private fun AppShell(initialTab: Int = 0) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var tab by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(initialTab.coerceIn(0, 4)) }
+    LaunchedEffect(tab){context.getSharedPreferences("navigation_state",0).edit().putInt("tab",tab).apply()}
     var dirty by remember { mutableStateOf(false) }
     var pendingTab by remember { mutableStateOf<Int?>(null) }
     var config by remember { mutableStateOf(ScheduleStore.load(context)) }
@@ -137,6 +141,16 @@ private fun AppShell(initialTab: Int = 0) {
         confirmButton={TextButton(onClick={dirty=false;tab=pendingTab!!;pendingTab=null}){Text("تجاهل وانتقل")}},
         dismissButton={TextButton(onClick={pendingTab=null}){Text("الرجوع للتعديل")}})
     Scaffold(
+        floatingActionButton={if(tab<4 && !dirty) {
+            val label=when(tab){0->"+ ملاحظة";1->"+ حصة";2->"+ طالب";else->"+ تجربة"}
+            ExtendedFloatingActionButton(onClick={
+                when(tab) {
+                    0->context.startActivity(Intent(context,com.mrabah.oneuischedule.ui.StudioActivity::class.java).putExtra("page","inbox").putExtra("add",true))
+                    1->com.mrabah.oneuischedule.ui.openStudio(context,"quick_lesson")
+                    else->context.startActivity(Intent(context,com.mrabah.oneuischedule.ui.StudioActivity::class.java).putExtra("page","classroom").putExtra("classroom_mode",if(tab==2)"student" else "lab").putExtra("add",true))
+                }
+            }){Text(label)}
+        }},
         bottomBar = {
             NavigationBar {
                 listOf("اليوم", "الأجندة", "الفصول", "الأدوات", "الإعدادات").forEachIndexed { index, label ->
@@ -158,6 +172,7 @@ private fun AppShell(initialTab: Int = 0) {
                 2 -> com.mrabah.oneuischedule.ui.ClassHub(config)
                 3 -> com.mrabah.oneuischedule.ui.ToolsHub()
             }
+            com.mrabah.oneuischedule.ui.ActionFeedback()
         }
     }
 }

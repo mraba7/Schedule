@@ -34,9 +34,13 @@ internal class DesignRenderer(context: Context) {
 
     fun render(design: Design, day: DesignDay, width: Int = 720, height: Int = 720,
                task: String = "تحديد التجهيز", done: Boolean = false,
-               layoutWidth:Float=width/2f, layoutHeight:Float=height/2f, peekPeriod:Int?=null, options:WidgetOptions=WidgetOptions()): Bitmap {
+               layoutWidth:Float=width/2f, layoutHeight:Float=height/2f, peekPeriod:Int?=null, options:WidgetOptions=WidgetOptions(),noteOpen:Boolean=false): Bitmap {
         this.options=options
         d = day; preparation = if(options.showNote)task else ""; prepared = done
+        if(design==Design.FOCUS || design==Design.INTERACTIVE) {
+            val today=com.mrabah.oneuischedule.data.ScheduleEngine.today(day.ui.config,day.now)
+            if(today.slots.isNotEmpty()) d=DesignDay(today,day.now)
+        }
         val bitmap = Bitmap.createBitmap(width.coerceAtLeast(1), height.coerceAtLeast(1), Bitmap.Config.ARGB_8888)
         c = Canvas(bitmap)
         if(design==Design.PATH) {
@@ -52,7 +56,18 @@ internal class DesignRenderer(context: Context) {
         val scale = minOf(width, height) / 360f
         c.translate((width - 360 * scale) / 2, (height - 360 * scale) / 2)
         c.scale(scale, scale)
-        if(day.focus==null) {
+        if((design==Design.FOCUS || design==Design.INTERACTIVE) && d.ui.slots.isNotEmpty() && d.ui.slots.all{it.state==com.mrabah.oneuischedule.data.SlotState.DONE}) {
+            rect(1f,1f,358f,358f,"#152230",18f,"#405568")
+            text("✓",100f,42f,160f,64f,48f,"#CFB47D",true,"center")
+            text("خلصت اليوم",20f,113f,320f,45f,30f,"#F1F0EA",true,"center")
+            text("أنجزت ${d.ui.slots.size} حصص",20f,164f,320f,28f,19f,"#A7B5C1",align="center")
+            val tomorrow=com.mrabah.oneuischedule.data.ScheduleEngine.today(d.ui.config,d.now.toLocalDate().plusDays(1).atStartOfDay())
+            val first=tomorrow.slots.firstOrNull()
+            text(first?.let{"غدًا: ${periodName(it.period)} · ${DesignDay.section(it)}"} ?: "غدًا: ${tomorrow.holiday?.label ?: "بلا حصص"}",20f,229f,320f,35f,19f,"#F1F0EA",align="center")
+            first?.let{clock(DesignDay.clock(it.bell.start),100f,273f,160f,36f,26f,"#CFB47D")}
+            return bitmap
+        }
+        if(d.focus==null) {
             empty(design)
             return bitmap
         }
@@ -66,7 +81,7 @@ internal class DesignRenderer(context: Context) {
             Design.BLUEPRINT -> blueprint()
             Design.GLASS -> glass()
             Design.FOCUS -> focus()
-            Design.INTERACTIVE -> focus(peekPeriod)
+            Design.INTERACTIVE -> focus(peekPeriod,noteOpen)
             Design.PATH -> error("Responsive path handled above")
         }
         return bitmap
@@ -414,15 +429,15 @@ internal class DesignRenderer(context: Context) {
         text("الانصراف ${d.finish}",210f,336f,131f,20f,12f,fg,true)
         text("عرض الجدول  ‹",17f,336f,134f,20f,12f,muted,true,"left")
     }
-    private fun focus(peekPeriod:Int?=null) {
-        val fg="#F1F0EA";val muted="#A7B5C1";val gold="#CFB47D"
+    private fun focus(peekPeriod:Int?=null,noteOpen:Boolean=true) {
+        val fg="#F1F0EA";val muted="#A7B5C1";val gold=if(d.ui.live!=null && (d.minutes ?: 99)<=5)"#E8B46D" else "#CFB47D"
         val slot=d.focus!!;val live=d.ui.live!=null
-        val lessons=d.ui.slots
+        val lessons=LessonPeek.lessons(d)
         rect(1f,1f,358f,358f,"#152230",18f,"#405568")
         text(d.day,191f,9f,151f,27f,24f,fg,true,minSize=15f)
         text(d.date,207f,35f,135f,17f,12f,muted)
         rect(12f,13f,130f,29f,"#263137",14f,gold)
-        text("${lessons.size} حصص ${if(d.ui.isToday) "اليوم" else "بالجدول"}",17f,14f,120f,27f,15f,fg,true,"center",12f)
+        text("${d.ui.slots.size} حصص ${if(d.ui.isToday) "اليوم" else "بالجدول"}",17f,14f,120f,27f,15f,fg,true,"center",12f)
         // Four readable tiles per row; a full teaching day uses two rows.
         val columns=minOf(4,lessons.size.coerceAtLeast(1))
         val rows=(lessons.size+columns-1)/columns
@@ -452,23 +467,24 @@ internal class DesignRenderer(context: Context) {
 
             }
         }
-        val done=lessons.count{it.state==com.mrabah.oneuischedule.data.SlotState.DONE}
+        val done=d.ui.slots.count{it.state==com.mrabah.oneuischedule.data.SlotState.DONE}
         val ahead=lessons.count{it.state==com.mrabah.oneuischedule.data.SlotState.AHEAD}
         val summary=if(live) "$done انتهت · $ahead بعد الحالية" else if(d.ui.isToday) "$done انتهت · $ahead قادمة" else "${lessons.size} حصص في هذا اليوم"
-        if(selected==null)text(summary,16f,if(rows>1)112f else 104f,328f,15f,11f,muted,align="center")
+        if(selected==null)text("وين وصلنا؟ · $summary",16f,if(rows>1)112f else 104f,328f,15f,11f,muted,align="center")
         c.save()
         val bodyTop=maxOf(133f,(tiles.maxOfOrNull { it.bottom } ?: 125f)+8f)
         if(bodyTop>133f) {c.translate(0f,bodyTop);c.scale(1f,(360f-bodyTop)/227f);c.translate(0f,-133f)}
         rect(6f,133f,348f,194f,"#132331",9f,"#2D4253")
+        if(live)rect(6f+348f*(1-d.ui.progress),133f,348f*d.ui.progress,194f,"#24343C",9f)
         rect(15f,142f,48f,23f,"#CFB47D",10f)
-        text(if(live)"الآن" else "القادمة",18f,142f,42f,23f,12f,"#152230",true,"center")
+        text(if(slot.overridden)"معدّلة" else if(live)"الآن" else "القادمة",18f,142f,42f,23f,12f,"#152230",true,"center")
         text(periodName(slot.period),70f,141f,272f,36f,29f,fg,true,minSize=22f)
         rect(246f,180f,96f,22f,"#203D41",11f,classColor(slot.displaySection))
         text("الفصل ${d.section}",251f,180f,86f,22f,13f,classColor(slot.displaySection),true,"center",10f)
         val note=noteFor(slot.section)
         rect(15f,210f,330f,25f,"#1D3040",8f)
         icon("note",323f,215f,muted,15f)
-        text(note ?: "أضف آخر نقطة لهذا الفصل",22f,211f,292f,23f,12f,if(note==null)muted else fg,minSize=10f)
+        text(if(!options.showNote)"" else if(noteOpen)note ?: "أضف آخر نقطة لهذا الفصل" else if(note!=null)"▤ لديك ملاحظة · اضغط لعرضها" else "لا توجد ملاحظة · أضفها من صفحة الفصل",22f,211f,292f,23f,12f,if(note==null)muted else fg,minSize=10f)
         line(84f,250f,84f,291f,"#405568")
         line(276f,250f,276f,291f,"#405568")
         text("البداية",281f,253f,62f,16f,12f,muted,align="center")
