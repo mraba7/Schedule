@@ -143,7 +143,7 @@ private fun AppShell(initialTab: Int = 0) {
     Scaffold(
         floatingActionButton={if(tab<4 && !dirty) {
             val label=when(tab){0->"+ ملاحظة";1->"+ حصة";2->"+ طالب";else->"+ تجربة"}
-            ExtendedFloatingActionButton(onClick={
+            androidx.compose.material3.ExtendedFloatingActionButton(onClick={
                 when(tab) {
                     0->context.startActivity(Intent(context,com.mrabah.oneuischedule.ui.StudioActivity::class.java).putExtra("page","inbox").putExtra("add",true))
                     1->com.mrabah.oneuischedule.ui.openStudio(context,"quick_lesson")
