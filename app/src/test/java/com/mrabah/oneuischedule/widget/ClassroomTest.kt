@@ -20,7 +20,7 @@ class ClassroomTest {
         assertEquals(b,ClassroomStore.choose(listOf(a.copy(count=1),b)))
         assertEquals(a,ClassroomStore.choose(listOf(a,b.copy(excluded=true))))
         assertNull(ClassroomStore.choose(listOf(a.copy(excluded=true))))
-        assertEquals(b,ClassroomStore.choose(listOf(a.copy(updated=20),b.copy(updated=10))))
+        assertEquals(b.copy(updated=10),ClassroomStore.choose(listOf(a.copy(updated=20),b.copy(updated=10))))
     }
     @Test fun groupsHaveEveryPresentStudentOnceAndBalancedSizes() {
         val students=(1..11).map{student(it,it)}+student(12).copy(excluded=true)
