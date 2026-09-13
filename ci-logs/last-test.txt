@@ -7,12 +7,12 @@ Daemon will be stopped at the end of the build
 > Task :app:generateDebugResValues FROM-CACHE
 > Task :app:checkDebugAarMetadata
 > Task :app:mapDebugSourceSetPaths
-> Task :app:generateDebugResources FROM-CACHE
-> Task :app:mergeDebugResources FROM-CACHE
-> Task :app:packageDebugResources FROM-CACHE
-> Task :app:parseDebugLocalResources FROM-CACHE
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
 > Task :app:createDebugCompatibleScreenManifests
 > Task :app:extractDeepLinksDebug FROM-CACHE
+> Task :app:parseDebugLocalResources
+> Task :app:mergeDebugResources
 > Task :app:processDebugMainManifest
 > Task :app:processDebugManifest
 > Task :app:javaPreCompileDebug FROM-CACHE
@@ -25,17 +25,18 @@ Daemon will be stopped at the end of the build
 > Task :app:buildKotlinToolingMetadata
 > Task :app:preReleaseBuild UP-TO-DATE
 > Task :app:generateReleaseBuildConfig
-> Task :app:generateReleaseResValues FROM-CACHE
 > Task :app:checkReleaseAarMetadata
+> Task :app:generateReleaseResValues FROM-CACHE
 > Task :app:mapReleaseSourceSetPaths
-> Task :app:generateReleaseResources FROM-CACHE
-> Task :app:mergeReleaseResources FROM-CACHE
-> Task :app:packageReleaseResources FROM-CACHE
+> Task :app:generateReleaseResources
+> Task :app:packageReleaseResources
 > Task :app:parseReleaseLocalResources FROM-CACHE
 > Task :app:createReleaseCompatibleScreenManifests
 > Task :app:extractDeepLinksRelease FROM-CACHE
 > Task :app:processReleaseMainManifest
 > Task :app:processReleaseManifest
+> Task :app:processDebugManifestForPackage
+> Task :app:processReleaseManifestForPackage
 > Task :app:javaPreCompileRelease FROM-CACHE
 > Task :app:preReleaseUnitTestBuild UP-TO-DATE
 > Task :app:javaPreCompileReleaseUnitTest FROM-CACHE
@@ -43,27 +44,26 @@ Daemon will be stopped at the end of the build
 > Task :app:compileReleaseShaders NO-SOURCE
 > Task :app:generateReleaseAssets UP-TO-DATE
 > Task :app:mergeReleaseAssets
-> Task :app:processReleaseManifestForPackage
-> Task :app:processDebugManifestForPackage
-> Task :app:processReleaseResources
+> Task :app:mergeReleaseResources
 > Task :app:processDebugResources
+> Task :app:processReleaseResources
 > Task :app:packageDebugUnitTestForUnitTest
 > Task :app:generateDebugUnitTestConfig
 > Task :app:packageReleaseUnitTestForUnitTest
 > Task :app:generateReleaseUnitTestConfig
-> Task :app:compileReleaseKotlin
 > Task :app:compileDebugKotlin
+> Task :app:compileReleaseKotlin
 w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/MainActivity.kt:392:38 'fun <T : Parcelable!> getParcelableExtra(p0: String!): T?' is deprecated. Deprecated in Java.
 w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/widget/ScheduleWidget.kt:669:20 'static field ACTION_WALLPAPER_CHANGED: String' is deprecated. Deprecated in Java.
 
-> Task :app:compileReleaseKotlin
+> Task :app:compileDebugKotlin
 w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/MainActivity.kt:392:38 'fun <T : Parcelable!> getParcelableExtra(p0: String!): T?' is deprecated. Deprecated in Java.
 w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneuischedule/widget/ScheduleWidget.kt:669:20 'static field ACTION_WALLPAPER_CHANGED: String' is deprecated. Deprecated in Java.
 
 > Task :app:compileDebugJavaWithJavac
 > Task :app:processDebugJavaRes
-> Task :app:bundleDebugClassesToCompileJar
 > Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:bundleDebugClassesToCompileJar
 > Task :app:compileReleaseJavaWithJavac
 > Task :app:processReleaseJavaRes
 > Task :app:bundleReleaseClassesToRuntimeJar
@@ -72,12 +72,25 @@ w: file:///home/runner/work/Schedule/Schedule/app/src/main/java/com/mrabah/oneui
 > Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
 > Task :app:processDebugUnitTestJavaRes
 > Task :app:compileReleaseUnitTestKotlin
-> Task :app:testDebugUnitTest
-> Task :app:compileReleaseUnitTestJavaWithJavac NO-SOURCE
-> Task :app:processReleaseUnitTestJavaRes
-> Task :app:testReleaseUnitTest
-> Task :app:test
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/tests-1789241880678.json
 
-BUILD SUCCESSFUL in 2m
-57 actionable tasks: 41 executed, 16 from cache
+> Task :app:testDebugUnitTest
+
+ClassroomTest > fairSelectionSkipsExcludedAndRotatesAfterParticipation FAILED
+    java.lang.AssertionError at ClassroomTest.kt:23
+
+85 tests completed, 1 failed
+
+> Task :app:testDebugUnitTest FAILED
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/tests-1789272309995.json
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:testDebugUnitTest'.
+> There were failing tests. See the report at: file:///home/runner/work/Schedule/Schedule/app/build/reports/tests/testDebugUnitTest/index.html
+
+* Try:
+> Run with --scan to get full insights.
+
+BUILD FAILED in 1m 40s
+55 actionable tasks: 46 executed, 9 from cache
