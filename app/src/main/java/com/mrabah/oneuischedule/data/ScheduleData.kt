@@ -94,15 +94,15 @@ object Defaults {
         Bell(7, LocalTime.of(12, 25), LocalTime.of(13, 5)),
     )
 
-    /** As printed on the official aSc sheet — 40-minute periods. */
+    /** Winter timetable supplied by the teacher, first semester 1448 AH. */
     val winterBells = listOf(
-        Bell(1, LocalTime.of(7, 15), LocalTime.of(7, 55)),
-        Bell(2, LocalTime.of(7, 55), LocalTime.of(8, 35)),
-        Bell(3, LocalTime.of(8, 35), LocalTime.of(9, 15)),
-        Bell(4, LocalTime.of(10, 15), LocalTime.of(10, 55)),
-        Bell(5, LocalTime.of(10, 55), LocalTime.of(11, 35)),
-        Bell(6, LocalTime.of(11, 35), LocalTime.of(12, 15)),
-        Bell(7, LocalTime.of(12, 15), LocalTime.of(12, 50)),
+        Bell(1, LocalTime.of(7, 45), LocalTime.of(8, 35)),
+        Bell(2, LocalTime.of(8, 35), LocalTime.of(9, 20)),
+        Bell(3, LocalTime.of(9, 20), LocalTime.of(10, 5)),
+        Bell(4, LocalTime.of(10, 35), LocalTime.of(11, 20)),
+        Bell(5, LocalTime.of(11, 20), LocalTime.of(12, 5)),
+        Bell(6, LocalTime.of(12, 5), LocalTime.of(12, 50)),
+        Bell(7, LocalTime.of(12, 50), LocalTime.of(13, 35)),
     )
 
     val assemblyStart: LocalTime = LocalTime.of(7, 0)
@@ -397,6 +397,13 @@ data class ScheduleUi(
 
 object ScheduleEngine {
 
+    fun assemblyEnd(config: Config, date: LocalDate): LocalTime =
+        SchoolTools.bells(config, date).minOfOrNull { it.start } ?: Defaults.assemblyEnd
+
+    fun assemblyStart(config: Config, date: LocalDate): LocalTime =
+        assemblyEnd(config, date).minusMinutes(15)
+
+
     /** The timetable for a real date: template, then overrides, then holidays. */
     fun dutiesOn(config: Config, date: LocalDate): Map<Int, Duty> {
         if (config.holidayOn(date) != null) return emptyMap()
@@ -452,7 +459,7 @@ object ScheduleEngine {
         if (dutiesOn(config, date).isNotEmpty()) {
             val closes = SchoolTools.bells(config,now.toLocalDate()).maxOfOrNull { it.end }
             if (closes != null &&
-                !now.toLocalTime().isBefore(Defaults.assemblyStart) &&
+                !now.toLocalTime().isBefore(assemblyStart(config, date)) &&
                 now.toLocalTime().isBefore(closes)
             ) {
                 return minOf(nextBoundary, now.truncatedTo(ChronoUnit.MINUTES).plusMinutes(5))
@@ -470,8 +477,8 @@ object ScheduleEngine {
                     add(date.atTime(it.end))
                 }
             }
-            add(date.atTime(Defaults.assemblyStart))
-            add(date.atTime(Defaults.assemblyEnd))
+            add(date.atTime(assemblyStart(config, date)))
+            add(date.atTime(assemblyEnd(config, date)))
         }
         add(date.plusDays(1).atTime(0, 1))
     }
@@ -534,7 +541,7 @@ object ScheduleEngine {
             minutesUntilNext = if (next != null && clock != null)
                 ChronoUnit.MINUTES.between(clock, next.bell.start).coerceAtLeast(0) else null,
             isAssembly = clock != null &&
-                !clock.isBefore(Defaults.assemblyStart) && clock.isBefore(Defaults.assemblyEnd),
+                !clock.isBefore(assemblyStart(config, date)) && clock.isBefore(assemblyEnd(config, date)),
             holiday = holidayOverride ?: config.holidayOn(date),
             config = config,
         )

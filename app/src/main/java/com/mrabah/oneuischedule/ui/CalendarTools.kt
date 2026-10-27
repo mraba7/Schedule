@@ -150,6 +150,13 @@ private fun ProfileEditor(initial:TimetableProfile,config:Config,onDismiss:()->U
     val overlaps=config.profiles.any{it.id!=initial.id && from<=it.to && to>=it.from}
     EditorPage(onDismissRequest=onDismiss,title={Text("توقيت ${initial.name}")},text={Column(Modifier.verticalScroll(rememberScrollState())){
         OutlinedTextField(name,{name=it},label={Text("اسم التوقيت")});DateField("من",from){from=it};DateField("إلى",to){to=it}
+        Text("اختر تاريخ البداية والنهاية؛ تعود الأوقات السابقة تلقائيًا بعد انتهاء الفترة.")
+        if (bells == Defaults.winterBells) {
+            Text("الدوام الشتوي · الفصل الأول ١٤٤٨", style=MaterialTheme.typography.titleMedium)
+            Text("الاصطفاف 07:30–07:45 · الفسحة 10:05–10:35")
+            Text("الصلاة 13:35–13:45 · لا تُحسب حصة دراسية")
+        }
+        Text("اضغط وقت البداية أو النهاية لتعديله.")
         bells.forEach {bell->Text("الحصة ${bell.period}");Row{TimeField(bell.start){time->bells=bells.map{if(it.period==bell.period)it.copy(start=time) else it}};TimeField(bell.end){time->bells=bells.map{if(it.period==bell.period)it.copy(end=time) else it}}}}
         Row{Checkbox(independent,{independent=it});Text("جدول حصص مستقل")}
         if(independent){Choice("اليوم",day,ScheduleStore.DAYS,::dayName){day=it};(1..7).forEach{p->val duty=week[day]?.get(p);val selected=when(duty){is Duty.Teach->duty.section;Duty.Standby->"انتظار";else->"بدون"};Choice("الحصة $p",selected,listOf("بدون","انتظار")+config.sections,{it}){v->val duties=week[day].orEmpty().toMutableMap();if(v=="بدون")duties.remove(p) else duties[p]=if(v=="انتظار")Duty.Standby else Duty.Teach(v);week=week+(day to duties)}}}
